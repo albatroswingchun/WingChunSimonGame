@@ -137,7 +137,7 @@ async function loadGLBCharacter() {
     loader.setDRACOLoader(draco);
 
     // 1) Chemin EXACT (sensible à la casse) vers votre fichier
-    const url = './assets/models/MaleCharBaseMesh.glb';
+    const url = 'assets/models/MaleCharBaseMesh.glb';
     console.log('Chargement GLB:', url);
     const gltf = await loader.loadAsync(url);
 
