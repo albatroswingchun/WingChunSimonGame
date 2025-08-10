@@ -19,6 +19,14 @@
   #ui button:active{ transform:scale(.985) }
   @media (max-width: 820px){ :root{ --btn-size: 68px; } }
 </style>
+  <script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/"
+  }
+}
+</script>
 </head>
 <body>
 <div id="hint">Cliquez pour activer le son. Perso de dos devant le mannequin. Boutons carrés.</div>
@@ -34,9 +42,9 @@
 
 <script type="module">
 /* Imports locaux (proxies vers CDN) */
-import * as THREE from './vendor/three.module.js';
-import { GLTFLoader } from './vendor/GLTFLoader.js';
-import { DRACOLoader } from './vendor/DRACOLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/DRACOLoader.js';
 
 /* Overlay erreurs globales pour éviter la chasse au bug */
 const showErr = (msg)=>{
