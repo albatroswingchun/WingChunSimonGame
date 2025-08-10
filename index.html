@@ -149,8 +149,107 @@ async function loadGLBCharacter() {
     const gltf = await loader.loadAsync(url);
 
     // 2) Récupération du modèle
-    const model = gltf.scene || gltf.scenes?.[0];
+    let model = gltf.scene || gltf.scenes?.[0];
     if (!model) throw new Error('GLB sans scène');
+
+    /* ==== ISOLER UN SEUL PERSONNAGE DANS LE GLB ==== */
+function getArmatureRoots(root){
+  const roots = new Set();
+  root.traverse(o=>{
+    if (o.isBone && (!o.parent || !o.parent.isBone)) roots.add(o);
+  });
+  return [...roots];
+}
+function meshBelongsToArmature(skinned, rootBone){
+  if (!skinned.isSkinnedMesh || !skinned.skeleton) return false;
+  return skinned.skeleton.bones.some(b=>{
+    let p=b;
+    while(p){ if (p===rootBone) return true; p=p.parent; }
+    return false;
+  });
+}
+function armatureScore(root, sceneRoot){
+  // Somme des sommets de tous les SkinnedMesh rattachés
+  let sum=0;
+  sceneRoot.traverse(o=>{
+    if (o.isSkinnedMesh && meshBelongsToArmature(o, root)){
+      const pos = o.geometry?.attributes?.position;
+      sum += pos ? pos.count : 0;
+    }
+  });
+  return sum;
+}
+function pickDominantArmature(sceneRoot){
+  const roots = getArmatureRoots(sceneRoot);
+  if (roots.length <= 1) return roots[0] || null;
+  let best = roots[0], bestScore = armatureScore(roots[0], sceneRoot);
+  for (let i=1;i<roots.length;i++){
+    const s = armatureScore(roots[i], sceneRoot);
+    if (s > bestScore){ best = roots[i]; bestScore = s; }
+  }
+  return best;
+}
+function hideOtherArmatures(sceneRoot, keepRoot){
+  const roots = getArmatureRoots(sceneRoot).filter(r=>r!==keepRoot);
+  // Masquer les os des armatures non gardées
+  roots.forEach(r=>{ r.visible = false; });
+  // Masquer les SkinnedMesh rattachés aux armatures non gardées
+  sceneRoot.traverse(o=>{
+    if (o.isSkinnedMesh && o.skeleton){
+      const belongsToKept = meshBelongsToArmature(o, keepRoot);
+      o.visible = belongsToKept;
+    }
+  });
+}
+
+// 1) Détecte l’armature dominante et masque l’autre
+const keptRoot = pickDominantArmature(model);
+if (keptRoot){
+  hideOtherArmatures(model, keptRoot);
+} else {
+  // Pas d’armature claire: si la scène a 2 gros enfants, on garde le plus gros en sommets
+  const kids = model.children.filter(c=>c.visible !== false);
+  if (kids.length >= 2){
+    function subtreeVerts(node){
+      let sum=0;
+      node.traverse(o=>{
+        const pos = o.geometry?.attributes?.position;
+        if (pos) sum += pos.count;
+      });
+      return sum;
+    }
+    let best = kids[0], bestS = subtreeVerts(kids[0]);
+    for(let i=1;i<kids.length;i++){
+      const s = subtreeVerts(kids[i]);
+      if (s > bestS){ best = kids[i]; bestS = s; }
+    }
+    kids.forEach(k=>{ if (k!==best) k.visible=false; });
+  }
+}
+
+// 2) Option pratique: touche N pour inverser si ce n’est pas le bon
+addEventListener('keydown', (e)=>{
+  if (e.key.toLowerCase() !== 'n') return;
+  const roots = getArmatureRoots(model);
+  if (roots.length < 2) return;
+  const current = roots.find(r=>r.visible!==false) || roots[0];
+  const other = roots.find(r=>r!==current);
+  // Montre l’autre, cache l’actuel
+  roots.forEach(r=> r.visible = (r===other));
+  model.traverse(o=>{
+    if (o.isSkinnedMesh && o.skeleton){
+      o.visible = meshBelongsToArmature(o, other);
+    }
+  });
+  // Vous pouvez recalculer la boîte si besoin, mais la normalisation arrive juste après
+});
+/* ==== FIN ISOLATION ==== */
+
+    // ... votre code existant ...
+// 3) Normalisation: compute bounding-box, remise à l’échelle et recentrage
+const box = new THREE.Box3().setFromObject(model);
+// etc.
+
 
     // 3) Normalisation: compute bounding-box, remise à l’échelle et recentrage
     const box = new THREE.Box3().setFromObject(model);
