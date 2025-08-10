@@ -133,7 +133,7 @@ async function loadGLBCharacter() {
 
     // Draco inoffensif (au cas où votre GLB soit compressé)
     const draco = new DRACOLoader();
-    draco.setDecoderPath('https://unpkg.com/three@0.155.0/examples/jsm/libs/draco/');
+    draco.setDecoderPath('./vendor/draco/');
     loader.setDRACOLoader(draco);
 
     // 1) Chemin EXACT (sensible à la casse) vers votre fichier
