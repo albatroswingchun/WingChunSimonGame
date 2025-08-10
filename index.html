@@ -1,332 +1,344 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Wing Chun Simon • GitHub Pages</title>
-  <style>
-    :root{ --btn-size:84px; --btn-radius:14px; }
-    html,body{ margin:0; height:100%; background:#0b0b0b; color:#eee; font-family:system-ui,Segoe UI,Roboto,Arial; }
-    canvas{ display:block; width:100%; height:100%; }
-    #hint{ position:fixed; left:0; right:0; top:0; text-align:center; padding:6px; font-size:13px; opacity:.85; z-index:10 }
-    #err { position:fixed; left:0; right:0; top:28px; padding:6px; text-align:center; color:#fff; background:#a22; font-size:12px; display:none; z-index:9999 }
-    #ui  { position:fixed; left:0; right:0; bottom:0; padding:12px; display:grid;
-           grid-template-columns:repeat(4, var(--btn-size)); gap:12px; justify-content:center; z-index:10;
-           background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55)); }
-    #ui button{ width:var(--btn-size); height:var(--btn-size); border:0; border-radius:var(--btn-radius);
-                background:#222; color:#eee; font-weight:700; letter-spacing:.2px; font-size:14px;
-                box-shadow:0 1px 6px rgba(0,0,0,.35); user-select:none; cursor:pointer; }
-    #ui button:active{ transform:scale(.985) }
-    @media (max-width:820px){ :root{ --btn-size:68px; } }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "./vendor/three.module.js",
-      "three/addons/": "./vendor/"
-    }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wing Chun Simon Game</title>
+<style>
+  :root{
+    --ink:#e7d7b8; --panel:#1c1715; --panel2:#241d1b;
+    --red:#d34b43; --blue:#3d74d6; --green:#4cb36c; --gold:#d1a341;
   }
-  </script>
+  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial}
+  #app{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:linear-gradient(180deg,var(--panel),var(--panel2)); border-bottom:1px solid #2a2322}
+  header .score{font-size:14px; letter-spacing:.5px}
+  header .best{opacity:.8}
+  footer{padding:6px 12px; font-size:12px; opacity:.6; text-align:center; background:linear-gradient(180deg,var(--panel2),#120f0f)}
+  /* Stage */
+  #stageWrap{position:relative; overflow:hidden; background:#101011;}
+  #stage{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(100vw,960px); height:min(56vw,540px); max-height:70vh;}
+  canvas{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges;}
+  /* Simon Board */
+  #board{position:absolute; left:20px; bottom:20px; display:grid; grid-template-columns:repeat(2,112px); grid-gap:12px; z-index:5}
+  .pad{width:112px;height:112px;border-radius:14px;background:#222; box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45); cursor:pointer; transition:transform .06s ease}
+  .pad:active{transform:translateY(2px)}
+  .p-red{background:linear-gradient(#5a1714,#2b0b0a)} .p-blue{background:linear-gradient(#16315f,#0b1831)}
+  .p-green{background:linear-gradient(#154226,#092112)} .p-gold{background:linear-gradient(#5a3e12,#2e210a)}
+  .pad.lit{filter:brightness(1.55); box-shadow:inset 0 0 0 2px #fff3, 0 0 42px currentColor}
+  .p-red.lit{color:var(--red)} .p-blue.lit{color:var(--blue)} .p-green.lit{color:var(--green)} .p-gold.lit{color:var(--gold)}
+  .lbl{position:absolute; left:0; right:0; bottom:-22px; text-align:center; color:#d8cbb0; opacity:.9; font-size:13px}
+  /* Menu */
+  #menu{position:absolute; inset:0; display:grid; place-items:center; background:linear-gradient(180deg,#0b0a0a 0,#151213 70%,#0b0a0a 100%); z-index:10}
+  .panel{background:linear-gradient(180deg,#1d1816,#231d1c); border:1px solid #2a2322; border-radius:16px; padding:28px 24px; width:min(760px,92vw); box-shadow:0 20px 80px rgba(0,0,0,.6)}
+  .title{font-size:44px; letter-spacing:1.5px; text-align:center; margin:0 0 10px; color:var(--ink); text-shadow:0 2px 0 #000, 0 0 24px rgba(209,163,65,.35)}
+  .zh{font-weight:900; letter-spacing:2px; color:#d1a341}
+  .subtitle{opacity:.85; text-align:center; margin-bottom:18px}
+  .actions{display:flex; gap:12px; justify-content:center; align-items:center}
+  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18); border:1px solid #3a302d; color:#e9d9bc; padding:12px 18px; border-radius:10px; font-weight:700; cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .hi{font-size:14px; text-align:center; margin-top:10px; opacity:.85}
+  /* Onomatopée */
+  #onom{position:absolute; left:50%; top:12%; transform:translate(-50%,0) scale(.6); font-size:72px; font-weight:900; color:#ffe9a8; text-shadow:0 4px 0 #000, 0 0 22px #ffec9a; opacity:0; pointer-events:none; z-index:6}
+  .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pop{0%{opacity:0; transform:translate(-50%,0) scale(.6)} 28%{opacity:1; transform:translate(-50%,0) scale(1.07)} 100%{opacity:0; transform:translate(-50%,0) scale(1)}}
+  /* Flash erreur */
+  #flash{position:absolute; inset:0; background:#ff000022; opacity:0; pointer-events:none; z-index:7}
+  .boom{animation:boom .4s ease}
+  @keyframes boom{0%{opacity:.65}100%{opacity:0}}
+</style>
 </head>
 <body>
-  <div id="hint">Cliquez pour activer le son. Perso de dos devant le mannequin. Boutons carrés.</div>
-  <div id="err"></div>
-  <canvas id="c"></canvas>
+<div id="app">
+  <header>
+    <div><strong>Wing Chun Simon</strong></div>
+    <div class="score">Score: <span id="score">0</span> • <span class="best">Meilleur: <span id="best">0</span></span></div>
+  </header>
 
-  <div id="ui">
-    <button data-act="pak"   aria-label="Pak Sao">Pak</button>
-    <button data-act="tan"   aria-label="Tan Sao">Tan</button>
-    <button data-act="bon"   aria-label="Bon Sao">Bon</button>
-    <button data-act="punch" aria-label="Punch">Punch</button>
+  <div id="stageWrap">
+    <div id="stage">
+      <canvas id="cx" width="768" height="432"></canvas>
+      <div id="board" aria-label="Boutons Simon">
+        <button class="pad p-red"   data-color="red"></button>
+        <button class="pad p-blue"  data-color="blue"></button>
+        <button class="pad p-green" data-color="green"></button>
+        <button class="pad p-gold"  data-color="gold"></button>
+        <div class="lbl">Reproduis la séquence</div>
+      </div>
+      <div id="onom"></div>
+      <div id="flash"></div>
+      <div id="menu">
+        <div class="panel">
+          <h1 class="title"><span class="zh">Wing Chun</span> Simon Game</h1>
+          <p class="subtitle">Chaque tour ajoute un mouvement. Clique les bonnes touches. Un échec et tu repars de zéro.</p>
+          <div class="actions">
+            <button id="startBtn" class="btn">Commencer</button>
+            <button id="muteBtn"  class="btn">🔊 Son</button>
+          </div>
+          <div class="hi">Meilleur score: <span id="bestMenu">0</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/DRACOLoader.js';
+  <footer>Décor, perso et mannequin générés en Canvas “64-bit style”. Remplace les sons dans <code>assets/sounds/</code> si besoin.</footer>
+</div>
 
-/* ===== erreurs ===== */
-const showErr = (msg)=>{
-  const el = document.getElementById('err');
-  el.textContent = msg;
-  el.style.display = 'block';
-  console.error(msg);
+<script>
+/* ========= SONS (garde tes anciens noms) ========= */
+const SFX = {
+  red:   new Audio('assets/sounds/red.mp3'),
+  blue:  new Audio('assets/sounds/blue.mp3'),
+  green: new Audio('assets/sounds/green.mp3'),
+  gold:  new Audio('assets/sounds/yellow.mp3'), // ancien "jaune"
+  wrong: new Audio('assets/sounds/wrong.mp3')
 };
-addEventListener('error', e => showErr('JS Error: ' + (e.error?.stack || e.message)));
-addEventListener('unhandledrejection', e => showErr('Promise Error: ' + (e.reason?.stack || e.reason)));
+Object.values(SFX).forEach(a => { a.preload='auto'; a.volume=.9; });
 
-/* ===== renderer / scène / caméra ===== */
-const canvas   = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+/* ========= ETAT JEU ========= */
+const pads = [...document.querySelectorAll('.pad')];
+const scoreEl = document.getElementById('score');
+const bestEl  = document.getElementById('best');
+const bestMenuEl  = document.getElementById('bestMenu');
+const menu   = document.getElementById('menu');
+const startBtn = document.getElementById('startBtn');
+const muteBtn  = document.getElementById('muteBtn');
+const onom  = document.getElementById('onom');
+const flash = document.getElementById('flash');
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e0e12);
-
-const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
-camera.position.set(0, 1.6, 6);
-camera.lookAt(0, 1.2, 0);
-
-/* ===== lumières ===== */
-scene.add(new THREE.AmbientLight(0xffffff, .28));
-const dl = new THREE.DirectionalLight(0xffffff, 2.0);
-dl.position.set(1.2, 2.2, 1.5);
-dl.castShadow = true;
-scene.add(dl);
-
-/* ===== sol ===== */
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(40,40),
-  new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1})
-);
-ground.rotation.x = -Math.PI/2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-/* ===== mannequin ===== */
-const wood = new THREE.MeshStandardMaterial({color:0x6a4a2f, roughness:.6});
-const dummy = new THREE.Group();
-const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,2.4,20), wood); trunk.position.y = 1.2;
-function arm(len, r){ return new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,16), wood); }
-const armL = arm(0.6,0.05); armL.rotation.z =  Math.PI/2; armL.position.set(-0.35,1.55,0);
-const armR = arm(0.6,0.05); armR.rotation.z =  Math.PI/2; armR.position.set( 0.35,1.55,0);
-const armC = arm(0.5,0.05); armC.rotation.z =  Math.PI/2; armC.position.set( 0.00,1.15,0);
-const leg  = arm(0.8,0.06); leg.rotation.x =  Math.PI/2; leg.position.set(0,0.55,0.18);
-dummy.add(trunk, armL, armR, armC, leg);
-scene.add(dummy);
-
-/* ===== conteneur personnage ===== */
-const person = new THREE.Group();
-person.position.set(0,0,1.6);
-scene.add(person);
-(function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
-
-/* ===== bones sélectionnés ===== */
-const charBones = { R:{upper:null,fore:null,hand:null}, L:{upper:null,fore:null,hand:null} };
-
-/* ===== utilitaires rig ===== */
-function getArmatureRoots(root){
-  const roots = new Set();
-  root.traverse(o=>{ if (o.isBone && (!o.parent || !o.parent.isBone)) roots.add(o); });
-  return [...roots];
-}
-function meshBelongsToArmature(skinned, rootBone){
-  if (!skinned.isSkinnedMesh || !skinned.skeleton) return false;
-  return skinned.skeleton.bones.some(b=>{ let p=b; while(p){ if (p===rootBone) return true; p=p.parent; } return false; });
-}
-/* Regroupe les SkinnedMesh par armature root + calcule centre monde */
-function clusterByArmature(sceneRoot){
-  const roots = getArmatureRoots(sceneRoot);
-  const clusters = roots.map(r=>({ root:r, meshes:[], center:new THREE.Vector3() }));
-  const tmpBox = new THREE.Box3(), tmpC = new THREE.Vector3();
-  sceneRoot.traverse(o=>{
-    if (o.isSkinnedMesh){
-      const root = roots.find(rt=>meshBelongsToArmature(o, rt));
-      if (root){
-        const cl = clusters.find(c=>c.root===root);
-        cl.meshes.push(o);
-      }
-    }
-  });
-  clusters.forEach(c=>{
-    if (c.meshes.length){
-      tmpBox.makeEmpty();
-      c.meshes.forEach(m=> tmpBox.expandByObject(m));
-      tmpBox.getCenter(c.center);
-    }
-  });
-  return clusters.filter(c=>c.meshes.length);
-}
-
-/* Garde le rig le plus proche du mannequin (0,1.2,0) et masque les autres */
-function keepClosestArmature(sceneRoot){
-  const clusters = clusterByArmature(sceneRoot);
-  if (clusters.length <= 1) return; // déjà unique
-  const target = new THREE.Vector3(0,1.2,0);
-  let best = clusters[0], bestD = best.center.distanceTo(target);
-  for (let i=1;i<clusters.length;i++){
-    const d = clusters[i].center.distanceTo(target);
-    if (d < bestD){ best = clusters[i]; bestD = d; }
-  }
-  clusters.forEach(c=>{
-    if (c !== best){
-      c.meshes.forEach(m=> m.visible = false);
-      c.root.traverse(b=> b.visible = false);
-    }
-  });
-}
-
-/* Cherche les os automatiquement par regex */
-function autoPickBones(model){
-  const bones = [];
-  model.traverse(o=>{ if (o.isBone) bones.push(o); });
-  const pick = (side, ...cands)=>{
-    const sideRx = side==='R' ? /(right|\br\b)/i : /(left|\bl\b)/i;
-    for (const rx of cands){
-      const b = bones.find(n => sideRx.test(n.name) && rx.test(n.name));
-      if (b) return b;
-    }
-    return null;
-  };
-  charBones.R.upper = pick('R', /(upperarm|^arm(?!ature)|shoulder)/i);
-  charBones.R.fore  = pick('R', /(forearm|lowerarm|elbow)/i) || charBones.R.upper;
-  charBones.R.hand  = pick('R', /(hand|wrist)/i);
-
-  charBones.L.upper = pick('L', /(upperarm|^arm(?!ature)|shoulder)/i);
-  charBones.L.fore  = pick('L', /(forearm|lowerarm|elbow)/i) || charBones.L.upper;
-  charBones.L.hand  = pick('L', /(hand|wrist)/i);
-}
-
-/* ===== charge GLB et remplace tout ===== */
-async function loadGLBCharacter(){
-  try{
-    const loader = new GLTFLoader();
-    const draco  = new DRACOLoader();
-    draco.setDecoderPath('./vendor/draco/');
-    loader.setDRACOLoader(draco);
-
-    const url = './assets/models/MaleCharBaseMesh.glb';
-    const gltf = await loader.loadAsync(url);
-    const model = gltf.scene || gltf.scenes?.[0];
-    if (!model) throw new Error('GLB sans scène');
-
-    // isole: garde le rig le plus proche du mannequin
-    keepClosestArmature(model);
-
-    // normalise taille/position/orientation
-    const box  = new THREE.Box3().setFromObject(model);
-    const size = new THREE.Vector3(); box.getSize(size);
-    model.scale.setScalar(size.y>0 ? 1.75/size.y : 1);
-    const box2 = new THREE.Box3().setFromObject(model);
-    const center2 = new THREE.Vector3(); box2.getCenter(center2);
-    model.position.set(-center2.x, -box2.min.y, -center2.z);
-    model.rotation.y = Math.PI;
-    model.traverse(o=>{ if (o.isMesh){ o.castShadow=o.receiveShadow=true; } });
-
-    person.clear();
-    person.add(model);
-
-    autoPickBones(model);
-    console.log('Bones choisis:', {
-      rArm: charBones.R.upper?.name, rFore: charBones.R.fore?.name, rHand: charBones.R.hand?.name,
-      lArm: charBones.L.upper?.name, lFore: charBones.L.fore?.name, lHand: charBones.L.hand?.name
-    });
-  }catch(e){
-    showErr('Erreur chargement perso GLB: ' + e.message);
-  }
-}
-loadGLBCharacter();
-
-/* ===== AUDIO fiable (HTMLAudio) ===== */
-const sounds = {
-  pak:   new Audio('./assets/sounds/pak.wav'),
-  tan:   new Audio('./assets/sounds/tan.wav'),
-  bon:   new Audio('./assets/sounds/bon.wav'),
-  punch: new Audio('./assets/sounds/punch.wav')
+let muted = false;
+muteBtn.onclick = () => {
+  muted = !muted;
+  muteBtn.textContent = muted ? '🔇 Muet' : '🔊 Son';
 };
-Object.values(sounds).forEach(a=>{ a.preload='auto'; a.crossOrigin = 'anonymous'; });
+const play = a => { if (!muted) { a.currentTime=0; a.play().catch(()=>{});} };
 
-function playSound(key){
-  const a = sounds[key];
-  if (!a) return;
-  try { a.pause(); a.currentTime = 0; a.play(); }
-  catch(err){ console.warn('Audio play bloqué:', err); }
+let seq = [];
+let userIndex = 0;
+let locked = true;
+let score = 0;
+let best = +localStorage.getItem('wcs_best') || 0;
+bestEl.textContent = best; bestMenuEl.textContent = best;
+
+/* ========= CANVAS RENDER ========= */
+const cx = document.getElementById('cx');
+const ctx = cx.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = cx.width, H = cx.height;
+
+/* Décor chinois “64-bit style” */
+function drawBackground(t){
+  // ciel dégradé
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, '#1a1a1f'); g.addColorStop(1, '#0d0d10');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // montagnes stylisées
+  ctx.fillStyle = '#1d2a2f';
+  for(let i=0;i<5;i++){
+    const y = H*0.5 + i*18;
+    ctx.fillRect(0,y,W,2);
+  }
+  // pagodes simplifiées
+  for(let i=0;i<3;i++){
+    const x = 140 + i*220;
+    ctx.fillStyle = '#2b2220';
+    ctx.fillRect(x-24, H-150, 48, 90);
+    ctx.fillStyle = '#4a2a22';
+    ctx.fillRect(x-32, H-160, 64, 12);
+    ctx.fillStyle = '#6e3a29';
+    ctx.fillRect(x-44, H-172, 88, 10);
+  }
+  // sol
+  ctx.fillStyle = '#2a221f';
+  ctx.fillRect(0, H-64, W, 64);
+  // pavés
+  ctx.fillStyle = '#342a27';
+  for(let x=0;x<W;x+=22) ctx.fillRect(x+((t/150|0)%2)*8, H-40, 16, 6);
 }
-// déverrouille au premier clic tactile/souris
-addEventListener('pointerdown', ()=>{
-  Object.values(sounds).forEach(a=>{ try{ a.play().then(()=>a.pause()).catch(()=>{}); }catch{} });
-}, { once:true });
 
-/* ===== UI ===== */
-document.querySelectorAll('#ui button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const a = btn.dataset.act;
-    if (a==='pak')   pak();
-    if (a==='tan')   tan();
-    if (a==='bon')   bon();
-    if (a==='punch') punch();
-  });
+/* Mook Jong (mannequin) */
+function drawDummy(){
+  const x= W*0.66, y= H-100;
+  // tronc
+  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
+  ctx.fillStyle='#603a1f'; ctx.fillRect(x-10,y-92,20,3);
+  // bras haut
+  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8, y-74, 38, 6);
+  // bras milieu
+  ctx.fillRect(x-8, y-46, 34, 6);
+  // jambe
+  ctx.fillRect(x-6, y-12, 12, 28);
+}
+
+/* Perso “64-bit” simplifié (silhouette + bras/jambes) */
+const fighter = {
+  baseX: W*0.42, baseY: H-64,
+  pose: 'idle', t0: 0
+};
+
+function drawFighter(t){
+  const x = fighter.baseX, y = fighter.baseY;
+  // ombre
+  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.beginPath(); ctx.ellipse(x-24, y-6, 38, 10, 0, 0, Math.PI*2); ctx.fill();
+  // corps
+  ctx.fillStyle='#1b1d20';
+  ctx.fillRect(x-40, y-112, 56, 68); // torse
+  // tête
+  ctx.fillStyle='#c7a880';
+  ctx.fillRect(x-20, y-132, 24, 24);
+  // ceinture
+  ctx.fillStyle='#0e0f11'; ctx.fillRect(x-40, y-54, 56, 8);
+
+  // jambes
+  ctx.fillStyle='#171a1d';
+  ctx.fillRect(x-44, y-50, 22, 50); // jambe G
+  ctx.fillRect(x+2,  y-50, 22, 50); // jambe D
+  ctx.fillStyle='#111'; ctx.fillRect(x-44, y, 26, 8); ctx.fillRect(x+2, y, 26, 8);
+
+  // bras selon pose
+  ctx.fillStyle='#171a1d';
+  const ph = ((t - fighter.t0)/1000);
+  const bounce = Math.sin(ph*8)*1.5;
+
+  if (fighter.pose==='idle'){
+    // bras en garde
+    ctx.fillRect(x-54, y-88, 18, 40);
+    ctx.fillRect(x+18,  y-88, 18, 40);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(x-54, y-48, 18, 10); ctx.fillRect(x+18, y-48, 18, 10);
+  } else if (fighter.pose==='pak'){
+    // paume latérale sur bras haut
+    ctx.fillRect(x+12, y-88, 18, 40);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(x+28, y-72, 26, 10);
+  } else if (fighter.pose==='tan'){
+    // avant-bras horizontal paume vers le haut (milieu)
+    ctx.fillRect(x+10, y-90, 18, 40);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(x+26, y-64, 30, 8);
+  } else if (fighter.pose==='bon'){
+    // coude vers le ciel (aile) vers bras haut
+    ctx.fillRect(x+6, y-96, 18, 46);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(x+18, y-98, 12, 16);
+  } else if (fighter.pose==='punch'){
+    // poing direct au tronc
+    ctx.fillRect(x+8, y-92, 18, 42);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(x+26, y-72, 24, 10);
+  }
+
+  // micro rebond
+  ctx.translate(0, bounce); ctx.translate(0, -bounce);
+}
+
+/* Onomatopées */
+function shout(txt){
+  onom.textContent = txt;
+  onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
+}
+
+/* Animation pose courte */
+function doPose(name){
+  fighter.pose = name; fighter.t0 = performance.now();
+  setTimeout(()=>{ fighter.pose='idle'; fighter.t0 = performance.now(); }, 280);
+}
+
+/* ========= SIMON LOGIQUE ========= */
+const COLORS = ['red','blue','green','gold'];
+const MAP_MOVE = { red:'punch', blue:'bon', green:'tan', gold:'pak' };
+const MAP_SHOUT = { red:'POW!', blue:'THWACK!', green:'WHAP!', gold:'SMACK!' };
+
+function randColor(){ return COLORS[Math.random()*COLORS.length|0]; }
+
+async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function playSequence(){
+  locked = true;
+  await sleep(500);
+  for (let i=0;i<seq.length;i++){
+    const c = seq[i];
+    light(c, true);
+    play(SFX[c]);
+    doPose(MAP_MOVE[c]);
+    shout(MAP_SHOUT[c]);
+    await sleep(450);
+    light(c, false);
+    await sleep(160);
+  }
+  locked = false;
+  userIndex = 0;
+}
+
+function light(color, on){
+  const el = pads.find(p=>p.dataset.color===color);
+  if (!el) return;
+  el.classList.toggle('lit', !!on);
+}
+
+async function stepUser(color){
+  if (locked) return;
+  // feedback immédiat
+  light(color,true);
+  doPose(MAP_MOVE[color]);
+  shout(MAP_SHOUT[color]);
+  play(SFX[color]);
+  await sleep(220);
+  light(color,false);
+
+  if (color !== seq[userIndex]){
+    // erreur
+    play(SFX.wrong);
+    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    seq = [];
+    score = 0; scoreEl.textContent = score;
+    locked = true;
+    await sleep(600);
+    // retour menu rapide ou redémarrage direct
+    startGame(); // relance direct, sinon affiche le menu: menu.style.display='grid';
+    return;
+  }
+  userIndex++;
+  if (userIndex === seq.length){
+    // round réussi
+    score++; scoreEl.textContent = score;
+    if (score>best){ best=score; bestEl.textContent=best; bestMenuEl.textContent=best; localStorage.setItem('wcs_best', best); }
+    seq.push(randColor());
+    await sleep(420);
+    playSequence();
+  }
+}
+
+/* ========= INPUT ========= */
+pads.forEach(p=>{
+  p.addEventListener('click', ()=> stepUser(p.dataset.color));
+});
+window.addEventListener('keydown', e=>{
+  const k = e.key;
+  if (k==='1') stepUser('red');
+  if (k==='2') stepUser('blue');
+  if (k==='3') stepUser('green');
+  if (k==='4') stepUser('gold');
 });
 
-/* ===== effets / tweens ===== */
-function dummyHit(side=0){
-  const startZ = dummy.rotation.z; const tilt = 0.05*(side||1);
-  const t0 = performance.now();
-  function f(now){
-    const k = Math.min(1,(now-t0)/70);
-    dummy.rotation.z = startZ + tilt*k;
-    if (k<1) requestAnimationFrame(f);
-    else {
-      const t1 = performance.now();
-      function b(n2){
-        const k2 = Math.min(1,(n2-t1)/110);
-        dummy.rotation.z = startZ + tilt*(1-k2);
-        if (k2<1) requestAnimationFrame(b);
-      }
-      requestAnimationFrame(b);
-    }
-  }
-  requestAnimationFrame(f);
+/* ========= GAME FLOW ========= */
+function startGame(){
+  menu.style.display='none';
+  // déverrouille AudioContext sur interaction
+  Object.values(SFX).forEach(a=>{ try{a.play().then(()=>a.pause()).catch(()=>{});}catch{} });
+  seq = [randColor()];
+  score = 0; scoreEl.textContent = 0;
+  playSequence();
 }
+startBtn.addEventListener('click', startGame);
 
-const rotRef = (obj, axis) => ({ set(v){ obj[axis]=v; }, get(){ return obj[axis]||0; } });
-function tweenRot(ref, from, to, dur, onEnd){
-  const t0 = performance.now();
-  function step(now){
-    const k = Math.min(1,(now-t0)/dur);
-    ref.set(from + (to-from)*k);
-    if (k<1) requestAnimationFrame(step); else onEnd && onEnd();
-  }
-  requestAnimationFrame(step);
+/* ========= MAIN LOOP ========= */
+let last = performance.now();
+function loop(t){
+  const dt = t-last; last=t;
+  drawBackground(t);
+  drawDummy();
+  drawFighter(t);
+  requestAnimationFrame(loop);
 }
-
-/* ===== techniques ===== */
-let busy = false;
-function pak(){
-  if (busy) return; busy = true;
-  const fore = charBones.R.fore || charBones.R.upper;
-  if (fore){
-    const ref = rotRef(fore.rotation,'y'); const s = ref.get();
-    tweenRot(ref, s, s-0.35, 100, ()=>{ dummyHit(+1); playSound('pak'); tweenRot(ref, s-0.35, s, 120, ()=>busy=false); });
-  } else { dummyHit(+1); playSound('pak'); busy=false; }
-}
-function tan(){
-  if (busy) return; busy = true;
-  const fore = charBones.L.fore || charBones.L.upper;
-  if (fore){
-    const ref = rotRef(fore.rotation,'y'); const s = ref.get();
-    tweenRot(ref, s, s+0.35, 110, ()=>{ dummyHit(-1); playSound('tan'); tweenRot(ref, s+0.35, s, 120, ()=>busy=false); });
-  } else { dummyHit(-1); playSound('tan'); busy=false; }
-}
-function bon(){
-  if (busy) return; busy = true;
-  const upper = charBones.R.upper;
-  if (upper){
-    const ref = rotRef(upper.rotation,'x'); const s = ref.get();
-    tweenRot(ref, s, s-0.6, 120, ()=>{ dummyHit(0); playSound('bon'); tweenRot(ref, s-0.6, s, 120, ()=>busy=false); });
-  } else { dummyHit(0); playSound('bon'); busy=false; }
-}
-function punch(){
-  if (busy) return; busy = true;
-  const fore = charBones.L.fore || charBones.L.upper;
-  if (fore){
-    const ref = rotRef(fore.rotation,'y'); const s = ref.get();
-    tweenRot(ref, s, s+0.55, 90, ()=>{ dummyHit(0); playSound('punch'); tweenRot(ref, s+0.55, s, 110, ()=>busy=false); });
-  } else { dummyHit(0); playSound('punch'); busy=false; }
-}
-
-/* ===== resize + boucle ===== */
-addEventListener('resize', ()=>{
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-});
-function animate(){ renderer.render(scene, camera); requestAnimationFrame(animate); }
-requestAnimationFrame(animate);
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
