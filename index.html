@@ -213,28 +213,69 @@ async function loadGLBCharacter() {
 
 loadGLBCharacter();
 
-/* Audio */
-let ctx; let sPak,sTan,sBon,sPunch;
-async function ensureAudio(){
-  if(!ctx){
-    ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const load = async (url)=>{
+/* --- AUDIO --- */
+let ctx;
+let sPak, sTan, sBon, sPunch;
+
+async function ensureAudio() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    console.log('AudioContext state:', ctx.state);
+
+    const load = async (url) => {
       const resp = await fetch(url);
-      if(!resp.ok) throw new Error('Audio introuvable: ' + url);
-      const arr  = await resp.arrayBuffer();
+      if (!resp.ok) throw new Error('Audio introuvable: ' + url);
+      const arr = await resp.arrayBuffer();
       return await ctx.decodeAudioData(arr);
     };
-    [sPak,sTan,sBon,sPunch] = await Promise.all([
-      load('./assets/sounds/pak.wav'),
-      load('./assets/sounds/tan.wav'),
-      load('./assets/sounds/bon.wav'),
-      load('./assets/sounds/punch.wav'),
-    ]);
-    document.getElementById('hint').style.display='none';
+
+    try {
+      [sPak, sTan, sBon, sPunch] = await Promise.all([
+        load('./assets/sounds/pak.wav'),
+        load('./assets/sounds/tan.wav'),
+        load('./assets/sounds/bon.wav'),
+        load('./assets/sounds/punch.wav'),
+      ]);
+      console.log('Tous les sons chargés');
+      document.getElementById('hint').style.display = 'none';
+    } catch (err) {
+      console.error('Erreur chargement sons:', err);
+      document.getElementById('err').textContent = 'Erreur chargement sons: ' + err.message;
+      document.getElementById('err').style.display = 'block';
+    }
+  } else {
+    // Sur certains navigateurs mobiles, il faut "reprendre" le contexte
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+      console.log('AudioContext repris');
+    }
   }
 }
-document.body.addEventListener('pointerdown', ensureAudio, {once:true});
-function play(buf){ if(!ctx||!buf) return; const src=ctx.createBufferSource(); src.buffer=buf; src.connect(ctx.destination); src.start(); }
+
+function play(buf) {
+  if (!ctx || !buf) return;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start();
+  console.log('Playing sound:', buf);
+}
+
+/* --- BOUTONS UI --- */
+const uiButtons = document.querySelectorAll('#ui button');
+uiButtons.forEach((btn) => {
+  // Garantit que le contexte audio s'active au premier clic
+  btn.addEventListener('pointerdown', ensureAudio, { once: true });
+
+  btn.addEventListener('click', () => {
+    const a = btn.dataset.act;
+    if (a === 'pak') pak();
+    if (a === 'tan') tan();
+    if (a === 'bon') bon();
+    if (a === 'punch') punch();
+  });
+});
 
 /* Impact mannequin */
 function dummyHit(side=0){
