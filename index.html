@@ -35,13 +35,30 @@
 <script type="module">
 import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
 import { GLTFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/DRACOLoader.js';
+
+// ---------------- Debug overlay (affiche toute erreur)
+window.addEventListener('error', (e) => {
+  const el = document.getElementById('err');
+  el.textContent = 'JS Error: ' + (e.error?.stack || e.message);
+  el.style.display = 'block';
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const el = document.getElementById('err');
+  el.textContent = 'Promise Error: ' + (e.reason?.stack || e.reason);
+  el.style.display = 'block';
+});
 
 // --- Renderer / Scene
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth, innerHeight);
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e0e12);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e0e12);
 
 // Caméra de face (perso devant le mannequin)
 const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
@@ -50,11 +67,20 @@ camera.lookAt(0,1.2,0);
 
 // Lumières
 scene.add(new THREE.AmbientLight(0xffffff,.28));
-const dl = new THREE.DirectionalLight(0xffffff,2.0); dl.position.set(1.2,2.2,1.5); scene.add(dl);
+const dl = new THREE.DirectionalLight(0xffffff,2.0);
+dl.position.set(1.2,2.2,1.5);
+dl.castShadow = true;
+scene.add(dl);
 
 // Sol
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1}));
-ground.rotation.x=-Math.PI/2; ground.position.y=0; scene.add(ground);
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40,40),
+  new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1})
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = 0;
+ground.receiveShadow = true;
+scene.add(ground);
 
 // --- Mannequin 3D
 const wood = new THREE.MeshStandardMaterial({color:0x6a4a2f, roughness:.6});
@@ -124,9 +150,18 @@ person.add(pBody,pHead,armR3D,armL3D,legR,legL);
 async function loadGLBCharacter() {
   try {
     const loader = new GLTFLoader();
-    // Mets ton fichier glb dans ./assets/sounds/MaleCharBaseMesh.glb (GitHub Pages)
-    const gltf = await loader.loadAsync('./assets/sounds/MaleCharBaseMesh.glb');
+    // Draco activé (inoffensif si le GLB n'est pas Draco)
+    const draco = new DRACOLoader();
+    draco.setDecoderPath('https://unpkg.com/three@0.155.0/examples/jsm/libs/draco/');
+    loader.setDRACOLoader(draco);
+
+    // Chemin vers TON fichier (tu l'as mis dans assets/sounds/)
+    const url = './assets/sounds/MaleCharBaseMesh.glb';
+    console.log('Chargement GLB:', url);
+    const gltf = await loader.loadAsync(url);
+
     charModel = gltf.scene || gltf.scenes?.[0];
+
     // Taille/placement: ajuste si besoin pour coller au mannequin
     charModel.scale.set(1,1,1);
     charModel.position.set(0,0,0);
@@ -151,16 +186,17 @@ async function loadGLBCharacter() {
     charBones.leftHand     = find('mixamorigLeftHand')     || find('LeftHand')     || null;
     charBones.spine        = find('mixamorigSpine')        || find('Spine')        || null;
 
-    // Ajoute dans le conteneur
     person.add(charModel);
 
-    // Option: masquer l’ancien rig si des os valides ont été trouvés
+    // Masque le rig fallback si on a bien des avant-bras
     const hasArms = (charBones.leftForeArm && charBones.rightForeArm);
     if (hasArms) {
       pBody.visible = false; pHead.visible = false;
       armR3D.visible = false; armL3D.visible = false;
       legR.visible = false; legL.visible = false;
     }
+
+    console.log('GLB chargé:', charModel);
   } catch (e) {
     const errEl = document.getElementById('err');
     errEl.textContent = 'Erreur chargement perso GLB: ' + e.message;
@@ -216,7 +252,18 @@ function dummyHit(side=0){
   } requestAnimationFrame(f);
 }
 
-// Utilitaires tween rotation sur os (ou fallback marionnette)
+// Tween générique (fallback rig)
+function tween(obj,key,from,to,dur,onEnd){
+  const t0=performance.now();
+  function step(now){
+    const k=Math.min(1,(now-t0)/dur);
+    obj[key] = from + (to-from)*k;
+    if(k<1) requestAnimationFrame(step); else onEnd && onEnd();
+  }
+  requestAnimationFrame(step);
+}
+
+// Tween rotation pour os (GLB)
 function tweenRot(target, axis, from, to, dur, onEnd){
   const t0=performance.now();
   function step(now){
@@ -232,7 +279,6 @@ let busy=false;
 function pak(){
   if(busy) return; busy=true;
 
-  // Si os du bras droit dispos
   if (charBones.rightForeArm || charBones.rightArm) {
     const fore = charBones.rightForeArm || charBones.rightArm;
     const startY = fore.rotation.y || 0;
@@ -243,7 +289,6 @@ function pak(){
     return;
   }
 
-  // Fallback: ancien rig bras droit
   const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation;
   const u0=U.y||0, l0=L.y||0;
   tween(U,'y',u0,-0.35,100);
@@ -300,7 +345,6 @@ function bon(){
 function punch(){
   if(busy) return; busy=true;
 
-  // Poing gauche: avant-bras gauche en extension
   if (charBones.leftForeArm || charBones.leftArm) {
     const fore = charBones.leftForeArm || charBones.leftArm;
     const startY = fore.rotation.y || 0;
@@ -321,18 +365,28 @@ function punch(){
 }
 
 // Boutons
-document.querySelectorAll('#ui button').forEach(b=>b.addEventListener('click',()=>{
-  const a=b.dataset.act||b.getAttribute('data-act');
-  if(a==='pak')  pak();
-  if(a==='tan')  tan();
-  if(a==='bon')  bon();
-  if(a==='punch') punch();
-}));
+document.querySelectorAll('#ui button').forEach((b)=>{
+  b.addEventListener('click',()=>{
+    const a = b.dataset.act;
+    if(a==='pak')  pak();
+    if(a==='tan')  tan();
+    if(a==='bon')  bon();
+    if(a==='punch') punch();
+  });
+});
 
 // Resize + loop
-addEventListener('resize', ()=>{ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
-function animate(){ renderer.render(scene,camera); requestAnimationFrame(animate); } requestAnimationFrame(animate);
+addEventListener('resize', ()=>{
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+function animate(){
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 </script>
 </body>
 </html>
-
