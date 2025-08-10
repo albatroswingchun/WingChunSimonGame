@@ -2,50 +2,44 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Wing Chun Simon Game</title>
 <style>
-  :root{
-    --ink:#e7d7b8; --panel:#1c1715; --panel2:#241d1b;
-    --red:#d34b43; --blue:#3d74d6; --green:#4cb36c; --gold:#d1a341;
-  }
+  :root{--panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
+    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;}
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial}
-  #app{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto;}
-  header{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:linear-gradient(180deg,var(--panel),var(--panel2)); border-bottom:1px solid #2a2322}
-  header .score{font-size:14px; letter-spacing:.5px}
-  header .best{opacity:.8}
-  footer{padding:6px 12px; font-size:12px; opacity:.6; text-align:center; background:linear-gradient(180deg,var(--panel2),#120f0f)}
-  /* Stage */
-  #stageWrap{position:relative; overflow:hidden; background:#101011;}
-  #stage{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(100vw,960px); height:min(56vw,540px); max-height:70vh;}
-  canvas{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges;}
-  /* Simon Board */
-  #board{position:absolute; left:20px; bottom:20px; display:grid; grid-template-columns:repeat(2,112px); grid-gap:12px; z-index:5}
-  .pad{width:112px;height:112px;border-radius:14px;background:#222; box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45); cursor:pointer; transition:transform .06s ease}
+  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+  header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322}
+  header .score{font-size:14px} header .best{opacity:.8}
+  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
+  #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
+  #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
+  canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+  /* BOUTONS: gris par défaut, n'éclairent qu'en lecture */
+  #board{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(2,132px);grid-gap:14px;z-index:5}
+  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
+    color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.3px;
+    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
   .pad:active{transform:translateY(2px)}
-  .p-red{background:linear-gradient(#5a1714,#2b0b0a)} .p-blue{background:linear-gradient(#16315f,#0b1831)}
-  .p-green{background:linear-gradient(#154226,#092112)} .p-gold{background:linear-gradient(#5a3e12,#2e210a)}
-  .pad.lit{filter:brightness(1.55); box-shadow:inset 0 0 0 2px #fff3, 0 0 42px currentColor}
-  .p-red.lit{color:var(--red)} .p-blue.lit{color:var(--blue)} .p-green.lit{color:var(--green)} .p-gold.lit{color:var(--gold)}
-  .lbl{position:absolute; left:0; right:0; bottom:-22px; text-align:center; color:#d8cbb0; opacity:.9; font-size:13px}
+  .pad small{display:block;font-weight:400;opacity:.8;margin-top:2px}
+  /* Effet d’illumination Simon (couleurs internes uniquement quand joué) */
+  .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
+  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
   /* Menu */
-  #menu{position:absolute; inset:0; display:grid; place-items:center; background:linear-gradient(180deg,#0b0a0a 0,#151213 70%,#0b0a0a 100%); z-index:10}
-  .panel{background:linear-gradient(180deg,#1d1816,#231d1c); border:1px solid #2a2322; border-radius:16px; padding:28px 24px; width:min(760px,92vw); box-shadow:0 20px 80px rgba(0,0,0,.6)}
-  .title{font-size:44px; letter-spacing:1.5px; text-align:center; margin:0 0 10px; color:var(--ink); text-shadow:0 2px 0 #000, 0 0 24px rgba(209,163,65,.35)}
-  .zh{font-weight:900; letter-spacing:2px; color:#d1a341}
-  .subtitle{opacity:.85; text-align:center; margin-bottom:18px}
-  .actions{display:flex; gap:12px; justify-content:center; align-items:center}
-  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18); border:1px solid #3a302d; color:#e9d9bc; padding:12px 18px; border-radius:10px; font-weight:700; cursor:pointer}
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,#0b0a0a 0,#151213 70%,#0b0a0a 100%);z-index:10}
+  .panel{background:linear-gradient(180deg,#1d1816,#231d1c);border:1px solid #2a2322;border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6)}
+  .title{font-size:44px;text-align:center;margin:0 0 10px;color:var(--ink);text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
+  .zh{font-weight:900;letter-spacing:2px;color:#d1a341}
+  .actions{display:flex;gap:12px;justify-content:center}
+  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer}
   .btn:hover{filter:brightness(1.08)}
-  .hi{font-size:14px; text-align:center; margin-top:10px; opacity:.85}
-  /* Onomatopée */
-  #onom{position:absolute; left:50%; top:12%; transform:translate(-50%,0) scale(.6); font-size:72px; font-weight:900; color:#ffe9a8; text-shadow:0 4px 0 #000, 0 0 22px #ffec9a; opacity:0; pointer-events:none; z-index:6}
+  .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
+  /* Onomatopée + flash erreur */
+  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
-  @keyframes pop{0%{opacity:0; transform:translate(-50%,0) scale(.6)} 28%{opacity:1; transform:translate(-50%,0) scale(1.07)} 100%{opacity:0; transform:translate(-50%,0) scale(1)}}
-  /* Flash erreur */
-  #flash{position:absolute; inset:0; background:#ff000022; opacity:0; pointer-events:none; z-index:7}
-  .boom{animation:boom .4s ease}
-  @keyframes boom{0%{opacity:.65}100%{opacity:0}}
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}28%{opacity:1;transform:translate(-50%,0) scale(1.07)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
+  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
+  .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 </style>
 </head>
 <body>
@@ -58,19 +52,21 @@
   <div id="stageWrap">
     <div id="stage">
       <canvas id="cx" width="768" height="432"></canvas>
-      <div id="board" aria-label="Boutons Simon">
-        <button class="pad p-red"   data-color="red"></button>
-        <button class="pad p-blue"  data-color="blue"></button>
-        <button class="pad p-green" data-color="green"></button>
-        <button class="pad p-gold"  data-color="gold"></button>
-        <div class="lbl">Reproduis la séquence</div>
+
+      <div id="board" aria-label="Boutons">
+        <button class="pad" data-tech="pak"><div>Pak Sao<small>[1]</small></div></button>
+        <button class="pad" data-tech="tan"><div>Tan Sao<small>[2]</small></div></button>
+        <button class="pad" data-tech="bon"><div>Bon Sao<small>[3]</small></div></button>
+        <button class="pad" data-tech="punch"><div>Punch<small>[4]</small></div></button>
       </div>
+
       <div id="onom"></div>
       <div id="flash"></div>
+
       <div id="menu">
         <div class="panel">
           <h1 class="title"><span class="zh">Wing Chun</span> Simon Game</h1>
-          <p class="subtitle">Chaque tour ajoute un mouvement. Clique les bonnes touches. Un échec et tu repars de zéro.</p>
+          <p class="subtitle">Reproduis la séquence. À chaque tour, un bouton s’ajoute. Les couleurs n’apparaissent que pendant la lecture.</p>
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
             <button id="muteBtn"  class="btn">🔊 Son</button>
@@ -81,21 +77,21 @@
     </div>
   </div>
 
-  <footer>Décor, perso et mannequin générés en Canvas “64-bit style”. Remplace les sons dans <code>assets/sounds/</code> si besoin.</footer>
+  <footer>Canvas “64-bit style”. Sons WAV dans <code>assets/sounds/</code>.</footer>
 </div>
 
 <script>
-/* ========= SONS (garde tes anciens noms) ========= */
+/* ======== SONS (WAV) ======== */
 const SFX = {
-  red:   new Audio('assets/sounds/red.mp3'),
-  blue:  new Audio('assets/sounds/blue.mp3'),
-  green: new Audio('assets/sounds/green.mp3'),
-  gold:  new Audio('assets/sounds/yellow.mp3'), // ancien "jaune"
-  wrong: new Audio('assets/sounds/wrong.mp3')
+  pak:   new Audio('assets/sounds/pak.wav'),
+  tan:   new Audio('assets/sounds/tan.wav'),
+  bon:   new Audio('assets/sounds/bon.wav'),
+  punch: new Audio('assets/sounds/punch.wav'),
+  wrong: new Audio('assets/sounds/wrong.wav')
 };
-Object.values(SFX).forEach(a => { a.preload='auto'; a.volume=.9; });
+Object.values(SFX).forEach(a=>{a.preload='auto';a.volume=.9;});
 
-/* ========= ETAT JEU ========= */
+/* ======== ETAT ======== */
 const pads = [...document.querySelectorAll('.pad')];
 const scoreEl = document.getElementById('score');
 const bestEl  = document.getElementById('best');
@@ -105,239 +101,123 @@ const startBtn = document.getElementById('startBtn');
 const muteBtn  = document.getElementById('muteBtn');
 const onom  = document.getElementById('onom');
 const flash = document.getElementById('flash');
+let muted=false; muteBtn.onclick=()=>{muted=!muted; muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';};
+const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
-let muted = false;
-muteBtn.onclick = () => {
-  muted = !muted;
-  muteBtn.textContent = muted ? '🔇 Muet' : '🔊 Son';
-};
-const play = a => { if (!muted) { a.currentTime=0; a.play().catch(()=>{});} };
+let seq=[], userIndex=0, locked=true, score=0;
+let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
 
-let seq = [];
-let userIndex = 0;
-let locked = true;
-let score = 0;
-let best = +localStorage.getItem('wcs_best') || 0;
-bestEl.textContent = best; bestMenuEl.textContent = best;
+/* ======== MAPPINGS ======== */
+const TECHS=['pak','tan','bon','punch'];
+const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'}; // couleurs visibles seulement en lecture
+const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ========= CANVAS RENDER ========= */
-const cx = document.getElementById('cx');
-const ctx = cx.getContext('2d');
-ctx.imageSmoothingEnabled = false;
+/* ======== CANVAS ======== */
+const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const W=cx.width,H=cx.height;
+const bgImg=new Image(); bgImg.src='https://i.imgur.com/D772Q4m.png';
 
-const W = cx.width, H = cx.height;
-
-/* Décor chinois “64-bit style” */
-function drawBackground(t){
-  // ciel dégradé
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, '#1a1a1f'); g.addColorStop(1, '#0d0d10');
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  // montagnes stylisées
-  ctx.fillStyle = '#1d2a2f';
-  for(let i=0;i<5;i++){
-    const y = H*0.5 + i*18;
-    ctx.fillRect(0,y,W,2);
-  }
-  // pagodes simplifiées
-  for(let i=0;i<3;i++){
-    const x = 140 + i*220;
-    ctx.fillStyle = '#2b2220';
-    ctx.fillRect(x-24, H-150, 48, 90);
-    ctx.fillStyle = '#4a2a22';
-    ctx.fillRect(x-32, H-160, 64, 12);
-    ctx.fillStyle = '#6e3a29';
-    ctx.fillRect(x-44, H-172, 88, 10);
-  }
-  // sol
-  ctx.fillStyle = '#2a221f';
-  ctx.fillRect(0, H-64, W, 64);
-  // pavés
-  ctx.fillStyle = '#342a27';
-  for(let x=0;x<W;x+=22) ctx.fillRect(x+((t/150|0)%2)*8, H-40, 16, 6);
+function drawBG(){
+  if(bgImg.complete) ctx.drawImage(bgImg,0,0,W,H);
+  else { ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H); }
+  // assombrir légèrement pour lisibilité
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
 }
 
-/* Mook Jong (mannequin) */
+/* Mannequin */
 function drawDummy(){
-  const x= W*0.66, y= H-100;
-  // tronc
+  const x=W*0.66,y=H-100;
   ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
-  ctx.fillStyle='#603a1f'; ctx.fillRect(x-10,y-92,20,3);
-  // bras haut
-  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8, y-74, 38, 6);
-  // bras milieu
-  ctx.fillRect(x-8, y-46, 34, 6);
-  // jambe
-  ctx.fillRect(x-6, y-12, 12, 28);
+  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);
+  ctx.fillRect(x-8,y-46, 34,6);
+  ctx.fillRect(x-6,y-12, 12,28);
 }
 
-/* Perso “64-bit” simplifié (silhouette + bras/jambes) */
-const fighter = {
-  baseX: W*0.42, baseY: H-64,
-  pose: 'idle', t0: 0
-};
-
+/* Perso simplifié (placeholder 64-bit) */
+const fighter={x:W*0.42,y:H-64,pose:'idle',t0:0};
 function drawFighter(t){
-  const x = fighter.baseX, y = fighter.baseY;
-  // ombre
-  ctx.fillStyle='rgba(0,0,0,.35)';
-  ctx.beginPath(); ctx.ellipse(x-24, y-6, 38, 10, 0, 0, Math.PI*2); ctx.fill();
-  // corps
-  ctx.fillStyle='#1b1d20';
-  ctx.fillRect(x-40, y-112, 56, 68); // torse
-  // tête
-  ctx.fillStyle='#c7a880';
-  ctx.fillRect(x-20, y-132, 24, 24);
-  // ceinture
-  ctx.fillStyle='#0e0f11'; ctx.fillRect(x-40, y-54, 56, 8);
-
-  // jambes
+  const x=fighter.x,y=fighter.y;
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x-24,y-6,38,10,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68); // torse
+  ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24); // tête
+  ctx.fillStyle='#171a1d'; ctx.fillRect(x-44,y-50,22,50); ctx.fillRect(x+2,y-50,22,50); // jambes
+  ctx.fillStyle='#111'; ctx.fillRect(x-44,y,26,8); ctx.fillRect(x+2,y,26,8);
   ctx.fillStyle='#171a1d';
-  ctx.fillRect(x-44, y-50, 22, 50); // jambe G
-  ctx.fillRect(x+2,  y-50, 22, 50); // jambe D
-  ctx.fillStyle='#111'; ctx.fillRect(x-44, y, 26, 8); ctx.fillRect(x+2, y, 26, 8);
-
-  // bras selon pose
-  ctx.fillStyle='#171a1d';
-  const ph = ((t - fighter.t0)/1000);
-  const bounce = Math.sin(ph*8)*1.5;
-
-  if (fighter.pose==='idle'){
-    // bras en garde
-    ctx.fillRect(x-54, y-88, 18, 40);
-    ctx.fillRect(x+18,  y-88, 18, 40);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(x-54, y-48, 18, 10); ctx.fillRect(x+18, y-48, 18, 10);
-  } else if (fighter.pose==='pak'){
-    // paume latérale sur bras haut
-    ctx.fillRect(x+12, y-88, 18, 40);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(x+28, y-72, 26, 10);
-  } else if (fighter.pose==='tan'){
-    // avant-bras horizontal paume vers le haut (milieu)
-    ctx.fillRect(x+10, y-90, 18, 40);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(x+26, y-64, 30, 8);
-  } else if (fighter.pose==='bon'){
-    // coude vers le ciel (aile) vers bras haut
-    ctx.fillRect(x+6, y-96, 18, 46);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(x+18, y-98, 12, 16);
-  } else if (fighter.pose==='punch'){
-    // poing direct au tronc
-    ctx.fillRect(x+8, y-92, 18, 42);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(x+26, y-72, 24, 10);
-  }
-
-  // micro rebond
-  ctx.translate(0, bounce); ctx.translate(0, -bounce);
+  if(fighter.pose==='idle'){ ctx.fillRect(x-54,y-88,18,40); ctx.fillRect(x+18,y-88,18,40); }
+  if(fighter.pose==='pak'){  ctx.fillRect(x+12,y-88,18,40); ctx.fillStyle='#c7a880'; ctx.fillRect(x+28,y-72,26,10); }
+  if(fighter.pose==='tan'){  ctx.fillRect(x+10,y-90,18,40); ctx.fillStyle='#c7a880'; ctx.fillRect(x+26,y-64,30,8); }
+  if(fighter.pose==='bon'){  ctx.fillRect(x+6,y-96,18,46);  ctx.fillStyle='#c7a880'; ctx.fillRect(x+18,y-98,12,16); }
+  if(fighter.pose==='punch'){ctx.fillRect(x+8,y-92,18,42);  ctx.fillStyle='#c7a880'; ctx.fillRect(x+26,y-72,24,10); }
 }
 
-/* Onomatopées */
-function shout(txt){
-  onom.textContent = txt;
-  onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
-}
+/* Onomatopée */
+function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
+/* Pose courte */
+function doPose(name){ fighter.pose=name; fighter.t0=performance.now(); setTimeout(()=>{fighter.pose='idle';}, 280); }
 
-/* Animation pose courte */
-function doPose(name){
-  fighter.pose = name; fighter.t0 = performance.now();
-  setTimeout(()=>{ fighter.pose='idle'; fighter.t0 = performance.now(); }, 280);
-}
-
-/* ========= SIMON LOGIQUE ========= */
-const COLORS = ['red','blue','green','gold'];
-const MAP_MOVE = { red:'punch', blue:'bon', green:'tan', gold:'pak' };
-const MAP_SHOUT = { red:'POW!', blue:'THWACK!', green:'WHAP!', gold:'SMACK!' };
-
-function randColor(){ return COLORS[Math.random()*COLORS.length|0]; }
-
+/* ======== SIMON ======== */
+function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
 async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+function setLit(tech,on){
+  const color=TECH_TO_COLOR[tech];
+  const btn=pads.find(b=>b.dataset.tech===tech);
+  btn.classList.toggle('lit',on);
+  btn.classList.toggle(color,on);
+}
+
 async function playSequence(){
-  locked = true;
-  await sleep(500);
-  for (let i=0;i<seq.length;i++){
-    const c = seq[i];
-    light(c, true);
-    play(SFX[c]);
-    doPose(MAP_MOVE[c]);
-    shout(MAP_SHOUT[c]);
-    await sleep(450);
-    light(c, false);
+  locked=true; await sleep(560);
+  for(const tech of seq){
+    setLit(tech,true);
+    if(SFX[tech]) play(SFX[tech]);
+    doPose(tech); shout(TECH_TO_SHOUT[tech]);
+    await sleep(460);
+    setLit(tech,false);
     await sleep(160);
   }
-  locked = false;
-  userIndex = 0;
+  locked=false; userIndex=0;
 }
 
-function light(color, on){
-  const el = pads.find(p=>p.dataset.color===color);
-  if (!el) return;
-  el.classList.toggle('lit', !!on);
-}
+async function press(tech){
+  if(locked) return;
+  setLit(tech,true);
+  if(SFX[tech]) play(SFX[tech]);
+  doPose(tech); shout(TECH_TO_SHOUT[tech]);
+  await sleep(200);
+  setLit(tech,false);
 
-async function stepUser(color){
-  if (locked) return;
-  // feedback immédiat
-  light(color,true);
-  doPose(MAP_MOVE[color]);
-  shout(MAP_SHOUT[color]);
-  play(SFX[color]);
-  await sleep(220);
-  light(color,false);
-
-  if (color !== seq[userIndex]){
-    // erreur
-    play(SFX.wrong);
-    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
-    seq = [];
-    score = 0; scoreEl.textContent = score;
-    locked = true;
-    await sleep(600);
-    // retour menu rapide ou redémarrage direct
-    startGame(); // relance direct, sinon affiche le menu: menu.style.display='grid';
-    return;
+  if(tech!==seq[userIndex]){
+    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
-  if (userIndex === seq.length){
-    // round réussi
-    score++; scoreEl.textContent = score;
-    if (score>best){ best=score; bestEl.textContent=best; bestMenuEl.textContent=best; localStorage.setItem('wcs_best', best); }
-    seq.push(randColor());
-    await sleep(420);
-    playSequence();
+  if(userIndex===seq.length){
+    score++; scoreEl.textContent=score;
+    if(score>best){best=score;bestEl.textContent=best;bestMenuEl.textContent=best;localStorage.setItem('wcs_best',best);}
+    seq.push(randTech()); await sleep(420); playSequence();
   }
 }
 
-/* ========= INPUT ========= */
-pads.forEach(p=>{
-  p.addEventListener('click', ()=> stepUser(p.dataset.color));
-});
-window.addEventListener('keydown', e=>{
-  const k = e.key;
-  if (k==='1') stepUser('red');
-  if (k==='2') stepUser('blue');
-  if (k==='3') stepUser('green');
-  if (k==='4') stepUser('gold');
+/* INPUT */
+pads.forEach(b=>b.addEventListener('click',()=>press(b.dataset.tech)));
+window.addEventListener('keydown',e=>{
+  if(e.key==='1') press('pak');
+  if(e.key==='2') press('tan');
+  if(e.key==='3') press('bon');
+  if(e.key==='4') press('punch');
 });
 
-/* ========= GAME FLOW ========= */
+/* FLOW */
 function startGame(){
   menu.style.display='none';
-  // déverrouille AudioContext sur interaction
   Object.values(SFX).forEach(a=>{ try{a.play().then(()=>a.pause()).catch(()=>{});}catch{} });
-  seq = [randColor()];
-  score = 0; scoreEl.textContent = 0;
-  playSequence();
+  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-startBtn.addEventListener('click', startGame);
+document.getElementById('startBtn').addEventListener('click',startGame);
 
-/* ========= MAIN LOOP ========= */
-let last = performance.now();
-function loop(t){
-  const dt = t-last; last=t;
-  drawBackground(t);
-  drawDummy();
-  drawFighter(t);
-  requestAnimationFrame(loop);
-}
+/* LOOP */
+function loop(t){ drawBG(); drawDummy(); drawFighter(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 </script>
 </body>
