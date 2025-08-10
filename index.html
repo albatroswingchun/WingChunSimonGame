@@ -5,96 +5,41 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Wing Chun Simon Game</title>
 <style>
-  :root{
-    --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
-    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
-  }
-  html,body{
-    margin:0;height:100%;background:#0b0a0a;color:#eee;
-    font-family:system-ui,Segoe UI,Roboto,Arial;
-    overflow:hidden;
-  }
+  :root{--panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
+    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;}
+  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial}
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-
-  header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));
-    border-bottom:1px solid #2a2322;z-index:10;
-  }
-  header .score{font-size:14px}
-  header .best{opacity:.8}
-
-  footer{
-    padding:6px 12px;font-size:12px;opacity:.6;text-align:center;
-    background:linear-gradient(180deg,var(--panel2),#120f0f);
-    z-index:10;
-  }
-
+  header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:5}
+  header .score{font-size:14px} header .best{opacity:.8}
+  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
-  #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
+  #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
-
-  /* Boutons : en ligne en bas */
-  #board{
-    position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
-    display:flex;gap:14px;z-index:5
-  }
-  .pad{
-    width:132px;height:100px;border-radius:14px;
-    background:linear-gradient(#2a2a2a,#1e1e1e);
-    color:#cfcfcf;display:flex;align-items:center;justify-content:center;
-    font-weight:700;letter-spacing:.3px;
-    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
-    cursor:pointer;transition:transform .06s ease,filter .12s;
-  }
+  /* BOUTONS EN LIGNE */
+  #board{position:absolute;left:50%;transform:translateX(-50%);bottom:20px;display:flex;gap:14px;z-index:5}
+  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
+    color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.3px;
+    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
   .pad:active{transform:translateY(2px)}
+  /* Effet d’illumination Simon */
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
-  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)}
-  .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
-
+  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
   /* Menu */
-  #menu{
-    position:absolute;inset:0;display:grid;place-items:center;
-    background:rgba(0,0,0,0.6);z-index:10;text-align:center;
-  }
-  #menu::before{
-    content:"";position:absolute;inset:0;
-    background:url('https://i.imgur.com/heR2x5A.png') repeat-x center/cover;
-    z-index:-1;
-  }
-  .panel{
-    background:linear-gradient(180deg,#1d1816cc,#231d1ccc);
-    border:1px solid #2a2322;border-radius:16px;padding:28px 24px;
-    width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);
-  }
-  .title{
-    font-size:44px;color:var(--ink);margin:0;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)
-  }
-  .subtitle{
-    font-size:20px;margin:10px 0 20px;opacity:.85
-  }
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,0.7);z-index:10;text-align:center;color:#fff}
+  #menu .panel{padding:28px 24px;border-radius:16px}
+  .title{font-size:52px;margin:0 0 5px;color:var(--ink);text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
+  .subtitle{font-size:18px;margin-bottom:20px;opacity:.9}
   .actions{display:flex;gap:12px;justify-content:center}
-  .btn{
-    background:linear-gradient(180deg,#2a221f,#1f1a18);
-    border:1px solid #3a302d;color:#e9d9bc;
-    padding:16px 24px;border-radius:10px;font-weight:700;font-size:18px;cursor:pointer;
-  }
+  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
+    padding:16px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px}
   .btn:hover{filter:brightness(1.08)}
-
+  .hi{font-size:14px;margin-top:10px;opacity:.85}
   /* Onomatopée + flash erreur */
-  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);
-    font-size:72px;font-weight:900;color:#ffe9a8;
-    text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
+  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
-  @keyframes pop{
-    0%{opacity:0;transform:translate(-50%,0) scale(.6)}
-    28%{opacity:1;transform:translate(-50%,0) scale(1.07)}
-    100%{opacity:0;transform:translate(-50%,0) scale(1)}
-  }
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}28%{opacity:1;transform:translate(-50%,0) scale(1.07)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
-  .boom{animation:boom .4s ease}
-  @keyframes boom{0%{opacity:.65}100%{opacity:0}}
+  .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 </style>
 </head>
 <body>
@@ -120,7 +65,7 @@
 
       <div id="menu">
         <div class="panel">
-          <h1 class="title">Wing Chun<br>Simon Game</h1>
+          <h1 class="title">Wing Chun<br><span style="font-size:36px;">Simon Game</span></h1>
           <p class="subtitle">Reproduis les techniques dans le bon ordre !</p>
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
@@ -132,11 +77,11 @@
     </div>
   </div>
 
-  <footer>© 2025 - Wing Chun Simon Game</footer>
+  <footer>Canvas “64-bit style” avec parallaxe.</footer>
 </div>
 
 <script>
-/* ======== SONS (WAV) ======== */
+/* SONS */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
   tan:   new Audio('assets/sounds/tan.wav'),
@@ -146,7 +91,7 @@ const SFX = {
 };
 Object.values(SFX).forEach(a=>{a.preload='auto';a.volume=.9;});
 
-/* ======== ETAT ======== */
+/* ÉTAT */
 const pads = [...document.querySelectorAll('.pad')];
 const scoreEl = document.getElementById('score');
 const bestEl  = document.getElementById('best');
@@ -162,25 +107,29 @@ const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 let seq=[], userIndex=0, locked=true, score=0;
 let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
 
-/* ======== MAPPINGS ======== */
+/* TECHS */
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ======== CANVAS ======== */
+/* CANVAS */
 const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=cx.width,H=cx.height;
-const bgImg=new Image(); bgImg.src='https://i.imgur.com/heR2x5A.png';
-let bgX=0;
+const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';
+const bgNear=new Image(); bgNear.src='https://i.imgur.com/D772Q4m.png';
+const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
+let bgOffset=0, parallaxSpeed=0.1;
 
+/* Dessin du décor avec parallaxe */
 function drawBG(){
-  if(bgImg.complete){
-    bgX -= 0.5; // vitesse défilement
-    if(bgX <= -W) bgX = 0;
-    ctx.drawImage(bgImg,bgX,0,W,H);
-    ctx.drawImage(bgImg,bgX+W,0,W,H);
-  } else {
-    ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+  bgOffset -= parallaxSpeed;
+  if(bgFar.complete){
+    ctx.drawImage(bgFar, bgOffset % W, 0, W, H);
+    ctx.drawImage(bgFar, (bgOffset % W)+W, 0, W, H);
+  }
+  if(bgNear.complete){
+    ctx.drawImage(bgNear, (bgOffset*1.5) % W, 0, W, H);
+    ctx.drawImage(bgNear, ((bgOffset*1.5) % W)+W, 0, W, H);
   }
   ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
 }
@@ -194,49 +143,48 @@ function drawDummy(){
   ctx.fillRect(x-6,y-12, 12,28);
 }
 
-/* Perso simplifié */
+/* Perso */
 const fighter={x:W*0.42,y:H-64,pose:'idle'};
 function drawFighter(){
   const x=fighter.x,y=fighter.y;
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x-24,y-6,38,10,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68);
   ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24);
   ctx.fillStyle='#171a1d'; ctx.fillRect(x-44,y-50,22,50); ctx.fillRect(x+2,y-50,22,50);
-  ctx.fillStyle='#171a1d';
-  if(fighter.pose==='pak'){ ctx.fillStyle='#c7a880'; ctx.fillRect(x+28,y-72,26,10); }
-  if(fighter.pose==='tan'){ ctx.fillStyle='#c7a880'; ctx.fillRect(x+26,y-64,30,8); }
-  if(fighter.pose==='bon'){ ctx.fillStyle='#c7a880'; ctx.fillRect(x+18,y-98,12,16); }
-  if(fighter.pose==='punch'){ ctx.fillStyle='#c7a880'; ctx.fillRect(x+26,y-72,24,10); }
+  if(fighter.pose==='pak' && pakImg.complete){
+    ctx.drawImage(pakImg, x-60, y-130, 120, 120);
+  }
 }
 
 /* Onomatopée */
 function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
 function doPose(name){ fighter.pose=name; setTimeout(()=>{fighter.pose='idle';}, 280); }
 
-/* ======== SIMON ======== */
+/* SIMON */
 function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
 async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
 function setLit(tech,on){
-  const color=TECH_TO_COLOR[tech];
   const btn=pads.find(b=>b.dataset.tech===tech);
   btn.classList.toggle('lit',on);
-  btn.classList.toggle(color,on);
+  btn.classList.toggle(TECH_TO_COLOR[tech],on);
 }
-
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
+    setLit(tech,true);
+    if(SFX[tech]) play(SFX[tech]);
+    doPose(tech); shout(TECH_TO_SHOUT[tech]);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
   }
   locked=false; userIndex=0;
 }
-
 async function press(tech){
   if(locked) return;
-  setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
+  setLit(tech,true);
+  if(SFX[tech]) play(SFX[tech]);
+  doPose(tech); shout(TECH_TO_SHOUT[tech]);
   await sleep(200);
   setLit(tech,false);
   if(tech!==seq[userIndex]){
@@ -251,6 +199,7 @@ async function press(tech){
   }
 }
 
+/* INPUT */
 pads.forEach(b=>b.addEventListener('click',()=>press(b.dataset.tech)));
 window.addEventListener('keydown',e=>{
   if(e.key==='1') press('pak');
@@ -259,12 +208,13 @@ window.addEventListener('keydown',e=>{
   if(e.key==='4') press('punch');
 });
 
+/* FLOW */
 function startGame(){
   menu.style.display='none';
-  Object.values(SFX).forEach(a=>{ try{a.play().then(()=>a.pause()).catch(()=>{});}catch{} });
+  parallaxSpeed=0.2;
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-startBtn.addEventListener('click',startGame);
+document.getElementById('startBtn').addEventListener('click',startGame);
 
 /* LOOP */
 function loop(){ drawBG(); drawDummy(); drawFighter(); requestAnimationFrame(loop); }
