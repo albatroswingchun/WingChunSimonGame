@@ -20,7 +20,6 @@
     @media (max-width:820px){ :root{ --btn-size:68px; } }
   </style>
 
-  <!-- Import map vers tes “vendor” locaux -->
   <script type="importmap">
   {
     "imports": {
@@ -47,18 +46,18 @@
     import { GLTFLoader } from 'three/addons/GLTFLoader.js';
     import { DRACOLoader } from 'three/addons/DRACOLoader.js';
 
-    /* ===== Affichage clair des erreurs ===== */
+    // ---------- gestion erreurs ----------
     const showErr = (msg)=>{
       const el = document.getElementById('err');
       el.textContent = msg;
       el.style.display = 'block';
       console.error(msg);
     };
-    window.addEventListener('error', e => showErr('JS Error: ' + (e.error?.stack || e.message)));
-    window.addEventListener('unhandledrejection', e => showErr('Promise Error: ' + (e.reason?.stack || e.reason)));
+    addEventListener('error', e => showErr('JS Error: ' + (e.error?.stack || e.message)));
+    addEventListener('unhandledrejection', e => showErr('Promise Error: ' + (e.reason?.stack || e.reason)));
 
-    /* ===== Renderer / Scene / Camera ===== */
-    const canvas = document.getElementById('c');
+    // ---------- renderer / scène / caméra ----------
+    const canvas   = document.getElementById('c');
     const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(innerWidth, innerHeight);
@@ -72,24 +71,23 @@
     camera.position.set(0, 1.6, 6);
     camera.lookAt(0, 1.2, 0);
 
-    /* ===== Lumières ===== */
+    // ---------- lumières ----------
     scene.add(new THREE.AmbientLight(0xffffff, .28));
     const dl = new THREE.DirectionalLight(0xffffff, 2.0);
     dl.position.set(1.2, 2.2, 1.5);
     dl.castShadow = true;
     scene.add(dl);
 
-    /* ===== Sol ===== */
+    // ---------- sol ----------
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40,40),
       new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1})
     );
     ground.rotation.x = -Math.PI/2;
-    ground.position.y = 0;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    /* ===== Mannequin (Mook Yan Jong simplifié) ===== */
+    // ---------- mannequin ----------
     const wood = new THREE.MeshStandardMaterial({color:0x6a4a2f, roughness:.6});
     const dummy = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,2.4,20), wood); trunk.position.y = 1.2;
@@ -99,53 +97,81 @@
     const armC = arm(0.5,0.05); armC.rotation.z =  Math.PI/2; armC.position.set( 0.00,1.15,0);
     const leg  = arm(0.8,0.06); leg.rotation.x =  Math.PI/2; leg.position.set(0,0.55,0.18);
     dummy.add(trunk, armL, armR, armC, leg);
-    dummy.position.set(0,0,0);
     scene.add(dummy);
 
-    /* ===== Conteneur personnage + fallback marionnette ===== */
-    let charModel = null;
-    const charBones = { rightArm:null, rightForeArm:null, rightHand:null, leftArm:null, leftForeArm:null, leftHand:null };
-    const skin  = new THREE.MeshStandardMaterial({color:0xcaa98a, roughness:.8});
-    const cloth = new THREE.MeshStandardMaterial({color:0x222428, roughness:.9});
-    const person = new THREE.Group(); person.position.set(0,0,1.6); scene.add(person);
-
-    // Fallback marionnette (bras/jambes en primitives)
-    const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(.22,.9,12,20), cloth); pBody.position.set(0,1.1,0);
-    const pHead = new THREE.Mesh(new THREE.SphereGeometry(.17,20,20), skin); pHead.position.set(0,2.0,0);
-    function mkArm(side=1){
-      const g = new THREE.Group();
-      const upper = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,16), cloth);
-      upper.position.set(.30*side,1.55,0); upper.rotation.z = side>0 ? -Math.PI/2.5 : Math.PI/2.5;
-      const lower = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.45,16), cloth);
-      lower.position.set(.52*side,1.35,0.18); lower.rotation.z = side>0 ? -Math.PI/2.15 : Math.PI/2.15;
-      const hand  = new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.18), cloth);
-      hand.position.set(.72*side,1.20,0.32);
-      g.add(upper, lower, hand);
-      g.userData = {upper, lower, hand};
-      return g;
-    }
-    const armR3D = mkArm(1);
-    const armL3D = mkArm(-1);
-    function mkLeg(side=1){
-      const g = new THREE.Group();
-      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.6,16), cloth);
-      thigh.position.set(.15*side,0.7,0.05);
-      const shin  = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.6,16), cloth);
-      shin.position.set(.15*side,0.1,0.05);
-      const foot  = new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.26), cloth);
-      foot.position.set(.15*side,-0.22,0.1);
-      g.add(thigh, shin, foot);
-      g.userData = {thigh, shin, foot};
-      return g;
-    }
-    const legR = mkLeg(1);
-    const legL = mkLeg(-1);
-    person.add(pBody,pHead,armR3D,armL3D,legR,legL);
-
-    // Orientation: perso de dos vers la caméra, face au mannequin
+    // ---------- conteneur personnage ----------
+    const person = new THREE.Group();
+    person.position.set(0,0,1.6);
+    scene.add(person);
     (function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
 
-    /* ===== Chargement du GLB et isolation d’un seul rig ===== */
+    // ---------- fallback (créé UNIQUEMENT si GLB échoue) ----------
+    let fallback = null;
+    function buildFallback(){
+      const skin  = new THREE.MeshStandardMaterial({color:0xcaa98a, roughness:.8});
+      const cloth = new THREE.MeshStandardMaterial({color:0x222428, roughness:.9});
+      const g = new THREE.Group();
+
+      const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(.22,.9,12,20), cloth); pBody.position.set(0,1.1,0);
+      const pHead = new THREE.Mesh(new THREE.SphereGeometry(.17,20,20), skin); pHead.position.set(0,2.0,0);
+
+      function mkArm(side=1){
+        const arm = new THREE.Group();
+        const upper = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,16), cloth);
+        upper.position.set(.30*side,1.55,0); upper.rotation.z = side>0 ? -Math.PI/2.5 : Math.PI/2.5;
+        const lower = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.45,16), cloth);
+        lower.position.set(.52*side,1.35,0.18); lower.rotation.z = side>0 ? -Math.PI/2.15 : Math.PI/2.15;
+        const hand  = new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.18), cloth);
+        hand.position.set(.72*side,1.20,0.32);
+        arm.add(upper, lower, hand);
+        arm.userData = {upper, lower, hand};
+        return arm;
+      }
+      function mkLeg(side=1){
+        const leg = new THREE.Group();
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.6,16), cloth);
+        thigh.position.set(.15*side,0.7,0.05);
+        const shin  = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.6,16), cloth);
+        shin.position.set(.15*side,0.1,0.05);
+        const foot  = new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.26), cloth);
+        foot.position.set(.15*side,-0.22,0.1);
+        leg.add(thigh, shin, foot);
+        leg.userData = {thigh, shin, foot};
+        return leg;
+      }
+
+      const armR3D = mkArm(1), armL3D = mkArm(-1);
+      const legR = mkLeg(1),  legL  = mkLeg(-1);
+      g.add(pBody,pHead,armR3D,armL3D,legR,legL);
+      g.userData = { pBody,pHead,armR3D,armL3D,legR,legL };
+      return g;
+    }
+
+    // ---------- détection d’os robuste ----------
+    const charBones = { rightArm:null, rightForeArm:null, rightHand:null, leftArm:null, leftForeArm:null, leftHand:null };
+    function autoPickBones(model){
+      const bones = [];
+      model.traverse(o=>{ if (o.isBone) bones.push(o); });
+
+      const pick = (side, ...cands)=>{
+        const sideRx = side==='R' ? /(right|\br\b)/i : /(left|\bl\b)/i;
+        for (const rx of cands){
+          const b = bones.find(n => sideRx.test(n.name) && rx.test(n.name));
+          if (b) return b;
+        }
+        return null;
+      };
+
+      charBones.rightArm     = pick('R', /(upperarm|^arm(?!ature)|shoulder)/i);
+      charBones.rightForeArm = pick('R', /(forearm|lowerarm|elbow)/i) || charBones.rightArm;
+      charBones.rightHand    = pick('R', /(hand|wrist)/i);
+
+      charBones.leftArm      = pick('L', /(upperarm|^arm(?!ature)|shoulder)/i);
+      charBones.leftForeArm  = pick('L', /(forearm|lowerarm|elbow)/i) || charBones.leftArm;
+      charBones.leftHand     = pick('L', /(hand|wrist)/i);
+    }
+
+    // ---------- chargement GLB (remplace le fallback) ----------
     async function loadGLBCharacter(){
       try{
         const loader = new GLTFLoader();
@@ -153,12 +179,12 @@
         draco.setDecoderPath('./vendor/draco/');
         loader.setDRACOLoader(draco);
 
-        const url = './assets/models/MaleCharBaseMesh.glb'; // TODO modèle
+        const url = './assets/models/MaleCharBaseMesh.glb'; // ajuste si besoin
         const gltf = await loader.loadAsync(url);
-        let model = gltf.scene || gltf.scenes?.[0];
-        if(!model) throw new Error('GLB sans scène');
+        const model = gltf.scene || gltf.scenes?.[0];
+        if (!model) throw new Error('GLB sans scène');
 
-        // Utilitaires: détecter racines d’armature
+        // isole un seul rig si plusieurs
         function getArmatureRoots(root){
           const roots = new Set();
           root.traverse(o=>{ if (o.isBone && (!o.parent || !o.parent.isBone)) roots.add(o); });
@@ -166,10 +192,7 @@
         }
         function meshBelongsToArmature(skinned, rootBone){
           if (!skinned.isSkinnedMesh || !skinned.skeleton) return false;
-          return skinned.skeleton.bones.some(b=>{
-            let p=b; while(p){ if (p===rootBone) return true; p=p.parent; }
-            return false;
-          });
+          return skinned.skeleton.bones.some(b=>{ let p=b; while(p){ if (p===rootBone) return true; p=p.parent; } return false; });
         }
         function armatureScore(root, sceneRoot){
           let sum=0;
@@ -201,90 +224,43 @@
           });
         }
 
-        // Garde un seul personnage si le GLB en contient 2
         const keptRoot = pickDominantArmature(model);
-        if (keptRoot) hideOtherArmatures(model, keptRoot); else {
-          // Heuristique “plus gros sous-arbre”
-          const kids = model.children.filter(c=>c.visible !== false);
-          if (kids.length >= 2){
-            function subtreeVerts(node){
-              let sum=0; node.traverse(o=>{
-                const pos = o.geometry?.attributes?.position;
-                if (pos) sum += pos.count;
-              }); return sum;
-            }
-            let best = kids[0], bestS = subtreeVerts(kids[0]);
-            for (let i=1;i<kids.length;i++){
-              const s = subtreeVerts(kids[i]);
-              if (s > bestS){ best = kids[i]; bestS = s; }
-            }
-            kids.forEach(k=>{ if (k!==best) k.visible=false; });
-          }
-        }
+        if (keptRoot) hideOtherArmatures(model, keptRoot);
 
-        // Touche N: inverse rapide si c’est pas le bon rig
-        addEventListener('keydown', (e)=>{
-          if (e.key.toLowerCase() !== 'n') return;
-          const roots = getArmatureRoots(model);
-          if (roots.length < 2) return;
-          const current = roots.find(r=>r.visible!==false) || roots[0];
-          const other = roots.find(r=>r!==current);
-          roots.forEach(r=> r.visible = (r===other));
-          model.traverse(o=>{
-            if (o.isSkinnedMesh && o.skeleton){
-              o.visible = meshBelongsToArmature(o, other);
-            }
-          });
-        });
-
-        // Normalisation taille/centrage
-        const box = new THREE.Box3().setFromObject(model);
+        // normalisation
+        const box  = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3(); box.getSize(size);
-        const center = new THREE.Vector3(); box.getCenter(center);
-
         const targetHeight = 1.75;
-        const scale = size.y > 0 ? (targetHeight / size.y) : 1;
-        model.scale.setScalar(scale);
+        model.scale.setScalar(size.y>0 ? targetHeight/size.y : 1);
 
         const box2 = new THREE.Box3().setFromObject(model);
         const center2 = new THREE.Vector3(); box2.getCenter(center2);
+        model.position.set(-center2.x, -box2.min.y, -center2.z);
+        model.rotation.y = Math.PI;
 
-        model.position.x += -center2.x;
-        model.position.z += -center2.z;
-        model.position.y += -box2.min.y; // pieds au sol
-        model.rotation.y = Math.PI;      // de dos pour la caméra
+        model.traverse(o=>{ if (o.isMesh){ o.castShadow=o.receiveShadow=true; } });
 
-        model.traverse(o=>{ if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
-
+        person.clear();
         person.add(model);
-        charModel = model;
 
-        // Mapping os fréquents
-        const find = n => model.getObjectByName(n);
-        const bones = {
-          rightArm:     find('mixamorigRightArm')     || find('RightArm'),
-          rightForeArm: find('mixamorigRightForeArm') || find('RightForeArm'),
-          rightHand:    find('mixamorigRightHand')    || find('RightHand'),
-          leftArm:      find('mixamorigLeftArm')      || find('LeftArm'),
-          leftForeArm:  find('mixamorigLeftForeArm')  || find('LeftForeArm'),
-          leftHand:     find('mixamorigLeftHand')     || find('LeftHand'),
-        };
-        Object.assign(charBones, bones);
-
-        // Si squelette trouvé, on masque la marionnette
-        if (charBones.leftForeArm && charBones.rightForeArm){
-          pBody.visible = pHead.visible = armR3D.visible = armL3D.visible = legR.visible = legL.visible = false;
+        autoPickBones(model);
+        console.log('Bones:', {
+          rArm: charBones.rightArm?.name, rFore: charBones.rightForeArm?.name, rHand: charBones.rightHand?.name,
+          lArm: charBones.leftArm?.name,  lFore: charBones.leftForeArm?.name,  lHand: charBones.leftHand?.name
+        });
+      }catch(e){
+        // GLB KO → on bascule sur la marionnette
+        if (!fallback){
+          fallback = buildFallback();
+          person.clear();
+          person.add(fallback);
         }
-
-        console.log('GLB OK', { bones:charBones });
-      } catch(e){
         showErr('Erreur chargement perso GLB: ' + e.message);
-        console.error(e);
       }
     }
     loadGLBCharacter();
 
-    /* ===== AUDIO (déverrouillage + buffers) ===== */
+    // ---------- audio ----------
     let ctx;
     let sPak, sTan, sBon, sPunch;
 
@@ -298,7 +274,6 @@
           return await ctx.decodeAudioData(buf);
         };
         try{
-          // TODO sons: change ici si tu veux remplacer deux sons
           [sPak, sTan, sBon, sPunch] = await Promise.all([
             load('./assets/sounds/pak.wav'),
             load('./assets/sounds/tan.wav'),
@@ -322,20 +297,18 @@
       src.start();
     }
 
-    // Déverrouille au premier pointerdown
-    window.addEventListener('pointerdown', async ()=>{
+    addEventListener('pointerdown', async ()=>{
       try{
         await ensureAudio();
-        // ping silencieux
         [sPak, sTan, sBon, sPunch].filter(Boolean).forEach(b=>{
-          const s = ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); try{ s.start(0,0,0.001); }catch{}
+          const s = ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination);
+          try{ s.start(0,0,0.001); }catch{}
         });
       }catch{}
     }, { once:true });
 
-    /* ===== UI ===== */
-    const uiButtons = document.querySelectorAll('#ui button');
-    uiButtons.forEach(btn=>{
+    // ---------- UI ----------
+    document.querySelectorAll('#ui button').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         await ensureAudio();
         const a = btn.dataset.act;
@@ -346,7 +319,7 @@
       });
     });
 
-    /* ===== Effet de “coup” sur le mannequin ===== */
+    // ---------- effets / tweens ----------
     function dummyHit(side=0){
       const startZ = dummy.rotation.z; const tilt = 0.05*(side||1);
       const t0 = performance.now();
@@ -367,100 +340,76 @@
       requestAnimationFrame(f);
     }
 
-    /* ===== Tweens simples ===== */
-    function tweenRot(targetAxisRef, from, to, dur, onEnd){
+    const rotRef = (obj, axis) => ({ set(v){ obj[axis]=v; }, get(){ return obj[axis]||0; } });
+    function tweenRot(ref, from, to, dur, onEnd){
       const t0 = performance.now();
       function step(now){
         const k = Math.min(1,(now-t0)/dur);
-        targetAxisRef.set(from + (to-from)*k);
+        ref.set(from + (to-from)*k);
         if (k<1) requestAnimationFrame(step); else onEnd && onEnd();
       }
       requestAnimationFrame(step);
     }
-    // util pour passer un ref sur rotation[axis]
-    const rotRef = (obj, axis) => ({ set(v){ obj[axis]=v; }, get(){ return obj[axis]; } });
 
-    /* ===== Techniques ===== */
+    // ---------- techniques ----------
     let busy = false;
 
     function pak(){
       if (busy) return; busy = true;
-      if (charBones.rightForeArm || charBones.rightArm){
+      if (!fallback && (charBones.rightForeArm || charBones.rightArm)){
         const fore = charBones.rightForeArm || charBones.rightArm;
-        const r = fore.rotation;
-        const ref = rotRef(r,'y'); const s = ref.get() || 0;
-        tweenRot(ref, s, s-0.35, 100, ()=>{
-          dummyHit(+1); play(sPak);
-          tweenRot(ref, s-0.35, s, 120, ()=> busy=false);
-        });
-        return;
-      }
-      // Fallback marionnette
-      const U = armR3D.userData.upper.rotation, L = armR3D.userData.lower.rotation;
-      const u0 = U.y||0, l0 = L.y||0;
-      U.y = u0 - 0.35; L.y = l0 - 0.25;
-      dummyHit(+1); play(sPak);
-      setTimeout(()=>{ U.y = u0; L.y = l0; busy=false; }, 220);
+        const ref = rotRef(fore.rotation,'y'); const s = ref.get();
+        tweenRot(ref, s, s-0.35, 100, ()=>{ dummyHit(+1); play(sPak); tweenRot(ref, s-0.35, s, 120, ()=>busy=false); });
+      } else if (fallback){
+        const U = fallback.userData.armR3D.userData.upper.rotation;
+        const L = fallback.userData.armR3D.userData.lower.rotation;
+        const u0=U.y||0, l0=L.y||0; U.y=u0-0.35; L.y=l0-0.25; dummyHit(+1); play(sPak);
+        setTimeout(()=>{ U.y=u0; L.y=l0; busy=false; },220);
+      } else busy=false;
     }
 
     function tan(){
       if (busy) return; busy = true;
-      if (charBones.leftForeArm || charBones.leftArm){
+      if (!fallback && (charBones.leftForeArm || charBones.leftArm)){
         const fore = charBones.leftForeArm || charBones.leftArm;
-        const r = fore.rotation;
-        const ref = rotRef(r,'y'); const s = ref.get() || 0;
-        tweenRot(ref, s, s+0.35, 110, ()=>{
-          dummyHit(-1); play(sTan);
-          tweenRot(ref, s+0.35, s, 120, ()=> busy=false);
-        });
-        return;
-      }
-      const U = armL3D.userData.upper.rotation, L = armL3D.userData.lower.rotation;
-      const u0 = U.y||0, l0 = L.y||0;
-      U.y = u0 + 0.35; L.y = l0 + 0.25;
-      dummyHit(-1); play(sTan);
-      setTimeout(()=>{ U.y = u0; L.y = l0; busy=false; }, 230);
+        const ref = rotRef(fore.rotation,'y'); const s = ref.get();
+        tweenRot(ref, s, s+0.35, 110, ()=>{ dummyHit(-1); play(sTan); tweenRot(ref, s+0.35, s, 120, ()=>busy=false); });
+      } else if (fallback){
+        const U = fallback.userData.armL3D.userData.upper.rotation;
+        const L = fallback.userData.armL3D.userData.lower.rotation;
+        const u0=U.y||0, l0=L.y||0; U.y=u0+0.35; L.y=l0+0.25; dummyHit(-1); play(sTan);
+        setTimeout(()=>{ U.y=u0; L.y=l0; busy=false; },230);
+      } else busy=false;
     }
 
     function bon(){
       if (busy) return; busy = true;
-      if (charBones.rightArm){
-        const upper = charBones.rightArm;
-        const r = upper.rotation;
-        const ref = rotRef(r,'x'); const s = ref.get() || 0;
-        tweenRot(ref, s, s-0.6, 120, ()=>{
-          dummyHit(0); play(sBon);
-          tweenRot(ref, s-0.6, s, 120, ()=> busy=false);
-        });
-        return;
-      }
-      const U = armR3D.userData.upper.rotation, L = armR3D.userData.lower.rotation;
-      const u0 = U.x||0, l0 = L.x||0;
-      U.x = u0 - 0.6; L.x = l0 + 0.4;
-      dummyHit(0); play(sBon);
-      setTimeout(()=>{ U.x = u0; L.x = l0; busy=false; }, 240);
+      if (!fallback && charBones.rightArm){
+        const ref = rotRef(charBones.rightArm.rotation,'x'); const s = ref.get();
+        tweenRot(ref, s, s-0.6, 120, ()=>{ dummyHit(0); play(sBon); tweenRot(ref, s-0.6, s, 120, ()=>busy=false); });
+      } else if (fallback){
+        const U = fallback.userData.armR3D.userData.upper.rotation;
+        const L = fallback.userData.armR3D.userData.lower.rotation;
+        const u0=U.x||0, l0=L.x||0; U.x=u0-0.6; L.x=l0+0.4; dummyHit(0); play(sBon);
+        setTimeout(()=>{ U.x=u0; L.x=l0; busy=false; },240);
+      } else busy=false;
     }
 
     function punch(){
       if (busy) return; busy = true;
-      if (charBones.leftForeArm || charBones.leftArm){
+      if (!fallback && (charBones.leftForeArm || charBones.leftArm)){
         const fore = charBones.leftForeArm || charBones.leftArm;
-        const r = fore.rotation;
-        const ref = rotRef(r,'y'); const s = ref.get() || 0;
-        tweenRot(ref, s, s+0.55, 90, ()=>{
-          dummyHit(0); play(sPunch);
-          tweenRot(ref, s+0.55, s, 110, ()=> busy=false);
-        });
-        return;
-      }
-      const U = armL3D.userData.upper.rotation, L = armL3D.userData.lower.rotation;
-      const u0 = U.y||0, l0 = L.y||0;
-      U.y = u0 + 0.15; L.y = l0 + 0.55;
-      dummyHit(0); play(sPunch);
-      setTimeout(()=>{ U.y = u0; L.y = l0; busy=false; }, 200);
+        const ref = rotRef(fore.rotation,'y'); const s = ref.get();
+        tweenRot(ref, s, s+0.55, 90, ()=>{ dummyHit(0); play(sPunch); tweenRot(ref, s+0.55, s, 110, ()=>busy=false); });
+      } else if (fallback){
+        const U = fallback.userData.armL3D.userData.upper.rotation;
+        const L = fallback.userData.armL3D.userData.lower.rotation;
+        const u0=U.y||0, l0=L.y||0; U.y=u0+0.15; L.y=l0+0.55; dummyHit(0); play(sPunch);
+        setTimeout(()=>{ U.y=u0; L.y=l0; busy=false; },200);
+      } else busy=false;
     }
 
-    /* ===== Resize + boucle ===== */
+    // ---------- resize + boucle ----------
     addEventListener('resize', ()=>{
       renderer.setSize(innerWidth, innerHeight);
       camera.aspect = innerWidth/innerHeight;
@@ -468,11 +417,8 @@
     });
 
     function animate(){
-      try{
-        renderer.render(scene, camera);
-      }catch(e){
-        showErr('Crash dans animate: ' + e.message);
-      }
+      try{ renderer.render(scene, camera); }
+      catch(e){ showErr('Crash dans animate: ' + e.message); }
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
