@@ -1,214 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wing Chun Simon • Debug + UI</title>
+<meta charset="utf-8">
+<title>Wing Chun Debug Loader</title>
 <style>
-  :root{ --btn-size: 84px; --btn-radius:14px; }
-  html,body{ margin:0; height:100%; background:#0b0b0b; color:#eee; font-family:system-ui,Segoe UI,Roboto,Arial; }
-  canvas{ display:block; width:100vw; height:100vh; position:fixed; inset:0; z-index:0; }
-  #err{ position:fixed; left:0; right:0; top:0; padding:8px 10px; text-align:center; color:#fff; background:#a00; font-size:13px; display:none; z-index:9999 }
-  #hint{ position:fixed; left:0; right:0; top:36px; text-align:center; padding:6px; font-size:13px; opacity:.9; z-index:50 }
-  #ui{ position:fixed; left:0; right:0; bottom:0; padding:12px; display:grid;
-       grid-template-columns:repeat(4, var(--btn-size)); gap:12px; justify-content:center; z-index:100;
-       background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55)); }
-  #ui button{ width:var(--btn-size); height:var(--btn-size); border:0; border-radius:var(--btn-radius);
-              background:#222; color:#eee; font-weight:700; letter-spacing:.2px; font-size:14px;
-              box-shadow:0 1px 6px rgba(0,0,0,.35); user-select:none; }
-  #ui button:active{ transform:scale(.985) }
-  @media (max-width:820px){ :root{ --btn-size: 68px; } }
+html,body { margin:0; height:100%; background:#111; color:#fff; font-family:sans-serif; }
+#log { position:fixed; top:0; left:0; right:0; padding:8px; background:#900; font-size:14px; display:none; }
+canvas { display:block; }
 </style>
 </head>
 <body>
-<div id="err"></div>
-<div id="hint">Clique pour activer le son. Si tu ne vois pas un cube tourner à gauche, c’est que le moteur ne rend pas.</div>
-<canvas id="c"></canvas>
-
-<div id="ui">
-  <button data-act="pak"   aria-label="Pak Sao">Pak</button>
-  <button data-act="tan"   aria-label="Tan Sao">Tan</button>
-  <button data-act="bon"   aria-label="Bon Sao">Bon</button>
-  <button data-act="punch" aria-label="Punch">Punch</button>
-</div>
-
+<div id="log"></div>
 <script type="module">
 import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
 import { GLTFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/DRACOLoader.js';
 
-// Overlay erreurs globales
-const showErr = (msg)=>{
-  const el = document.getElementById('err');
-  el.textContent = msg;
-  el.style.display = 'block';
-};
-window.addEventListener('error', e => showErr('JS Error: ' + (e.error?.stack || e.message)));
-window.addEventListener('unhandledrejection', e => showErr('Promise Error: ' + (e.reason?.stack || e.reason)));
+const logEl = document.getElementById('log');
+function showError(msg){ logEl.textContent = msg; logEl.style.display='block'; console.error(msg); }
 
-// Renderer / Scene
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Initialisation
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x202020);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(0,1.6,3);
 
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e0e12);
-const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
-camera.position.set(0, 1.6, 6);
-camera.lookAt(0,1.2,0);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-// Lumières + sol
-scene.add(new THREE.AmbientLight(0xffffff,.28));
-const dl = new THREE.DirectionalLight(0xffffff,2.0); dl.position.set(1.2,2.2,1.5); dl.castShadow = true; scene.add(dl);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1}));
-ground.rotation.x=-Math.PI/2; ground.position.y=0; ground.receiveShadow = true; scene.add(ground);
+// Lumières
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(3, 10, 5);
+scene.add(dirLight);
 
-// Cube test: s’il n’apparaît pas à gauche, ton moteur ne rend pas
+// Cube test
 const cube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshNormalMaterial());
-cube.position.set(-2,1,0); scene.add(cube);
+cube.position.x = -2;
+scene.add(cube);
 
-// Mannequin
-const wood = new THREE.MeshStandardMaterial({color:0x6a4a2f, roughness:.6});
-const dummy = new THREE.Group();
-const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,2.4, 20), wood); trunk.position.y = 1.2;
-function arm(len, r) { return new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,16), wood); }
-const armL = arm(0.6, 0.05); armL.rotation.z =  Math.PI/2; armL.position.set(-0.35, 1.55, 0);
-const armR = arm(0.6, 0.05); armR.rotation.z =  Math.PI/2; armR.position.set( 0.35, 1.55, 0);
-const armC = arm(0.5, 0.05); armC.rotation.z =  Math.PI/2; armC.position.set( 0.00, 1.15, 0);
-const leg  = arm(0.8, 0.06); leg.rotation.x =  Math.PI/2; leg.position.set(0, 0.55, 0.18);
-dummy.add(trunk, armL, armR, armC, leg);
-dummy.position.set(0,0,0);
-scene.add(dummy);
-
-// Perso conteneur + fallback rig
-let charModel = null;
-let charBones = {rightArm:null,rightForeArm:null,rightHand:null,leftArm:null,leftForeArm:null,leftHand:null,spine:null};
-const skin  = new THREE.MeshStandardMaterial({color:0xcaa98a, roughness:.8});
-const cloth = new THREE.MeshStandardMaterial({color:0x222428, roughness:.9});
-const person = new THREE.Group(); person.position.set(0,0,1.6); scene.add(person);
-const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .9, 12, 20), cloth); pBody.position.set(0,1.1,0);
-const pHead = new THREE.Mesh(new THREE.SphereGeometry(.17,20,20), skin); pHead.position.set(0,2.0,0);
-function mkArm(side=1){ const g=new THREE.Group();
-  const upper=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,16), cloth); upper.position.set(.30*side,1.55,0); upper.rotation.z= side>0?-Math.PI/2.5:Math.PI/2.5;
-  const lower=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.45,16), cloth); lower.position.set(.52*side,1.35,0.18); lower.rotation.z= side>0?-Math.PI/2.15:Math.PI/2.15;
-  const hand=new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.18), cloth); hand.position.set(.72*side,1.20,0.32);
-  g.add(upper,lower,hand); g.userData={upper,lower,hand}; return g;}
-const armR3D=mkArm(1), armL3D=mkArm(-1);
-function mkLeg(side=1){ const g=new THREE.Group();
-  const thigh=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.6,16), cloth); thigh.position.set(.15*side,0.7,0.05);
-  const shin=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.6,16), cloth); shin.position.set(.15*side,0.1,0.05);
-  const foot=new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.26), cloth); foot.position.set(.15*side,-0.22,0.1);
-  g.add(thigh,shin,foot); g.userData={thigh,shin,foot}; return g;}
-const legR=mkLeg(1), legL=mkLeg(-1);
-person.add(pBody,pHead,armR3D,armL3D,legR,legL);
-
-// Orientation perso
-(function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
-
-// Charge le GLB depuis assets/sounds
-async function loadGLBCharacter() {
-  try {
-    const loader = new GLTFLoader();
-    const draco = new DRACOLoader();
-    draco.setDecoderPath('https://unpkg.com/three@0.155.0/examples/jsm/libs/draco/');
-    loader.setDRACOLoader(draco);
-
-    const url = './assets/sounds/MaleCharBaseMesh.glb';
-    console.log('Chargement GLB:', location.origin + location.pathname.replace(/\/[^/]*$/, '/') + 'assets/sounds/MaleCharBaseMesh.glb');
-    const gltf = await loader.loadAsync(url);
-
-    charModel = gltf.scene || gltf.scenes?.[0];
-    charModel.scale.set(1,1,1);
-    charModel.position.set(0,0,0);
-    charModel.rotation.y = Math.PI;
-    charModel.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }});
-    person.add(charModel);
-
-    // map os
-    const find = n => charModel.getObjectByName(n);
-    charBones.rightArm     = find('mixamorigRightArm')     || find('RightArm')     || null;
-    charBones.rightForeArm = find('mixamorigRightForeArm') || find('RightForeArm') || null;
-    charBones.rightHand    = find('mixamorigRightHand')    || find('RightHand')    || null;
-    charBones.leftArm      = find('mixamorigLeftArm')      || find('LeftArm')      || null;
-    charBones.leftForeArm  = find('mixamorigLeftForeArm')  || find('LeftForeArm')  || null;
-    charBones.leftHand     = find('mixamorigLeftHand')     || find('LeftHand')     || null;
-
-    if (charBones.leftForeArm && charBones.rightForeArm){ pBody.visible=pHead.visible=armR3D.visible=armL3D.visible=legR.visible=legL.visible=false; }
-    console.log('GLB chargé:', charModel);
-  } catch (e) { showErr('Erreur chargement GLB: ' + e.message); }
-}
-loadGLBCharacter();
-
-// Audio
-let ctx; let sPak,sTan,sBon,sPunch;
-async function ensureAudio(){
-  if(!ctx){
-    ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const load = async (url)=>{ const resp=await fetch(url); const arr=await resp.arrayBuffer(); return await ctx.decodeAudioData(arr); };
-    [sPak,sTan,sBon,sPunch] = await Promise.all([
-      fetch('./assets/sounds/pak.wav').then(r=>r.arrayBuffer()).then(b=>ctx.decodeAudioData(b)),
-      fetch('./assets/sounds/tan.wav').then(r=>r.arrayBuffer()).then(b=>ctx.decodeAudioData(b)),
-      fetch('./assets/sounds/bon.wav').then(r=>r.arrayBuffer()).then(b=>ctx.decodeAudioData(b)),
-      fetch('./assets/sounds/punch.wav').then(r=>r.arrayBuffer()).then(b=>ctx.decodeAudioData(b)),
-    ]);
-    document.getElementById('hint').style.display='none';
+// Chargement GLB
+const loader = new GLTFLoader();
+loader.load(
+  './assets/models/MaleCharBaseMesh.glb',
+  gltf => {
+    const model = gltf.scene;
+    model.position.set(0,0,0);
+    scene.add(model);
+    console.log("Modèle GLB chargé :", model);
+  },
+  xhr => {
+    console.log(`Chargement : ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
+  },
+  err => {
+    showError("Erreur chargement GLB : " + err.message);
   }
+);
+
+// Animation
+function animate(){
+  requestAnimationFrame(animate);
+  cube.rotation.y += 0.01;
+  renderer.render(scene, camera);
 }
-document.body.addEventListener('pointerdown', ensureAudio, {once:true});
-function play(buf){ if(!ctx||!buf) return; const src=ctx.createBufferSource(); src.buffer=buf; src.connect(ctx.destination); src.start(); }
+animate();
 
-// Impact mannequin
-function dummyHit(side=0){
-  const startZ=dummy.rotation.z, tilt=0.05*(side||1), t0=performance.now();
-  function f(now){ const k=Math.min(1,(now-t0)/70); dummy.rotation.z = startZ + tilt*k;
-    if(k<1) requestAnimationFrame(f); else { const t1=performance.now(); function b(n2){ const k2=Math.min(1,(n2-t1)/110); dummy.rotation.z = startZ + tilt*(1-k2); if(k2<1) requestAnimationFrame(b); } requestAnimationFrame(b); } }
-  requestAnimationFrame(f);
-}
-
-// Tweens
-function tween(obj,key,from,to,dur,onEnd){ const t0=performance.now(); function step(now){ const k=Math.min(1,(now-t0)/dur); obj[key] = from + (to-from)*k; if(k<1) requestAnimationFrame(step); else onEnd&&onEnd(); } requestAnimationFrame(step); }
-function tweenRot(target, axis, from, to, dur, onEnd){ const t0=performance.now(); function step(now){ const k=Math.min(1,(now-t0)/dur); target[axis] = from + (to-from)*k; if(k<1) requestAnimationFrame(step); else onEnd&&onEnd(); } requestAnimationFrame(step); }
-
-let busy=false;
-function pak(){ if(busy) return; busy=true;
-  if (charBones.rightForeArm||charBones.rightArm){ const fore = charBones.rightForeArm||charBones.rightArm; const s=fore.rotation.y||0;
-    tweenRot(fore.rotation,'y',s, s-0.35,100, ()=>{ dummyHit(+1); play(sPak); tweenRot(fore.rotation,'y',s-0.35,s,120, ()=>busy=false); }); return; }
-  const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation; const u0=U.y||0, l0=L.y||0;
-  tween(U,'y',u0,-0.35,100); tween(L,'y',l0,-0.25,100, ()=>{ dummyHit(+1); play(sPak); tween(U,'y',-0.35,u0,120); tween(L,'y',-0.25,l0,120, ()=>busy=false); }); }
-
-function tan(){ if(busy) return; busy=true;
-  if (charBones.leftForeArm||charBones.leftArm){ const fore=charBones.leftForeArm||charBones.leftArm; const s=fore.rotation.y||0;
-    tweenRot(fore.rotation,'y',s, s+0.35,110, ()=>{ dummyHit(-1); play(sTan); tweenRot(fore.rotation,'y',s+0.35,s,120, ()=>busy=false); }); return; }
-  const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation; const u0=U.y||0, l0=L.y||0;
-  tween(U,'y',u0,0.35,110); tween(L,'y',l0,0.25,110, ()=>{ dummyHit(-1); play(sTan); tween(U,'y',0.35,u0,120); tween(L,'y',0.25,l0,120, ()=>busy=false); }); }
-
-function bon(){ if(busy) return; busy=true;
-  if (charBones.rightArm){ const upper=charBones.rightArm; const s=upper.rotation.x||0;
-    tweenRot(upper.rotation,'x',s, s-0.6,120, ()=>{ dummyHit(0); play(sBon); tweenRot(upper.rotation,'x',s-0.6,s,120, ()=>busy=false); }); return; }
-  const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation; const u0=U.x||0, l0=L.x||0;
-  tween(U,'x',u0,-0.6,120); tween(L,'x',l0, 0.4,120, ()=>{ dummyHit(0); play(sBon); tween(U,'x',-0.6,u0,120); tween(L,'x', 0.4,l0,120, ()=>busy=false); }); }
-
-function punch(){ if(busy) return; busy=true;
-  if (charBones.leftForeArm||charBones.leftArm){ const fore=charBones.leftForeArm||charBones.leftArm; const s=fore.rotation.y||0;
-    tweenRot(fore.rotation,'y',s, s+0.55,90, ()=>{ dummyHit(0); play(sPunch); tweenRot(fore.rotation,'y',s+0.55,s,110, ()=>busy=false); }); return; }
-  const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation; const u0=U.y||0, l0=L.y||0;
-  tween(U,'y',u0,0.15,90); tween(L,'y',l0,0.55,90, ()=>{ dummyHit(0); play(sPunch); tween(U,'y',0.15,u0,110); tween(L,'y',0.55,l0,110, ()=>busy=false); }); }
-
-// Boutons
-document.querySelectorAll('#ui button').forEach(b=>b.addEventListener('click',()=>{
-  const a=b.dataset.act;
-  if(a==='pak')  pak();
-  if(a==='tan')  tan();
-  if(a==='bon')  bon();
-  if(a==='punch') punch();
-}));
-
-// Resize + loop
-addEventListener('resize', ()=>{ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
-function animate(){ cube.rotation.y += 0.01; renderer.render(scene,camera); requestAnimationFrame(animate); }
-requestAnimationFrame(animate);
+// Resize
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 </body>
 </html>
