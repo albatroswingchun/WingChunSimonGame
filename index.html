@@ -123,9 +123,16 @@ async function ensureAudio(){
   if(!ctx){
     ctx = new (window.AudioContext||window.webkitAudioContext)();
     const load = async (url)=>{
-      const resp = await fetch(url);
-      const arr  = await resp.arrayBuffer();
-      return await ctx.decodeAudioData(arr);
+     try {
+        const resp = await fetch(url);
+        const arr  = await resp.arrayBuffer();
+        return await ctx.decodeAudioData(arr);
+      } catch (e) {
+        const errEl = document.getElementById('err');
+        errEl.textContent = 'Erreur audio : ' + e.message;
+        errEl.style.display = 'block';
+        throw e;
+      }
     };
     [sPak,sTan,sBon,sPunch] = await Promise.all([
       load('./assets/sounds/pak.wav'),
