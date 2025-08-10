@@ -9,6 +9,17 @@ une séquence de sons correspondant à des mouvements (`bon`, `pak`, `tan`,
 Ouvrez simplement `index.html` dans un navigateur moderne ou activez
 GitHub Pages sur ce dépôt pour y accéder en ligne.
 
+## Lancer en local
+
+Pour tester le jeu sans déployer, vous pouvez démarrer un serveur web local.
+Depuis le répertoire du projet, exécutez :
+
+```bash
+python -m http.server
+```
+
+Ensuite, ouvrez votre navigateur à l'adresse <http://localhost:8000>.
+
 ## Licence
 
 Ce projet est distribué sous la licence MIT. Vous pouvez l'utiliser, le
