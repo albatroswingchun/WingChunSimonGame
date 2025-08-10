@@ -124,6 +124,19 @@ const legR = mkLeg(1);
 const legL = mkLeg(-1);
 person.add(pBody,pHead,armR3D,armL3D,legR,legL);
 
+
+
+  
+const testCube = new THREE.Mesh(
+    new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshNormalMaterial()
+);
+testCube.position.set(0,1,0);
+scene.add(testCube);
+
+
+  
+
 /* Orientation: perso de dos vers le mannequin */
 (function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
 
