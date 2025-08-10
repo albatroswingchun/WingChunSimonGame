@@ -5,25 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Wing Chun Simon Game</title>
 <style>
-  :root{--panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
-    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;}
+  :root{--panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;--red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;}
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial}
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
   header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322}
   header .score{font-size:14px} header .best{opacity:.8}
   footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
+
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
   #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
-  /* BOUTONS: gris par défaut, n’éclairent qu’en lecture */
+
+  /* Boutons gris, n’illuminent qu’en lecture Simon */
   #board{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(2,132px);grid-gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
     color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.3px;
     box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
   .pad:active{transform:translateY(2px)}
-  /* Effet d’illumination Simon */
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
+
   /* Menu */
   #menu{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,#0b0a0a 0,#151213 70%,#0b0a0a 100%);z-index:10}
   .panel{background:linear-gradient(180deg,#1d1816,#231d1c);border:1px solid #2a2322;border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6)}
@@ -33,6 +34,7 @@
   .btn{background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer}
   .btn:hover{filter:brightness(1.08)}
   .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
+
   /* Onomatopée + flash erreur */
   #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
@@ -111,47 +113,76 @@ const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ======== CANVAS ======== */
+/* ======== CANVAS & PARALLAX ======== */
 const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=cx.width,H=cx.height;
-const bgImg=new Image(); bgImg.src='https://i.imgur.com/D772Q4m.png';
 
-let bgX = 0;
-const bgSpeed = 0.3;
-function drawBG() {
-  if (bgImg.complete) {
-    const imgW = bgImg.width;
-    const scale = H / bgImg.height;
-    const displayW = imgW * scale;
-    bgX -= bgSpeed;
-    if (bgX <= -displayW) bgX = 0;
-    ctx.drawImage(bgImg, bgX, 0, displayW, H);
-    ctx.drawImage(bgImg, bgX + displayW, 0, displayW, H);
-  } else {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, W, H);
+// Images de fond
+const backImg=new Image();  backImg.src='https://i.imgur.com/heR2x5A.png'; // couche arrière (très lente)
+const frontImg=new Image(); frontImg.src='https://i.imgur.com/D772Q4m.png'; // couche avant (plus rapide)
+
+// Offsets pour scroll
+let frontX=0, backX=0;
+const frontSpeed=0.4;      // vitesse premier plan
+const backSpeed=frontSpeed/4; // fond 4x plus lent
+
+function tileImage(img, offsetX){
+  // Dessine l'image "tilée" horizontalement sans couture, à la hauteur du canvas
+  const scale = H / img.height;
+  const w = img.width * scale;
+  // corriger offset pour rester dans [0, w)
+  let x = offsetX % w; if (x > 0) x -= w;
+  // dessiner au moins 2 fois pour couvrir tout le canvas
+  for(let dx = x; dx < W; dx += w){
+    ctx.drawImage(img, 0, 0, img.width, img.height, dx, 0, w, H);
   }
-  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
 }
 
-/* Mannequin */
+function drawBG(){
+  // Scroll en continu
+  frontX -= frontSpeed;
+  backX  -= backSpeed;
+
+  // Couche arrière
+  if (backImg.complete && backImg.naturalWidth>0) {
+    tileImage(backImg, backX);
+  } else {
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+  }
+
+  // Légère obscurité pour contraste général
+  ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fillRect(0,0,W,H);
+
+  // Couche avant
+  if (frontImg.complete && frontImg.naturalWidth>0) {
+    tileImage(frontImg, frontX);
+    // Assombrir un poil pour lisibilité du HUD
+    ctx.fillStyle='rgba(0,0,0,.12)'; ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* Mannequin (mook jong) */
 function drawDummy(){
   const x=W*0.66,y=H-100;
-  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
-  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);
-  ctx.fillRect(x-8,y-46, 34,6);
-  ctx.fillRect(x-6,y-12, 12,28);
+  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);     // tronc
+  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);      // bras haut
+  ctx.fillRect(x-8,y-46, 34,6);                               // bras milieu
+  ctx.fillRect(x-6,y-12, 12,28);                              // jambe
 }
 
-/* Perso simplifié */
+/* Perso placeholder (remplaçable par sprites) */
 const fighter={x:W*0.42,y:H-64,pose:'idle',t0:0};
 function drawFighter(t){
   const x=fighter.x,y=fighter.y;
+  // ombre
   ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x-24,y-6,38,10,0,0,Math.PI*2); ctx.fill();
+  // torse + tête
   ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68);
   ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24);
+  // jambes
   ctx.fillStyle='#171a1d'; ctx.fillRect(x-44,y-50,22,50); ctx.fillRect(x+2,y-50,22,50);
   ctx.fillStyle='#111'; ctx.fillRect(x-44,y,26,8); ctx.fillRect(x+2,y,26,8);
+  // bras selon pose
   ctx.fillStyle='#171a1d';
   if(fighter.pose==='idle'){ ctx.fillRect(x-54,y-88,18,40); ctx.fillRect(x+18,y-88,18,40); }
   if(fighter.pose==='pak'){  ctx.fillRect(x+12,y-88,18,40); ctx.fillStyle='#c7a880'; ctx.fillRect(x+28,y-72,26,10); }
@@ -160,7 +191,7 @@ function drawFighter(t){
   if(fighter.pose==='punch'){ctx.fillRect(x+8,y-92,18,42);  ctx.fillStyle='#c7a880'; ctx.fillRect(x+26,y-72,24,10); }
 }
 
-/* Onomatopée */
+/* Onomatopée + pose courte */
 function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
 function doPose(name){ fighter.pose=name; fighter.t0=performance.now(); setTimeout(()=>{fighter.pose='idle';}, 280); }
 
@@ -225,7 +256,7 @@ function startGame(){
 }
 document.getElementById('startBtn').addEventListener('click',startGame);
 
-/* LOOP */
+/* LOOP — la séquence ne s’arrête pas: le parallaxe tourne tout le temps */
 function loop(t){ drawBG(); drawDummy(); drawFighter(t); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 </script>
