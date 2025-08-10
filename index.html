@@ -124,8 +124,8 @@ person.add(pBody,pHead,armR3D,armL3D,legR,legL);
 async function loadGLBCharacter() {
   try {
     const loader = new GLTFLoader();
-    // Mets ton fichier glb dans ./assets/models/MaleCharBaseMesh.glb (GitHub Pages)
-    const gltf = await loader.loadAsync('./assets/models/MaleCharBaseMesh.glb');
+    // Mets ton fichier glb dans ./assets/sounds/MaleCharBaseMesh.glb (GitHub Pages)
+    const gltf = await loader.loadAsync('./assets/sounds/MaleCharBaseMesh.glb');
     charModel = gltf.scene || gltf.scenes?.[0];
     // Taille/placement: ajuste si besoin pour coller au mannequin
     charModel.scale.set(1,1,1);
