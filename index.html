@@ -1,1 +1,221 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Wing Chun Simon • GitHub Pages</title>
+<style>
+  :root{ --btn-size: 84px; --btn-radius:14px; }
+  html,body{ margin:0; height:100%; background:#0b0b0b; color:#eee; font-family:system-ui,Segoe UI,Roboto,Arial; }
+  canvas{ display:block; width:100%; height:100%; }
+  #hint{ position:fixed; left:0; right:0; top:0; text-align:center; padding:6px; font-size:13px; opacity:.85; z-index:10 }
+  #err { position:fixed; left:0; right:0; top:28px; padding:6px; text-align:center; color:#f66; font-size:12px; display:none; z-index:10 }
+  #ui  { position:fixed; left:0; right:0; bottom:0; padding:12px; display:grid;
+         grid-template-columns:repeat(4, var(--btn-size)); gap:12px; justify-content:center; z-index:10;
+         background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55)); }
+  #ui button{ width:var(--btn-size); height:var(--btn-size); border:0; border-radius:var(--btn-radius);
+              background:#222; color:#eee; font-weight:700; letter-spacing:.2px; font-size:14px;
+              box-shadow:0 1px 6px rgba(0,0,0,.35); user-select:none; }
+  #ui button:active{ transform:scale(.985) }
+  @media (max-width: 820px){ :root{ --btn-size: 68px; } }
+</style>
+</head>
+<body>
+<div id="hint">Clique pour activer le son. Perso de dos devant le mannequin. Boutons carrés.</div>
+<div id="err"></div>
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <button data-act="pak"   aria-label="Pak Sao">Pak</button>
+  <button data-act="tan"   aria-label="Tan Sao">Tan</button>
+  <button data-act="bon"   aria-label="Bon Sao">Bon</button>
+  <button data-act="punch" aria-label="Punch">Punch</button>
+</div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+
+// --- Renderer / Scene
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e0e12);
+
+// Caméra de face (perso devant le mannequin)
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
+camera.position.set(0, 1.6, 6);
+camera.lookAt(0,1.2,0);
+
+// Lumières
+scene.add(new THREE.AmbientLight(0xffffff,.28));
+const dl = new THREE.DirectionalLight(0xffffff,2.0); dl.position.set(1.2,2.2,1.5); scene.add(dl);
+
+// Sol
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x1e1e20, roughness:1}));
+ground.rotation.x=-Math.PI/2; ground.position.y=0; scene.add(ground);
+
+// --- Mannequin 3D
+const wood = new THREE.MeshStandardMaterial({color:0x6a4a2f, roughness:.6});
+const dummy = new THREE.Group();
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,2.4, 20), wood); trunk.position.y = 1.2;
+function arm(len, r) { return new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,16), wood); }
+const armL = arm(0.6, 0.05); armL.rotation.z =  Math.PI/2; armL.position.set(-0.35, 1.55, 0);
+const armR = arm(0.6, 0.05); armR.rotation.z =  Math.PI/2; armR.position.set( 0.35, 1.55, 0);
+const armC = arm(0.5, 0.05); armC.rotation.z =  Math.PI/2; armC.position.set( 0.00, 1.15, 0);
+const leg  = arm(0.8, 0.06); leg.rotation.x =  Math.PI/2; leg.position.set(0, 0.55, 0.18);
+dummy.add(trunk, armL, armR, armC, leg);
+dummy.position.set(0,0,0);
+scene.add(dummy);
+
+// --- Perso 3D articulé (marionnette), de dos, DEVANT le mannequin
+const skin  = new THREE.MeshStandardMaterial({color:0xcaa98a, roughness:.8});
+const cloth = new THREE.MeshStandardMaterial({color:0x222428, roughness:.9});
+const person = new THREE.Group();
+// tronc + tête
+const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .9, 12, 20), cloth); pBody.position.set(0,1.1,0);
+const pHead = new THREE.Mesh(new THREE.SphereGeometry(.17,20,20), skin); pHead.position.set(0,2.0,0);
+// BRAS (2 sections)
+function mkArm(side=1){
+  const g = new THREE.Group();
+  const upper = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,16), cloth);
+  upper.position.set(.30*side,1.55,0); upper.rotation.z = side>0 ? -Math.PI/2.5 : Math.PI/2.5;
+  const lower = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.45,16), cloth);
+  lower.position.set(.52*side,1.35,0.18); lower.rotation.z = side>0 ? -Math.PI/2.15 : Math.PI/2.15;
+  const hand  = new THREE.Mesh(new THREE.BoxGeometry(.14,.05,.18), cloth);
+  hand.position.set(.72*side,1.20,0.32);
+  g.add(upper, lower, hand);
+  g.userData = {upper, lower, hand};
+  return g;
+}
+const armR3D = mkArm(1);
+const armL3D = mkArm(-1);
+// JAMBES (2 sections)
+function mkLeg(side=1){
+  const g = new THREE.Group();
+  const thigh = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.6,16), cloth);
+  thigh.position.set(.15*side,0.7,0.05);
+  const shin  = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.6,16), cloth);
+  shin.position.set(.15*side,0.1,0.05);
+  const foot  = new THREE.Mesh(new THREE.BoxGeometry(.16,.06,.26), cloth);
+  foot.position.set(.15*side,-0.22,0.1);
+  g.add(thigh, shin, foot);
+  g.userData = {thigh, shin, foot};
+  return g;
+}
+const legR = mkLeg(1);
+const legL = mkLeg(-1);
+
+person.add(pBody,pHead,armR3D,armL3D,legR,legL);
+person.position.set(0,0,1.6); // DEVANT
+scene.add(person);
+
+// Oriente le perso vers le mannequin mais de DOS pour la caméra
+(function orient(){
+  const t = new THREE.Vector3(0,1.2,0);
+  person.lookAt(t);
+  person.rotateY(Math.PI);
+})();
+
+// --- Audio: chargement local des WAV ---
+let ctx; let sPak,sTan,sBon,sPunch;
+async function ensureAudio(){
+  if(!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const load = async (url)=>{
+      const resp = await fetch(url);
+      const arr  = await resp.arrayBuffer();
+      return await ctx.decodeAudioData(arr);
+    };
+    [sPak,sTan,sBon,sPunch] = await Promise.all([
+      load('./assets/sounds/pak.wav'),
+      load('./assets/sounds/tan.wav'),
+      load('./assets/sounds/bon.wav'),
+      load('./assets/sounds/punch.wav'),
+    ]);
+    document.getElementById('hint').style.display='none';
+  }
+}
+document.body.addEventListener('pointerdown', ensureAudio, {once:true});
+function play(buf){ if(!ctx||!buf) return; const src=ctx.createBufferSource(); src.buffer=buf; src.connect(ctx.destination); src.start(); }
+
+// Impact mannequin
+function dummyHit(side=0){
+  const startZ = dummy.rotation.z; const tilt = 0.05*(side||1);
+  const t0=performance.now();
+  function f(now){ const k=Math.min(1,(now-t0)/70); dummy.rotation.z = startZ + tilt*k;
+    if(k<1) requestAnimationFrame(f); else { const t1=performance.now(); function b(n2){ const k2=Math.min(1,(n2-t1)/110); dummy.rotation.z = startZ + tilt*(1-k2); if(k2<1) requestAnimationFrame(b); }
+      requestAnimationFrame(b); }
+  } requestAnimationFrame(f);
+}
+
+// Tween util
+function tween(obj,key,from,to,dur,onEnd){
+  const t0=performance.now();
+  function step(now){
+    const k=Math.min(1,(now-t0)/dur);
+    obj[key] = from + (to-from)*k;
+    if(k<1) requestAnimationFrame(step); else onEnd && onEnd();
+  }
+  requestAnimationFrame(step);
+}
+
+// Techniques
+let busy=false;
+function pak(){
+  if(busy) return; busy=true;
+  const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation;
+  const u0=U.y||0, l0=L.y||0;
+  tween(U,'y',u0,-0.35,100);
+  tween(L,'y',l0,-0.25,100, ()=>{ dummyHit(+1); play(sPak);
+    tween(U,'y',-0.35,u0,120);
+    tween(L,'y',-0.25,l0,120, ()=>busy=false);
+  });
+}
+function tan(){
+  if(busy) return; busy=true;
+  const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation;
+  const u0=U.y||0, l0=L.y||0;
+  tween(U,'y',u0,0.35,110);
+  tween(L,'y',l0,0.25,110, ()=>{ dummyHit(-1); play(sTan);
+    tween(U,'y',0.35,u0,120);
+    tween(L,'y',0.25,l0,120, ()=>busy=false);
+  });
+}
+function bon(){
+  if(busy) return; busy=true;
+  const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation;
+  const u0=U.x||0, l0=L.x||0;
+  tween(U,'x',u0,-0.6,120);
+  tween(L,'x',l0, 0.4,120, ()=>{ dummyHit(0); play(sBon);
+    tween(U,'x',-0.6,u0,120);
+    tween(L,'x', 0.4,l0,120, ()=>busy=false);
+  });
+}
+function punch(){
+  if(busy) return; busy=true;
+  const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation;
+  const u0=U.y||0, l0=L.y||0;
+  tween(U,'y',u0,0.15,90);
+  tween(L,'y',l0,0.55,90, ()=>{ dummyHit(0); play(sPunch);
+    tween(U,'y',0.15,u0,110);
+    tween(L,'y',0.55,l0,110, ()=>busy=false);
+  });
+}
+
+// Boutons
+document.querySelectorAll('#ui button').forEach(b=>b.addEventListener('click',()=>{
+  const a=b.dataset.act||b.getAttribute('data-act');
+  if(a==='pak')  pak();
+  if(a==='tan')  tan();
+  if(a==='bon')  bon();
+  if(a==='punch') punch();
+}));
+
+// Resize + loop
+addEventListener('resize', ()=>{ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+function animate(){ renderer.render(scene,camera); requestAnimationFrame(animate); } requestAnimationFrame(animate);
+</script>
+</body>
+</html>
 
