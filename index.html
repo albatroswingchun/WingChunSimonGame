@@ -127,46 +127,77 @@ person.add(pBody,pHead,armR3D,armL3D,legR,legL);
 /* Orientation: perso de dos vers le mannequin */
 (function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
 
-/* Chargement du personnage GLB */
 async function loadGLBCharacter() {
   try {
     const loader = new GLTFLoader();
-    // Draco inoffensif si le GLB n'est pas compressé
+
+    // Draco inoffensif (au cas où votre GLB soit compressé)
     const draco = new DRACOLoader();
     draco.setDecoderPath('https://unpkg.com/three@0.155.0/examples/jsm/libs/draco/');
     loader.setDRACOLoader(draco);
 
+    // 1) Chemin EXACT (sensible à la casse) vers votre fichier
     const url = './assets/models/MaleCharBaseMesh.glb';
     console.log('Chargement GLB:', url);
     const gltf = await loader.loadAsync(url);
 
-    charModel = gltf.scene || gltf.scenes?.[0];
-    charModel.scale.set(1,1,1);
-    charModel.position.set(0,0,0);
-    charModel.rotation.y = Math.PI; // de dos vers la caméra
-    charModel.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; }});
-    person.add(charModel);
+    // 2) Récupération du modèle
+    const model = gltf.scene || gltf.scenes?.[0];
+    if (!model) throw new Error('GLB sans scène');
 
-    // Mapping des os (Mixamo common names)
-    const find = n => charModel.getObjectByName(n);
+    // 3) Normalisation: compute bounding-box, remise à l’échelle et recentrage
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const center = new THREE.Vector3(); box.getCenter(center);
+
+    // Échelle pour avoir une hauteur ~1.75m (ajustez 1.75 si besoin)
+    const targetHeight = 1.75;
+    const scale = size.y > 0 ? (targetHeight / size.y) : 1;
+    model.scale.setScalar(scale);
+
+    // Recalcule boîte après scale
+    const box2 = new THREE.Box3().setFromObject(model);
+    const size2 = new THREE.Vector3(); box2.getSize(size2);
+    const center2 = new THREE.Vector3(); box2.getCenter(center2);
+
+    // Décale pour poser les pieds sur y=0 et centrer en x/z
+    model.position.x += -center2.x;
+    model.position.z += -center2.z;
+    model.position.y += -box2.min.y; // pose sur le sol
+
+    // 4) Orientation: de dos pour la caméra mais face au mannequin
+    model.rotation.y = Math.PI;
+
+    // 5) Ombres
+    model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+
+    // 6) Ajout à la scène dans le conteneur "person"
+    person.add(model);
+    charModel = model;
+
+    // 7) Mapping des os (si présents) pour piloter les bras
+    const find = n => model.getObjectByName(n);
     charBones.rightArm     = find('mixamorigRightArm')     || find('RightArm')     || null;
     charBones.rightForeArm = find('mixamorigRightForeArm') || find('RightForeArm') || null;
     charBones.rightHand    = find('mixamorigRightHand')    || find('RightHand')    || null;
     charBones.leftArm      = find('mixamorigLeftArm')      || find('LeftArm')      || null;
     charBones.leftForeArm  = find('mixamorigLeftForeArm')  || find('LeftForeArm')  || null;
     charBones.leftHand     = find('mixamorigLeftHand')     || find('LeftHand')     || null;
-    charBones.spine        = find('mixamorigSpine')        || find('Spine')        || null;
 
-    // Si squelette valide → masquer le fallback
-    if (charBones.leftForeArm && charBones.rightForeArm){
+    // 8) Si squelette OK → masque le rig fallback
+    if (charBones.leftForeArm && charBones.rightForeArm) {
       pBody.visible = pHead.visible = armR3D.visible = armL3D.visible = legR.visible = legL.visible = false;
     }
 
-    console.log('GLB chargé:', charModel);
+    console.log('GLB prêt. Taille:', size2, 'Bones:', charBones);
   } catch (e) {
-    showErr('Erreur chargement perso GLB: ' + e.message);
+    const errEl = document.getElementById('err');
+    errEl.textContent = 'Erreur chargement perso GLB: ' + e.message;
+    errEl.style.display = 'block';
+    console.error(e);
   }
 }
+
 loadGLBCharacter();
 
 /* Audio */
