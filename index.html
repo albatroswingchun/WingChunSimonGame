@@ -34,6 +34,7 @@
 
 <script type="module">
 import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+import { GLTFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
 
 // --- Renderer / Scene
 const canvas = document.getElementById('c');
@@ -68,14 +69,25 @@ dummy.add(trunk, armL, armR, armC, leg);
 dummy.position.set(0,0,0);
 scene.add(dummy);
 
-// --- Perso 3D articulé (marionnette), de dos, DEVANT le mannequin
+// --- Support perso GLB
+let charModel = null;      // le modèle GLB chargé
+let charBones = {          // raccourcis vers les os si trouvés
+  rightArm:null, rightForeArm:null, rightHand:null,
+  leftArm:null,  leftForeArm:null,  leftHand:null,
+  spine:null
+};
+
+// --- Perso: conteneur + ancien rig marionnette (fallback)
 const skin  = new THREE.MeshStandardMaterial({color:0xcaa98a, roughness:.8});
 const cloth = new THREE.MeshStandardMaterial({color:0x222428, roughness:.9});
-const person = new THREE.Group();
-// tronc + tête
+const person = new THREE.Group(); // conteneur commun
+person.position.set(0,0,1.6); // DEVANT
+scene.add(person);
+
+// Ancien rig marionnette (sert de fallback si pas d'os Mixamo trouvés)
 const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .9, 12, 20), cloth); pBody.position.set(0,1.1,0);
 const pHead = new THREE.Mesh(new THREE.SphereGeometry(.17,20,20), skin); pHead.position.set(0,2.0,0);
-// BRAS (2 sections)
+
 function mkArm(side=1){
   const g = new THREE.Group();
   const upper = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,16), cloth);
@@ -90,7 +102,7 @@ function mkArm(side=1){
 }
 const armR3D = mkArm(1);
 const armL3D = mkArm(-1);
-// JAMBES (2 sections)
+
 function mkLeg(side=1){
   const g = new THREE.Group();
   const thigh = new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.6,16), cloth);
@@ -107,8 +119,54 @@ const legR = mkLeg(1);
 const legL = mkLeg(-1);
 
 person.add(pBody,pHead,armR3D,armL3D,legR,legL);
-person.position.set(0,0,1.6); // DEVANT
-scene.add(person);
+
+// Charge et attache le modèle GLB dans "person"
+async function loadGLBCharacter() {
+  try {
+    const loader = new GLTFLoader();
+    // Mets ton fichier glb dans ./assets/models/MaleCharBaseMesh.glb (GitHub Pages)
+    const gltf = await loader.loadAsync('./assets/models/MaleCharBaseMesh.glb');
+    charModel = gltf.scene || gltf.scenes?.[0];
+    // Taille/placement: ajuste si besoin pour coller au mannequin
+    charModel.scale.set(1,1,1);
+    charModel.position.set(0,0,0);
+    // Face au mannequin mais de dos pour la caméra (comme le rig)
+    charModel.rotation.y = Math.PI;
+
+    // Ombres
+    charModel.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+
+    // Essai auto-détection os Mixamo (si dispo)
+    const find = name => charModel.getObjectByName(name);
+    charBones.rightArm     = find('mixamorigRightArm')     || find('RightArm')     || null;
+    charBones.rightForeArm = find('mixamorigRightForeArm') || find('RightForeArm') || null;
+    charBones.rightHand    = find('mixamorigRightHand')    || find('RightHand')    || null;
+    charBones.leftArm      = find('mixamorigLeftArm')      || find('LeftArm')      || null;
+    charBones.leftForeArm  = find('mixamorigLeftForeArm')  || find('LeftForeArm')  || null;
+    charBones.leftHand     = find('mixamorigLeftHand')     || find('LeftHand')     || null;
+    charBones.spine        = find('mixamorigSpine')        || find('Spine')        || null;
+
+    // Ajoute dans le conteneur
+    person.add(charModel);
+
+    // Option: masquer l’ancien rig si des os valides ont été trouvés
+    const hasArms = (charBones.leftForeArm && charBones.rightForeArm);
+    if (hasArms) {
+      pBody.visible = false; pHead.visible = false;
+      armR3D.visible = false; armL3D.visible = false;
+      legR.visible = false; legL.visible = false;
+    }
+  } catch (e) {
+    const errEl = document.getElementById('err');
+    errEl.textContent = 'Erreur chargement perso GLB: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
 
 // Oriente le perso vers le mannequin mais de DOS pour la caméra
 (function orient(){
@@ -116,6 +174,8 @@ scene.add(person);
   person.lookAt(t);
   person.rotateY(Math.PI);
 })();
+
+loadGLBCharacter();
 
 // --- Audio: chargement local des WAV ---
 let ctx; let sPak,sTan,sBon,sPunch;
@@ -156,21 +216,34 @@ function dummyHit(side=0){
   } requestAnimationFrame(f);
 }
 
-// Tween util
-function tween(obj,key,from,to,dur,onEnd){
+// Utilitaires tween rotation sur os (ou fallback marionnette)
+function tweenRot(target, axis, from, to, dur, onEnd){
   const t0=performance.now();
   function step(now){
     const k=Math.min(1,(now-t0)/dur);
-    obj[key] = from + (to-from)*k;
+    target[axis] = from + (to-from)*k;
     if(k<1) requestAnimationFrame(step); else onEnd && onEnd();
   }
   requestAnimationFrame(step);
 }
 
-// Techniques
 let busy=false;
+
 function pak(){
   if(busy) return; busy=true;
+
+  // Si os du bras droit dispos
+  if (charBones.rightForeArm || charBones.rightArm) {
+    const fore = charBones.rightForeArm || charBones.rightArm;
+    const startY = fore.rotation.y || 0;
+    tweenRot(fore.rotation,'y',startY, startY-0.35, 100, ()=>{
+      dummyHit(+1); play(sPak);
+      tweenRot(fore.rotation,'y',startY-0.35, startY, 120, ()=>busy=false);
+    });
+    return;
+  }
+
+  // Fallback: ancien rig bras droit
   const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation;
   const u0=U.y||0, l0=L.y||0;
   tween(U,'y',u0,-0.35,100);
@@ -179,8 +252,20 @@ function pak(){
     tween(L,'y',-0.25,l0,120, ()=>busy=false);
   });
 }
+
 function tan(){
   if(busy) return; busy=true;
+
+  if (charBones.leftForeArm || charBones.leftArm) {
+    const fore = charBones.leftForeArm || charBones.leftArm;
+    const startY = fore.rotation.y || 0;
+    tweenRot(fore.rotation,'y',startY, startY+0.35, 110, ()=>{
+      dummyHit(-1); play(sTan);
+      tweenRot(fore.rotation,'y',startY+0.35, startY, 120, ()=>busy=false);
+    });
+    return;
+  }
+
   const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation;
   const u0=U.y||0, l0=L.y||0;
   tween(U,'y',u0,0.35,110);
@@ -189,8 +274,20 @@ function tan(){
     tween(L,'y',0.25,l0,120, ()=>busy=false);
   });
 }
+
 function bon(){
   if(busy) return; busy=true;
+
+  if (charBones.rightArm) {
+    const upper = charBones.rightArm;
+    const startX = upper.rotation.x || 0;
+    tweenRot(upper.rotation,'x',startX, startX-0.6, 120, ()=>{
+      dummyHit(0); play(sBon);
+      tweenRot(upper.rotation,'x',startX-0.6, startX, 120, ()=>busy=false);
+    });
+    return;
+  }
+
   const U=armR3D.userData.upper.rotation, L=armR3D.userData.lower.rotation;
   const u0=U.x||0, l0=L.x||0;
   tween(U,'x',u0,-0.6,120);
@@ -199,8 +296,21 @@ function bon(){
     tween(L,'x', 0.4,l0,120, ()=>busy=false);
   });
 }
+
 function punch(){
   if(busy) return; busy=true;
+
+  // Poing gauche: avant-bras gauche en extension
+  if (charBones.leftForeArm || charBones.leftArm) {
+    const fore = charBones.leftForeArm || charBones.leftArm;
+    const startY = fore.rotation.y || 0;
+    tweenRot(fore.rotation,'y',startY, startY+0.55, 90, ()=>{
+      dummyHit(0); play(sPunch);
+      tweenRot(fore.rotation,'y',startY+0.55, startY, 110, ()=>busy=false);
+    });
+    return;
+  }
+
   const U=armL3D.userData.upper.rotation, L=armL3D.userData.lower.rotation;
   const u0=U.y||0, l0=L.y||0;
   tween(U,'y',u0,0.15,90);
