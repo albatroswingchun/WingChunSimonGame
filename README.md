@@ -6,12 +6,12 @@ une séquence de sons correspondant à des mouvements (`bon`, `pak`, `tan`,
 
 ## Exécution
 
-Ouvrez simplement `index.html` dans un navigateur moderne ou activez
+Activez GitHub Pages sur ce dépôt pour y accéder en ligne.
 GitHub Pages sur ce dépôt pour y accéder en ligne.
 
 ## Lancer en local
 
-Pour tester le jeu sans déployer, vous pouvez démarrer un serveur web local.
+Pour tester le jeu sans déployer, vous devez démarrer un serveur web local.
 Depuis le répertoire du projet, exécutez :
 
 ```bash
