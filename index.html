@@ -15,14 +15,13 @@
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
   #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
-  /* BOUTONS: gris par défaut, n'éclairent qu'en lecture */
+  /* BOUTONS: gris par défaut, n’éclairent qu’en lecture */
   #board{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(2,132px);grid-gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
     color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.3px;
     box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
   .pad:active{transform:translateY(2px)}
-  .pad small{display:block;font-weight:400;opacity:.8;margin-top:2px}
-  /* Effet d’illumination Simon (couleurs internes uniquement quand joué) */
+  /* Effet d’illumination Simon */
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
   /* Menu */
@@ -54,10 +53,10 @@
       <canvas id="cx" width="768" height="432"></canvas>
 
       <div id="board" aria-label="Boutons">
-        <button class="pad" data-tech="pak"><div>Pak Sao<small>[1]</small></div></button>
-        <button class="pad" data-tech="tan"><div>Tan Sao<small>[2]</small></div></button>
-        <button class="pad" data-tech="bon"><div>Bon Sao<small>[3]</small></div></button>
-        <button class="pad" data-tech="punch"><div>Punch<small>[4]</small></div></button>
+        <button class="pad" data-tech="pak">Pak Sao</button>
+        <button class="pad" data-tech="tan">Tan Sao</button>
+        <button class="pad" data-tech="bon">Bon Sao</button>
+        <button class="pad" data-tech="punch">Punch</button>
       </div>
 
       <div id="onom"></div>
@@ -77,7 +76,7 @@
     </div>
   </div>
 
-  <footer>Canvas “64-bit style”. Sons WAV dans <code>assets/sounds/</code>.</footer>
+  <footer>Sons WAV dans <code>assets/sounds/</code>.</footer>
 </div>
 
 <script>
@@ -109,7 +108,7 @@ let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenu
 
 /* ======== MAPPINGS ======== */
 const TECHS=['pak','tan','bon','punch'];
-const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'}; // couleurs visibles seulement en lecture
+const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
 /* ======== CANVAS ======== */
@@ -117,10 +116,21 @@ const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.image
 const W=cx.width,H=cx.height;
 const bgImg=new Image(); bgImg.src='https://i.imgur.com/D772Q4m.png';
 
-function drawBG(){
-  if(bgImg.complete) ctx.drawImage(bgImg,0,0,W,H);
-  else { ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H); }
-  // assombrir légèrement pour lisibilité
+let bgX = 0;
+const bgSpeed = 0.3;
+function drawBG() {
+  if (bgImg.complete) {
+    const imgW = bgImg.width;
+    const scale = H / bgImg.height;
+    const displayW = imgW * scale;
+    bgX -= bgSpeed;
+    if (bgX <= -displayW) bgX = 0;
+    ctx.drawImage(bgImg, bgX, 0, displayW, H);
+    ctx.drawImage(bgImg, bgX + displayW, 0, displayW, H);
+  } else {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, W, H);
+  }
   ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
 }
 
@@ -133,14 +143,14 @@ function drawDummy(){
   ctx.fillRect(x-6,y-12, 12,28);
 }
 
-/* Perso simplifié (placeholder 64-bit) */
+/* Perso simplifié */
 const fighter={x:W*0.42,y:H-64,pose:'idle',t0:0};
 function drawFighter(t){
   const x=fighter.x,y=fighter.y;
   ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x-24,y-6,38,10,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68); // torse
-  ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24); // tête
-  ctx.fillStyle='#171a1d'; ctx.fillRect(x-44,y-50,22,50); ctx.fillRect(x+2,y-50,22,50); // jambes
+  ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68);
+  ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24);
+  ctx.fillStyle='#171a1d'; ctx.fillRect(x-44,y-50,22,50); ctx.fillRect(x+2,y-50,22,50);
   ctx.fillStyle='#111'; ctx.fillRect(x-44,y,26,8); ctx.fillRect(x+2,y,26,8);
   ctx.fillStyle='#171a1d';
   if(fighter.pose==='idle'){ ctx.fillRect(x-54,y-88,18,40); ctx.fillRect(x+18,y-88,18,40); }
@@ -152,7 +162,6 @@ function drawFighter(t){
 
 /* Onomatopée */
 function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
-/* Pose courte */
 function doPose(name){ fighter.pose=name; fighter.t0=performance.now(); setTimeout(()=>{fighter.pose='idle';}, 280); }
 
 /* ======== SIMON ======== */
