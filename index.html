@@ -4,26 +4,46 @@
 <meta charset="utf-8">
 <title>Wing Chun Debug Loader</title>
 <style>
-html,body { margin:0; height:100%; background:#111; color:#fff; font-family:sans-serif; }
-#log { position:fixed; top:0; left:0; right:0; padding:8px; background:#900; font-size:14px; display:none; }
+html,body {
+  margin:0;
+  height:100%;
+  background:#111;
+  color:#fff;
+  font-family:sans-serif;
+}
+#log {
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  padding:8px;
+  background:#900;
+  font-size:14px;
+  display:none;
+  z-index:10;
+}
 canvas { display:block; }
 </style>
 </head>
 <body>
 <div id="log"></div>
+
 <script type="module">
-console.log("Fichier index.html actuel chargé");
 import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
 import { GLTFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
 
 const logEl = document.getElementById('log');
-function showError(msg){ logEl.textContent = msg; logEl.style.display='block'; console.error(msg); }
+function showError(msg){
+  logEl.textContent = msg;
+  logEl.style.display='block';
+  console.error(msg);
+}
 
-// Initialisation
+// Scène, caméra, rendu
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x202020);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-camera.position.set(0,1.6,3);
+camera.position.set(0, 1.6, 3);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -36,11 +56,14 @@ dirLight.position.set(3, 10, 5);
 scene.add(dirLight);
 
 // Cube test
-const cube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshNormalMaterial());
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshNormalMaterial()
+);
 cube.position.x = -2;
 scene.add(cube);
 
-// Chargement GLB
+// Tentative chargement modèle
 const loader = new GLTFLoader();
 loader.load(
   './assets/models/MaleCharBaseMesh.glb',
