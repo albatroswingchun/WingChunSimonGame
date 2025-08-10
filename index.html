@@ -33,10 +33,10 @@
 </div>
 
 <script type="module">
-/* Imports depuis CDN (compatibles GitHub Pages) */
-import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/DRACOLoader.js';
+/* Imports locaux (proxies vers CDN) */
+import * as THREE from './vendor/three.module.js';
+import { GLTFLoader } from './vendor/GLTFLoader.js';
+import { DRACOLoader } from './vendor/DRACOLoader.js';
 
 /* Overlay erreurs globales pour éviter la chasse au bug */
 const showErr = (msg)=>{
@@ -124,19 +124,6 @@ const legR = mkLeg(1);
 const legL = mkLeg(-1);
 person.add(pBody,pHead,armR3D,armL3D,legR,legL);
 
-
-
-  
-const testCube = new THREE.Mesh(
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshNormalMaterial()
-);
-testCube.position.set(0,1,0);
-scene.add(testCube);
-
-
-  
-
 /* Orientation: perso de dos vers le mannequin */
 (function(){ const t = new THREE.Vector3(0,1.2,0); person.lookAt(t); person.rotateY(Math.PI); })();
 
@@ -150,8 +137,7 @@ async function loadGLBCharacter() {
     loader.setDRACOLoader(draco);
 
     // 1) Chemin EXACT (sensible à la casse) vers votre fichier
-    const url = 'assets/models/MaleCharBaseMesh.glb';
-    console.log('Chargement GLB:', url);
+    const url = './assets/models/MaleCharBaseMesh.glb';
     const gltf = await loader.loadAsync(url);
 
     // 2) Récupération du modèle
@@ -265,10 +251,9 @@ function play(buf) {
 /* --- BOUTONS UI --- */
 const uiButtons = document.querySelectorAll('#ui button');
 uiButtons.forEach((btn) => {
-  // Garantit que le contexte audio s'active au premier clic
-  btn.addEventListener('pointerdown', ensureAudio, { once: true });
-
-  btn.addEventListener('click', () => {
+  // Garantit que le contexte audio s'active avant l'action
+  btn.addEventListener('click', async () => {
+    await ensureAudio();
     const a = btn.dataset.act;
     if (a === 'pak') pak();
     if (a === 'tan') tan();
@@ -394,14 +379,6 @@ function punch(){
   });
 }
 
-/* Boutons */
-document.querySelectorAll('#ui button').forEach(b=>b.addEventListener('click',()=>{
-  const a=b.dataset.act;
-  if(a==='pak')  pak();
-  if(a==='tan')  tan();
-  if(a==='bon')  bon();
-  if(a==='punch') punch();
-}));
 
 /* Resize + loop */
 addEventListener('resize', ()=>{ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
