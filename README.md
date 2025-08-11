@@ -7,7 +7,6 @@ une séquence de sons correspondant à des mouvements (`bon`, `pak`, `tan`,
 ## Exécution
 
 Activez GitHub Pages sur ce dépôt pour y accéder en ligne.
-GitHub Pages sur ce dépôt pour y accéder en ligne.
 
 ## Lancer en local
 
