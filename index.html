@@ -2,128 +2,72 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Wing Chun Simon Game</title>
+
+<!-- Police stylée -->
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
-
-    /* Portrait mobile */
-    --portrait-controls-height: 220px; /* hauteur zone boutons (approx) */
-    --portrait-stage-offset: 26%;      /* remonte la scène (plus petit = plus haut) */
   }
-
-  html,body{
-    margin:0;height:100%;
-    background:#0b0a0a;color:#eee;
-    font-family:system-ui,Segoe UI,Roboto,Arial;
-    overflow:hidden;
-  }
-
+  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-
-  header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;
-    background:linear-gradient(180deg,var(--panel),var(--panel2));
-    border-bottom:1px solid #2a2322
-  }
-  header .score{font-size:14px}
-  header .best{opacity:.8}
-
-  footer{
-    padding:6px 12px;font-size:12px;opacity:.6;text-align:center;
-    background:linear-gradient(180deg,var(--panel2),#120f0f)
-  }
-
+  header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322}
+  header .score{font-size:14px} header .best{opacity:.8}
+  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
-  #stage{
-    position:absolute;left:50%;top:50%;
-    transform:translate(-50%,-50%);
-    width:min(100vw,960px);
-    height:min(56vw,540px);
-    max-height:72vh;
-  }
-  canvas{
-    position:absolute;inset:0;
-    width:100%;height:100%;
-    image-rendering:pixelated;image-rendering:crisp-edges;
-    touch-action:none;
-  }
-
-  /* Boutons (PC par défaut: en ligne) */
-  #board{
-    position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
-    display:flex;gap:14px;z-index:5
-  }
-  .pad{
-    width:132px;height:100px;border-radius:14px;
-    background:linear-gradient(#2a2a2a,#1e1e1e);
-    color:#cfcfcf;display:flex;align-items:center;justify-content:center;
-    font-weight:700;
-    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
-    cursor:pointer;transition:transform .06s ease,filter .12s;
-    -webkit-tap-highlight-color:transparent;
-  }
+  #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
+  canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+  
+  /* Boutons techniques */
+  #board{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
+    color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;
+    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
   .pad:active{transform:translateY(2px)}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
-  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)}
-  .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
-
+  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
+  
   /* Menu */
-  #menu{
-    position:absolute;inset:0;display:grid;place-items:center;
-    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10}
+  .panel{background:rgba(0,0,0,0.6);border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center}
+  .title-main{
+    font-family: 'Permanent Marker', cursive;
+    font-size:72px;
+    color:#d1a341;
+    text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);
+    margin:0;
   }
-  .panel{
-    background:rgba(0,0,0,.6);border-radius:16px;padding:28px 24px;
-    width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center
-  }
-  .title-main{font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
-  .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px}
+  .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px 0}
   .subtitle{font-size:18px;color:#fff;margin-bottom:20px}
   .actions{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
-  .btn{
-    background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
-    padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px
-  }
+  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
+       padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px}
   .btn:hover{filter:brightness(1.08)}
   .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
-
-  /* Onomatopées + flash */
-  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);
-    font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;
-    opacity:0;pointer-events:none;z-index:6}
+  
+  /* Onomatopée + flash erreur */
+  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}28%{opacity:1;transform:translate(-50%,0) scale(1.07)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* ===== Portrait mobile uniquement: plein écran + boutons 2x2 ===== */
-  @media (max-width:768px) and (orientation:portrait){
-    body.touch #stage{
-      /* le stage prend toute la hauteur, le canvas est derrière les boutons */
-      position:fixed; left:0; top:0; transform:none;
-      width:100vw; height:100vh;
+  /* 📱 Adaptation mobile portrait */
+  @media (max-width: 768px) and (orientation: portrait) {
+    #stage{top:0;transform:translateX(-50%);height:100vh;max-height:none}
+    #board{
+      flex-wrap:wrap;
+      width:70%;
+      gap:10px;
+      bottom:20px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
     }
-    body.touch #board{
-      position:fixed;
-      left:50%; bottom:calc(env(safe-area-inset-bottom) + 8px);
-      transform:translateX(-50%);
-      display:grid; grid-template-columns:repeat(2, minmax(110px, 44vw));
-      gap:12px; width:min(94vw, 560px); z-index:6;
-    }
-    body.touch .pad{
-      width:100%;
-      height:clamp(70px, 14vh, 120px);
-      font-size:clamp(16px, 4vh, 22px);
-    }
-    body.touch #onom{ top:5% }
-    header, footer{
-      padding-left:max(12px, env(safe-area-inset-left));
-      padding-right:max(12px, env(safe-area-inset-right));
-    }
+    .pad{width:100px;height:80px;font-size:14px}
   }
 </style>
 </head>
@@ -136,7 +80,7 @@
 
   <div id="stageWrap">
     <div id="stage">
-      <canvas id="cx"></canvas>
+      <canvas id="cx" width="768" height="432"></canvas>
 
       <div id="board" aria-label="Boutons">
         <button class="pad" data-tech="pak">Pak Sao</button>
@@ -163,14 +107,10 @@
     </div>
   </div>
 
-  <footer>Canvas plein écran mobile. Sons WAV dans <code>assets/sounds/</code>.</footer>
+  <footer>Canvas “64-bit style”. Sons WAV dans <code>assets/sounds/</code>.</footer>
 </div>
 
 <script>
-/* Limite les modifs au tactile */
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
-if(isTouch) document.body.classList.add('touch');
-
 /* ======== SONS ======== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
@@ -183,134 +123,76 @@ const SFX = {
 SFX.music.loop = true; SFX.music.volume = 0.5;
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
-/* ======== ÉTAT ======== */
-const pads=[...document.querySelectorAll('.pad')];
-const scoreEl=document.getElementById('score');
-const bestEl=document.getElementById('best');
-const bestMenuEl=document.getElementById('bestMenu');
-const menu=document.getElementById('menu');
-const startBtn=document.getElementById('startBtn');
-const muteBtn=document.getElementById('muteBtn');
-const onom=document.getElementById('onom');
-const flash=document.getElementById('flash');
-
-let muted=false;
+/* ======== ETAT ======== */
+const pads = [...document.querySelectorAll('.pad')];
+const scoreEl = document.getElementById('score');
+const bestEl  = document.getElementById('best');
+const bestMenuEl  = document.getElementById('bestMenu');
+const menu   = document.getElementById('menu');
+const startBtn = document.getElementById('startBtn');
+const muteBtn  = document.getElementById('muteBtn');
+const onom  = document.getElementById('onom');
+const flash = document.getElementById('flash');
+let muted=false; 
 muteBtn.onclick=()=>{
-  muted=!muted;
-  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
+  muted=!muted; 
+  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son'; 
   if(muted) SFX.music.pause(); else SFX.music.play();
 };
-const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
+const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
 let seq=[], userIndex=0, locked=true, score=0;
-let best=+localStorage.getItem('wcs_best')||0;
-bestEl.textContent=best; bestMenuEl.textContent=best;
+let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
 
 /* ======== MAPPINGS ======== */
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ======== CANVAS + IMAGES ======== */
-const cx=document.getElementById('cx');
-const ctx=cx.getContext('2d',{alpha:true});
-ctx.imageSmoothingEnabled=false;
+/* ======== CANVAS ======== */
+const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const W=cx.width,H=cx.height;
+const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';
+const bgNear=new Image(); bgNear.src='https://i.imgur.com/ukcEfib.png';
+const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
 
-let W=0,H=0,DPR=1;
 let parallaxX=0;
-let raiseY=0; // remonte le décor/premier plan derrière les boutons
-
-const bgFar = new Image(); bgFar.src = 'https://i.imgur.com/heR2x5A.png'; // montagnes
-const bgNear= new Image(); bgNear.src= 'https://i.imgur.com/heR2x5A.png';  // re-use pour couche proche
-const alleyImg = new Image(); alleyImg.src = 'https://i.imgur.com/ukcEfib.png'; // allée
-const dummyImg = new Image(); dummyImg.src = 'https://i.imgur.com/DprtxP7.png'; // mannequin
-const heroImg  = new Image(); heroImg.src  = 'URL_DE_TON_PERSONNAGE_TRANSPARENT'; // remplace
-
-function resizeCanvas(){
-  const rect = cx.parentElement.getBoundingClientRect();
-  DPR = Math.max(1, Math.min(3, window.devicePixelRatio||1));
-  W = Math.floor(rect.width*DPR);
-  H = Math.floor(rect.height*DPR);
-  cx.width=W; cx.height=H;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.scale(DPR,DPR);
-  updateRaiseY();
-}
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas, 150));
-
-function updateRaiseY(){
-  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  if(document.body.classList.contains('touch') && isPortrait){
-    // remonte fortement pour dégager la zone des boutons 2x2
-    const controls = parseInt(getComputedStyle(document.documentElement)
-      .getPropertyValue('--portrait-controls-height')) || 220;
-    raiseY = controls * 0.65; // ajuste 0.5..0.9 si besoin
-  } else {
-    raiseY = 0;
-  }
-}
-
 function drawBG(){
-  const CW=W/DPR, CH=H/DPR;
-  parallaxX = (parallaxX - 0.3 + CW) % CW;
-
+  parallaxX = (parallaxX - 0.3) % W;
   if(bgFar.complete){
-    ctx.drawImage(bgFar, parallaxX - CW, -raiseY, CW, CH);
-    ctx.drawImage(bgFar, parallaxX,       -raiseY, CW, CH);
+    ctx.drawImage(bgFar,parallaxX,0,W,H);
+    ctx.drawImage(bgFar,parallaxX+W,0,W,H);
   }
   if(bgNear.complete){
-    const nx = (parallaxX*1.5) % CW;
-    ctx.drawImage(bgNear, nx - CW, -raiseY, CW, CH);
-    ctx.drawImage(bgNear, nx,      -raiseY, CW, CH);
+    ctx.drawImage(bgNear,parallaxX*1.5,H-100,W,100);
+    ctx.drawImage(bgNear,parallaxX*1.5+W,H-100,W,100);
   }
-
-  ctx.fillStyle='rgba(0,0,0,.25)';
-  ctx.fillRect(0, -raiseY, CW, CH);
-
-  // Allée en bas (premier plan), remontée aussi
-  if(alleyImg.complete){
-    const ratio = alleyImg.height / alleyImg.width;
-    const targetW = CW;
-    const targetH = targetW * ratio;
-    ctx.drawImage(alleyImg, 0, CH - targetH - raiseY, targetW, targetH);
-  }
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
 }
 
 function drawDummy(){
-  if(!dummyImg.complete) return;
-  const CW=W/DPR, CH=H/DPR;
-  const dw = Math.max(120, CW*0.22);
-  const dh = dw * (dummyImg.height/dummyImg.width);
-  const x  = CW*0.66;
-  const y  = CH - dh - 8 - raiseY;
-  ctx.drawImage(dummyImg, x, y, dw, dh);
+  const x=W*0.66,y=H-100;
+  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
+  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);
+  ctx.fillRect(x-8,y-46, 34,6);
+  ctx.fillRect(x-6,y-12, 12,28);
 }
 
+const fighter={x:W*0.42,y:H-64,pose:'idle'};
 function drawFighter(){
-  const CW=W/DPR, CH=H/DPR;
-  if(!heroImg.complete){
-    // Placeholder propre
-    ctx.fillStyle='#1b1d20'; ctx.fillRect(CW*0.38, CH-140-raiseY, 56, 68);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(CW*0.38+18, CH-160-raiseY, 24, 24);
-    return;
+  if(fighter.pose==='pak' && pakImg.complete){
+    ctx.drawImage(pakImg,fighter.x-60,fighter.y-120,120,120);
+  } else {
+    ctx.fillStyle='#1b1d20'; ctx.fillRect(fighter.x-40,fighter.y-112,56,68);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(fighter.x-20,fighter.y-132,24,24);
   }
-  const dw = Math.max(110, CW*0.24);
-  const dh = dw * (heroImg.height/heroImg.width);
-  const x  = CW*0.38;
-  const y  = CH - dh - 8 - raiseY;
-  ctx.drawImage(heroImg, x, y, dw, dh);
 }
 
-/* UI */
-function shout(txt){
-  onom.textContent=txt;
-  onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
-}
+function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
+function doPose(name){ fighter.pose=name; setTimeout(()=>{fighter.pose='idle';}, 280); }
 
-/* Simon */
 function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
-const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 function setLit(tech,on){
   const btn=pads.find(b=>b.dataset.tech===tech);
@@ -321,7 +203,7 @@ function setLit(tech,on){
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
+    setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
@@ -331,12 +213,12 @@ async function playSequence(){
 
 async function press(tech){
   if(locked) return;
-  setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
+  setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
   await sleep(200);
   setLit(tech,false);
+
   if(tech!==seq[userIndex]){
-    play(SFX.wrong);
-    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
@@ -347,11 +229,7 @@ async function press(tech){
   }
 }
 
-/* Entrées */
-pads.forEach(b=>{
-  b.addEventListener('click',()=>press(b.dataset.tech));
-  b.addEventListener('touchstart',(e)=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
-});
+pads.forEach(b=>b.addEventListener('click',()=>press(b.dataset.tech)));
 window.addEventListener('keydown',e=>{
   if(e.key==='1') press('pak');
   if(e.key==='2') press('tan');
@@ -359,7 +237,6 @@ window.addEventListener('keydown',e=>{
   if(e.key==='4') press('punch');
 });
 
-/* Démarrage */
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play();
@@ -367,15 +244,10 @@ function startGame(){
 }
 startBtn.addEventListener('click',startGame);
 
-/* Boucle */
 function loop(){
-  ctx.clearRect(0,0,W/DPR,H/DPR);
   drawBG(); drawDummy(); drawFighter();
   requestAnimationFrame(loop);
 }
-
-/* Init */
-resizeCanvas();
 requestAnimationFrame(loop);
 </script>
 </body>
