@@ -8,15 +8,15 @@
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
-    /* Décalage vertical de la scène en mobile portrait (plus petit chiffre = scène plus haute) */
-    --portrait-stage-offset: 28%;
+    /* plus petit = plus haut en mobile portrait */
+    --portrait-stage-offset: 18%;
   }
 
   html,body{
     margin:0;height:100%;
     background:#0b0a0a;color:#eee;
     font-family:system-ui,Segoe UI,Roboto,Arial;
-    overflow:hidden
+    overflow:hidden;
   }
 
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
@@ -25,14 +25,14 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:10px 14px;
     background:linear-gradient(180deg,var(--panel),var(--panel2));
-    border-bottom:1px solid #2a2322
+    border-bottom:1px solid #2a2322; z-index:10;
   }
   header .score{font-size:14px}
   header .best{opacity:.8}
 
   footer{
     padding:6px 12px;font-size:12px;opacity:.6;text-align:center;
-    background:linear-gradient(180deg,var(--panel2),#120f0f)
+    background:linear-gradient(180deg,var(--panel2),#120f0f); z-index:10;
   }
 
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
@@ -41,19 +41,19 @@
     transform:translate(-50%,-50%);
     width:min(100vw,960px);
     height:min(56vw,540px);
-    max-height:72vh
+    max-height:72vh;
   }
   canvas{
     position:absolute;inset:0;
     width:100%;height:100%;
     image-rendering:pixelated;image-rendering:crisp-edges;
-    touch-action:none
+    touch-action:none;
   }
 
-  /* Boutons PC (inchangés) */
+  /* Boutons PC */
   #board{
     position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
-    display:flex;gap:14px;z-index:5
+    display:flex;gap:14px;z-index:5;
   }
   .pad{
     width:132px;height:100px;border-radius:14px;
@@ -62,7 +62,7 @@
     font-weight:700;
     box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
     cursor:pointer;transition:transform .06s ease,filter .12s;
-    -webkit-tap-highlight-color:transparent
+    -webkit-tap-highlight-color:transparent;
   }
   .pad:active{transform:translateY(2px)}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
@@ -72,11 +72,11 @@
   /* Menu */
   #menu{
     position:absolute;inset:0;display:grid;place-items:center;
-    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10
+    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10;
   }
   .panel{
     background:rgba(0,0,0,.6);border-radius:16px;padding:28px 24px;
-    width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center
+    width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center;
   }
   .title-main{font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
   .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px}
@@ -84,7 +84,7 @@
   .actions{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
   .btn{
     background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
-    padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px
+    padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px;
   }
   .btn:hover{filter:brightness(1.08)}
   .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
@@ -95,7 +95,7 @@
     transform:translate(-50%,0) scale(.6);
     font-size:72px;font-weight:900;color:#ffe9a8;
     text-shadow:0 4px 0 #000,0 0 22px #ffec9a;
-    opacity:0;pointer-events:none;z-index:6
+    opacity:0;pointer-events:none;z-index:6;
   }
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
   @keyframes pop{
@@ -107,27 +107,52 @@
   .boom{animation:boom .4s ease}
   @keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* ===== Portrait mobile uniquement ===== */
+  /* ===== Portrait mobile ===== */
   @media (max-width:768px) and (orientation:portrait){
+
+    html, body { height: 100svh; }
+
     body.touch #stage{
       top: var(--portrait-stage-offset);
       transform: translate(-50%,0);
-      height: calc(100vh - 280px); /* libère de la place pour les boutons */
+      width: min(100svw, 900px);
+      height: calc(100svh - 240px);
+      max-height: none;
     }
+    @supports (height: 100dvh) {
+      body.touch #stage{ height: calc(100dvh - 240px); }
+    }
+
     body.touch #board{
-      position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
-      display:grid;grid-template-columns:repeat(2, minmax(92px, 40vw));
-      gap:10px;width:min(92vw,520px)
+      position:absolute;left:50%;
+      bottom: max(8px, env(safe-area-inset-bottom));
+      transform:translateX(-50%);
+      display:flex;gap:10px;padding:0 8px;
+      width:auto;
     }
     body.touch .pad{
-      width:100%;height:clamp(64px,13vh,110px);
-      font-size:clamp(16px,3.8vh,22px)
+      width: clamp(86px, 22vw, 130px);
+      height: clamp(58px, 11vh, 92px);
+      font-size: clamp(14px, 3.4vh, 18px);
+      border-radius: 12px;
     }
-    #onom{top:4%}
+
+    #menu .panel{
+      width:min(92vw,680px);padding:18px 16px;backdrop-filter:blur(2px);
+    }
+    .title-main{ font-size: clamp(28px, 6.2vh, 36px); }
+    .title-sub { font-size: clamp(20px, 4.6vh, 28px); }
+    .subtitle  { font-size: clamp(14px, 2.8vh, 18px); margin-bottom:14px; }
+    .actions   { gap: 12px; }
+    .btn{ font-size: clamp(14px, 2.8vh, 18px); padding:12px 18px; }
+    #onom{ top:4%; font-size: clamp(34px, 7.2vh, 60px); }
+
     header, footer{
       padding-left:max(12px, env(safe-area-inset-left));
       padding-right:max(12px, env(safe-area-inset-right));
     }
+
+    footer{ display:none; }
   }
 </style>
 </head>
@@ -171,7 +196,7 @@
 </div>
 
 <script>
-/* Détection tactile pour limiter l’adaptation aux mobiles/tablettes */
+/* Détection tactile pour activer le layout mobile */
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 if(isTouch) document.body.classList.add('touch');
 
@@ -202,7 +227,7 @@ let muted=false;
 muteBtn.onclick=()=>{
   muted=!muted;
   muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
-  if(muted) SFX.music.pause(); else SFX.music.play();
+  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
 const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
@@ -220,35 +245,34 @@ const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 
-let W=0,H=0,DPR=1;
+let DPR=1, W=0, H=0;
 let parallaxX=0;
-let raiseY=0; // décalage vertical important en mobile portrait
+let raiseY=0; // décalage vertical en mobile portrait
 
-const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';   // montagnes
-const bgNear=new Image(); bgNear.src='https://i.imgur.com/heR2x5A.png';  // on réutilise, décalé
-const alleyImg=new Image(); alleyImg.src='https://i.imgur.com/ukcEfib.png'; // allée largeur page
-const dummyImg=new Image(); dummyImg.src='https://i.imgur.com/DprtxP7.png'; // mannequin
-const heroImg =new Image(); heroImg.src ='URL_DE_TON_PERSONNAGE_TRANSPARENT'; // à remplacer
-
-function resizeCanvas(){
-  const rect = cx.parentElement.getBoundingClientRect();
-  DPR = Math.max(1, Math.min(3, window.devicePixelRatio||1));
-  W = Math.floor(rect.width*DPR);
-  H = Math.floor(rect.height*DPR);
-  cx.width=W; cx.height=H;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.scale(DPR,DPR);
-  updateRaiseY();
-}
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,150));
+const bgFar=new Image();  bgFar.src='https://i.imgur.com/heR2x5A.png';
+const bgNear=new Image(); bgNear.src='https://i.imgur.com/D772Q4m.png';
+const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
 
 function updateRaiseY(){
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  raiseY = (document.body.classList.contains('touch') && isPortrait) ? 140 : 0;
-  // 140px = “beaucoup”. Monte à 180/200 si tu veux encore plus haut.
+  raiseY = (document.body.classList.contains('touch') && isPortrait) ? 180 : 0;
 }
+function resizeCanvas(){
+  const rect = cx.parentElement.getBoundingClientRect();
+  DPR = Math.min(3, window.devicePixelRatio||1);
+  cx.width  = Math.max(320, Math.floor(rect.width  * DPR));
+  cx.height = Math.max(240, Math.floor(rect.height * DPR));
+  cx.style.width  = rect.width + 'px';
+  cx.style.height = rect.height + 'px';
+  W = cx.width; H = cx.height;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(DPR, DPR);
+  updateRaiseY();
+}
+window.addEventListener('resize', resizeCanvas, {passive:true});
+window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,150), {passive:true});
 
+/* Parallaxe */
 function drawBG(){
   const CW = W/DPR, CH = H/DPR;
   parallaxX = (parallaxX - 0.3 + CW) % CW;
@@ -262,82 +286,68 @@ function drawBG(){
     ctx.drawImage(bgNear, nx - CW, -raiseY, CW, CH);
     ctx.drawImage(bgNear, nx,      -raiseY, CW, CH);
   }
-
-  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0, -raiseY, CW, CH);
-
-  // Allée fixe en bas (premier plan, mais on la remonte visuellement pour cohérence mobile)
-  if(alleyImg.complete){
-    const targetW = CW;
-    const ratio   = alleyImg.height / alleyImg.width;
-    const targetH = targetW * ratio;
-    ctx.drawImage(alleyImg, 0, CH - targetH - raiseY, targetW, targetH);
-  }
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(0, -raiseY, CW, CH);
 }
 
+/* Mannequin simple */
 function drawDummy(){
-  if(!dummyImg.complete) return;
   const CW=W/DPR, CH=H/DPR;
-  const dw = Math.max(120, CW*0.22);
-  const dh = dw * (dummyImg.height/dummyImg.width);
-  const x  = CW*0.66;
-  const y  = CH - dh - 8 - raiseY;
-  ctx.drawImage(dummyImg, x, y, dw, dh);
+  const x=CW*0.66, y=CH-100-raiseY;
+  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
+  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74,38,6);
+  ctx.fillRect(x-8,y-46,34,6);
+  ctx.fillRect(x-6,y-12,12,28);
 }
 
+/* Perso + Pak Sao image pendant l'action */
+const fighter={x:0,y:0,pose:'idle'};
 function drawFighter(){
-  if(!heroImg.complete){
-    // Placeholder clean si l'image n'est pas encore chargée
-    const CW=W/DPR, CH=H/DPR;
-    ctx.fillStyle='#1b1d20'; ctx.fillRect(CW*0.38, CH-140-raiseY, 56, 68);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(CW*0.38+18, CH-160-raiseY, 24, 24);
-    return;
-  }
   const CW=W/DPR, CH=H/DPR;
-  const dw = Math.max(110, CW*0.24);
-  const dh = dw * (heroImg.height/heroImg.width);
-  const x  = CW*0.38;
-  const y  = CH - dh - 8 - raiseY;
-  ctx.drawImage(heroImg, x, y, dw, dh);
+  const x=CW*0.42, y=CH-64-raiseY;
+  fighter.x=x; fighter.y=y;
+
+  // Base très simple si pas d'image spécifique
+  ctx.fillStyle='#1b1d20'; ctx.fillRect(x-40,y-112,56,68);
+  ctx.fillStyle='#c7a880'; ctx.fillRect(x-20,y-132,24,24);
+
+  if(fighter.pose==='pak' && pakImg.complete){
+    ctx.drawImage(pakImg, x-60, y-120, 120, 120);
+  }
 }
 
-/* Effets UI */
+/* Onomatopée */
 function shout(txt){
-  const onom=document.getElementById('onom');
   onom.textContent=txt;
   onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
 }
+function doPose(name){ fighter.pose=name; setTimeout(()=>{fighter.pose='idle';}, 280); }
 
-/* Simon logic */
-function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
+/* ======== LOGIQUE SIMON ======== */
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
-
+function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
 function setLit(tech,on){
   const btn=pads.find(b=>b.dataset.tech===tech);
   btn.classList.toggle('lit',on);
   btn.classList.toggle(TECH_TO_COLOR[tech],on);
 }
-
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
+    setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
   }
   locked=false; userIndex=0;
 }
-
 async function press(tech){
   if(locked) return;
-  setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
+  setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
   await sleep(200);
   setLit(tech,false);
 
   if(tech!==seq[userIndex]){
-    play(SFX.wrong);
-    const flash=document.getElementById('flash');
-    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
@@ -351,7 +361,7 @@ async function press(tech){
 /* Entrées */
 pads.forEach(b=>{
   b.addEventListener('click',()=>press(b.dataset.tech));
-  b.addEventListener('touchstart',(e)=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
+  b.addEventListener('touchstart',e=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
 });
 window.addEventListener('keydown',e=>{
   if(e.key==='1') press('pak');
@@ -363,7 +373,7 @@ window.addEventListener('keydown',e=>{
 /* Démarrage */
 function startGame(){
   menu.style.display='none';
-  if(!muted) SFX.music.play();
+  if(!muted) SFX.music.play().catch(()=>{});
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
 startBtn.addEventListener('click',startGame);
