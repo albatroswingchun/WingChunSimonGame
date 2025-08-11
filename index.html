@@ -232,7 +232,7 @@ function drawBG(dt){
   // Montagnes: tuilées en taille native, défilement léger
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  150);
+  tileNative(MT_FAR,  offFar,  170);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
   tileNative(MT_NEAR, offNear, 0);
 
