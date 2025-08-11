@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
@@ -30,9 +31,9 @@
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
 
   /* Menu */
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:url('https://i.imgur.com/bLV8zWf.png') center/cover no-repeat;z-index:10}
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index
   .panel{background:rgba(0,0,0,.6);border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center}
-  .title-main{font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
+   .title-main{font-family:'Permanent Marker',cursive;font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
   .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px}
   .subtitle{font-size:18px;color:#fff;margin-bottom:20px}
   .actions{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
@@ -145,8 +146,6 @@ bestEl.textContent=best; bestMenuEl.textContent=best;
 const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';
 const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/D2n1796.png';
 const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';
-const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';
-
 /* Perso + mannequin + onomatopées (déjà fournis précédemment) */
 const IM = {
   fighter: {
@@ -187,22 +186,22 @@ const BASE_W=1536, BASE_H=1160;
 
 /* Parallaxe: vitesses relatives (px/frame @60fps) */
 const PAR = document.body.classList.contains('touch')
-  ? { sky:0.08, far:0.18, near:0.36 }
-  : { sky:0.10, far:0.22, near:0.45 };
+  ? { sky:0, far:0.18, near:0.36 }
+  : { sky:0, far:0.22, near:0.45 };
 
-let offSky=0, offFar=0, offNear=0, offAlley=0;
+let offSky=0, offFar=0, offNear=0;
 
 /* Placement et tailles: calés sur ta réf (ratios), ajustables vite fait */
 const CFG = document.body.classList.contains('touch')
   ? {
       fighter: { w: 0.19, x: 0.33, bottom: 0.06 },
-      dummy:   { w: 0.17, x: 0.50, bottom: 0.06 },
-      alleyH:  0.24       // hauteur de l'allée vs écran
+      dummy:   { w: 0.17, x: 0.50, bottom: 0.06 }
+    
+    // hauteur de l'allée vs écran
     }
   : {
       fighter: { w: 0.20, x: 0.35, bottom: 0.06 },
-      dummy:   { w: 0.18, x: 0.52, bottom: 0.06 },
-      alleyH:  0.24
+      dummy:   { w: 0.18, x: 0.52, bottom: 0.06 }
     };
 
 function updateRaiseY(){
@@ -239,7 +238,6 @@ function tile(img, offset, y, targetH){
 function drawBG(dt){
   const CW=W/DPR, CH=H/DPR;
   // avance offsets
-  offSky  -= PAR.sky   * dt;
   offFar  -= PAR.far   * dt;
   offNear -= PAR.near  * dt;
 
@@ -248,11 +246,6 @@ function drawBG(dt){
   tile(MT_FAR, offFar,  -raiseY, CH);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,-raiseY,CW,CH); // léger voile
   tile(MT_NEAR,offNear, -raiseY, CH);
-
-  // allée fixe
-  const alleyH = Math.max(0.18, CFG.alleyH) * CH;
-  const y = CH - alleyH - raiseY;
-  tile(ALLEY, 0, y, alleyH);
 }
 
 /* Sprites actifs */
