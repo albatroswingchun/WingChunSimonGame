@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon Game</title>
 
+<!-- Police pour le titre -->
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
@@ -12,13 +13,13 @@
     --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8;
     --red:#d34b43; --blue:#3d74d6; --green:#4cb36c; --gold:#d1a341;
 
-    /* Fix 100vh mobile: --vh est set en JS = innerHeight*0.01 */
+    /* Fix 100vh mobile: --vh est set en JS (innerHeight*0.01) */
     --vh: 1vh;
 
-    /* Hauteur cible des contrôles en portrait (sera ajustée dynamiquement) */
+    /* Hauteur estimée des contrôles portrait, recalée en JS */
     --controls-height: 220px;
 
-    /* Décalage de la scène pour qu’on voie TOUT au-dessus des boutons */
+    /* Remontée du foreground pour ne pas cacher sous les boutons */
     --raiseY: 160px;
   }
 
@@ -37,7 +38,8 @@
     background:linear-gradient(180deg,var(--panel),var(--panel2));
     border-bottom:1px solid #2a2322;
   }
-  header .score{font-size:14px} header .best{opacity:.8}
+  header .score{font-size:14px}
+  header .best{opacity:.8}
 
   footer{
     padding:6px 12px; font-size:12px; opacity:.6; text-align:center;
@@ -58,7 +60,7 @@
   /* Boutons PC: en ligne */
   #board{
     position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
-    display:flex; gap:14px; z-index:20;
+    display:flex; gap:14px; z-index:30;
   }
   .pad{
     width:132px; height:100px; border-radius:14px;
@@ -98,13 +100,13 @@
   /* Onomatopées + flash */
   #onom{position:absolute; left:50%; top:12%; transform:translate(-50%,0) scale(.6);
     font-size:72px; font-weight:900; color:#ffe9a8; text-shadow:0 4px 0 #000, 0 0 22px #ffec9a;
-    opacity:0; pointer-events:none; z-index:7;}
+    opacity:0; pointer-events:none; z-index:25;}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}28%{opacity:1;transform:translate(-50%,0) scale(1.07)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
-  #flash{position:absolute; inset:0; background:#ff000022; opacity:0; pointer-events:none; z-index:8}
+  #flash{position:absolute; inset:0; background:#ff000022; opacity:0; pointer-events:none; z-index:26}
   .boom{animation:boom .4s ease} @keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* ===== Mobile portrait: PLEIN ÉCRAN + boutons 2x2 visibles ===== */
+  /* ===== Mobile portrait: plein écran fiable + boutons 2x2 ===== */
   @media (max-width:768px) and (orientation:portrait){
     body.touch #stage{
       position:fixed; left:0; top:0; transform:none;
@@ -117,7 +119,7 @@
       transform:translateX(-50%);
       display:grid; grid-template-columns:repeat(2, minmax(110px, 44vw));
       gap:12px; width:min(94vw,560px);
-      z-index:30;
+      z-index:40;
     }
     body.touch .pad{
       width:100%;
@@ -168,11 +170,12 @@
     </div>
   </div>
 
-  <footer>PC inchangé. Mobile portrait plein écran fiable. Parallaxe fond, premier plan fixe.</footer>
+  <footer>PC inchangé. Mobile portrait plein écran, parallaxe fond, premier plan fixe remonté.</footer>
 </div>
 
 <script>
-/* 1) Fix 100vh mobile: calcule --vh à chaque resize/orientation */
+/* ---------- Helpers d’environnement ---------- */
+/* Fix 100vh mobile: calcule --vh */
 function setVhVar(){
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -181,11 +184,11 @@ window.addEventListener('resize', setVhVar);
 window.addEventListener('orientationchange', ()=>setTimeout(setVhVar, 150));
 setVhVar();
 
-/* 2) Limiter l’adaptation aux appareils tactiles */
+/* Limite l’adaptation aux tactiles */
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 if(isTouch) document.body.classList.add('touch');
 
-/* ======== SONS ======== */
+/* ---------- Audio ---------- */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
   tan:   new Audio('assets/sounds/tan.wav'),
@@ -197,7 +200,7 @@ const SFX = {
 SFX.music.loop = true; SFX.music.volume = 0.5;
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
-/* ======== ÉTAT ======== */
+/* ---------- DOM ---------- */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
@@ -208,41 +211,38 @@ const muteBtn=document.getElementById('muteBtn');
 const onom=document.getElementById('onom');
 const flash=document.getElementById('flash');
 
+/* ---------- État jeu ---------- */
 let muted=false;
-muteBtn.onclick=()=>{
-  muted=!muted;
-  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
-  if(muted) SFX.music.pause(); else SFX.music.play();
-};
-const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
-
 let seq=[], userIndex=0, locked=true, score=0;
 let best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best; bestMenuEl.textContent=best;
 
-/* ======== CANVAS + IMAGES ======== */
+const TECHS=['pak','tan','bon','punch'];
+const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
+const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
+const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
+
+/* ---------- Canvas + images ---------- */
 const cx=document.getElementById('cx');
-const ctx=cx.getContext('2d', {alpha:true});
+const ctx=cx.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 
 let W=0,H=0,DPR=1;
 let parallaxX=0;
 
-/* arrière-plan en parallaxe (pas de déformation: on “couvre” via tuilage) */
 const bgFar  = new Image(); bgFar.src  = 'https://i.imgur.com/heR2x5A.png';
-const bgNear = new Image(); bgNear.src = 'https://i.imgur.com/heR2x5A.png';
+const bgNear = new Image(); bgNear.src = 'https://i.imgur.com/heR2x5A.png'; // réutilisée pour 2e couche
 
-/* premier plan fixe */
 const alleyImg = new Image(); alleyImg.src = 'https://i.imgur.com/ukcEfib.png';
 const dummyImg = new Image(); dummyImg.src = 'https://i.imgur.com/DprtxP7.png';
-const heroImg  = new Image(); heroImg.src  = 'URL_DE_TON_PERSONNAGE_TRANSPARENT'; // remplace
+const heroImg  = new Image(); heroImg.src  = 'URL_DE_TON_PERSONNAGE_TRANSPARENT'; // remplace par ton PNG
 
-/* Mesure la hauteur réelle des boutons pour ne jamais les recouvrir */
+/* Hauteur réelle des contrôles pour caler le FG au-dessus */
 let controlsH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--controls-height'))||220;
 function measureControls(){
   const board = document.getElementById('board');
   const rect = board.getBoundingClientRect();
-  if(rect.height) controlsH = Math.max(180, Math.min(320, Math.ceil(rect.height)));
+  if(rect.height) controlsH = Math.max(180, Math.min(360, Math.ceil(rect.height)));
 }
 
 /* Resize pixel-perfect */
@@ -254,57 +254,52 @@ function resizeCanvas(){
   cx.width = W; cx.height = H;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.scale(DPR, DPR);
-
   measureControls();
 }
-window.addEventListener('resize', ()=>{ resizeCanvas(); });
+window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', ()=>setTimeout(()=>{ setVhVar(); resizeCanvas(); },150));
 
-/* Y de base: remonte foreground pour dégager les boutons */
+/* Remontée du FG au-dessus des boutons */
 function currentRaiseY(){
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
   if(document.body.classList.contains('touch') && isPortrait){
-    // on prend le max entre la variable CSS et ~2/3 des contrôles
     const cssRaise = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--raiseY')) || 160;
     return Math.max(cssRaise, Math.round(controlsH * 0.66));
   }
   return 0;
 }
 
-/* Helpers: dessine une image en couvrant l’écran horizontalement sans déformation */
+/* Tuilage horizontal pour couvrir sans étirer */
 function drawCoverX(img, y, w, h, shift){
   if(!img.complete) return;
-  const CW = w, CH = h;
-  const x = shift % CW;
-  ctx.drawImage(img, x - CW, y, CW, CH);
-  ctx.drawImage(img, x,      y, CW, CH);
+  const CW = w;
+  const x = ((shift % CW)+CW)%CW; // modulo positif
+  ctx.drawImage(img, x - CW, y, CW, h);
+  ctx.drawImage(img, x,      y, CW, h);
 }
 
-/* BG parallaxe sans étirer verticalement de travers */
+/* Parallaxe fond (2 couches) */
 function drawBG(){
   const CW = W/DPR, CH = H/DPR;
   parallaxX = (parallaxX - 0.3 + CW) % CW;
   drawCoverX(bgFar,  0, CW, CH, parallaxX);
   drawCoverX(bgNear, 0, CW, CH, parallaxX*1.5);
-  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.fillStyle='rgba(0,0,0,.22)';
   ctx.fillRect(0, 0, CW, CH);
 }
 
-/* Foreground: allée + dummy + héros, posés au-dessus des boutons */
+/* Foreground: allée + mannequin + perso */
 function drawForeground(){
   const CW = W/DPR, CH = H/DPR;
   const raise = currentRaiseY();
 
-  // Allée largeur écran, posée en bas de la zone visible remontée
   if(alleyImg.complete){
-    const targetW = CW;
     const ratio = alleyImg.height / alleyImg.width;
+    const targetW = CW;
     const targetH = targetW * ratio;
-    const y = CH - targetH - raise;
-    ctx.drawImage(alleyImg, 0, y, targetW, targetH);
+    ctx.drawImage(alleyImg, 0, CH - targetH - raise, targetW, targetH);
   }
 
-  // Mannequin
   if(dummyImg.complete){
     const dw = Math.max(120, CW*0.22);
     const dh = dw * (dummyImg.height/dummyImg.width);
@@ -313,7 +308,6 @@ function drawForeground(){
     ctx.drawImage(dummyImg, x, y, dw, dh);
   }
 
-  // Perso
   if(heroImg.complete){
     const dw = Math.max(110, CW*0.24);
     const dh = dw * (heroImg.height/heroImg.width);
@@ -328,20 +322,18 @@ function drawForeground(){
   }
 }
 
-/* UI effets */
+/* UI feedback */
 function shout(txt){
   onom.textContent=txt;
   onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
 }
 
 /* Simon */
-const TECHS=['pak','tan','bon','punch'];
-const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
-const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function setLit(tech,on){
   const btn=pads.find(b=>b.dataset.tech===tech);
+  if(!btn) return;
   btn.classList.toggle('lit',on);
   btn.classList.toggle(TECH_TO_COLOR[tech],on);
 }
@@ -369,7 +361,7 @@ async function press(tech){
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){best=score; bestEl.textContent=best; bestMenuEl.textContent=best; localStorage.setItem('wcs_best',best);}
+    if(score>best){ best=score; bestEl.textContent=best; bestMenuEl.textContent=best; localStorage.setItem('wcs_best',best); }
     seq.push(TECHS[Math.random()*TECHS.length|0]); await sleep(420); playSequence();
   }
 }
@@ -387,16 +379,17 @@ window.addEventListener('keydown',e=>{
 });
 
 /* Démarrage */
-let best=+localStorage.getItem('wcs_best')||0;
-let score=0; let userIndex=0; let locked=true;
-const startBtn=document.getElementById('startBtn');
-const muteBtn=document.getElementById('muteBtn');
 startBtn.addEventListener('click', startGame);
+muteBtn.addEventListener('click', ()=>{
+  muted=!muted; muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
+  if(muted) SFX.music.pause(); else SFX.music.play();
+});
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play();
   seq=[TECHS[Math.random()*TECHS.length|0]];
-  score=0; scoreEl.textContent=0; playSequence();
+  score=0; scoreEl.textContent=0; userIndex=0; locked=true;
+  playSequence();
 }
 
 /* Boucle */
