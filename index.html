@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon – 1536×1160</title>
 
-<!-- Ajout police Permanent Marker -->
+<!-- Police Permanent Marker pour le titre -->
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
@@ -19,9 +19,9 @@
 
   header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
   header .left, header .right{display:flex;align-items:center;gap:8px}
-  .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
-  .btn:hover{filter:brightness(1.08)}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
+  .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
+  .btn:hover{filter:brightness(1.08)}
   footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
 
   /* Zone d’affichage FIXE 1536×1160 centrée */
@@ -42,25 +42,14 @@
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* Overlay édition (inchangé) */
-  #editBar{display:none;gap:10px;align-items:center}
-  #editBar .range{display:flex;align-items:center;gap:6px}
-  #editBar input[type=range]{width:160px}
-  #markers{position:absolute;inset:0;pointer-events:none}
-  .mk{position:absolute;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#ec4;box-shadow:0 0 0 2px #0008;transform:translate(-50%,-50%);display:none;place-items:center;font-size:12px;color:#000;font-weight:900}
-  .mk.sel{background:#4cf}
-  .grid{position:absolute;inset:0;background-image:linear-gradient(#fff2 1px,transparent 1px),linear-gradient(90deg,#fff2 1px,transparent 1px);background-size:40px 40px;display:none}
-  .help{display:none;margin-left:8px;opacity:.8}
-
   /* Menu */
   #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
-  .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:20px 18px;text-align:center;border:1px solid #2f2724}
-  .panel h1{margin:0 0 6px 0;color:#d1a341}
-  .panel .actions{display:flex;gap:10px;justify-content:center}
-  .panel .btn{padding:10px 16px}
+  .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
+  .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
+  .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
+  .subtitle{opacity:.95;margin:0 0 16px}
+  .actions{display:flex;gap:12px;justify-content:center}
 
-  /* Classe Permanent Marker */
-  .pm { font-family: 'Permanent Marker', cursive; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -72,15 +61,7 @@
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
     <div class="right">
-      <div id="editBar">
-        <button id="saveBtn" class="btn">Sauver</button>
-        <button id="resetBtn" class="btn">Reset</button>
-        <div class="range">Taille perso <input id="scaleF" type="range" min="0.08" max="0.22" step="0.002"></div>
-        <div class="range">Taille mannequin <input id="scaleD" type="range" min="0.08" max="0.22" step="0.002"></div>
-        <span class="help">Glisse les marqueurs pour placer. Les sliders redimensionnent.</span>
-      </div>
-      <button id="editBtn" class="btn">Édition</button>
-      <button id="muteBtn" class="btn">🔊 Son</button>
+      <!-- plus de bouton/onglet d’édition -->
     </div>
   </header>
 
@@ -100,23 +81,20 @@
 
       <div id="menu">
         <div class="panel">
-          <h1><span class="pm">Wing Chun</span><br><small>Simon Game</small></h1>
-          <p>Reproduis les techniques dans le bon ordre !</p>
+          <h1 class="title-main">Wing Chun</h1>
+          <div class="title-sub">Simon Game</div>
+          <p class="subtitle">Reproduis les techniques dans le bon ordre !</p>
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
+            <button id="muteBtn"  class="btn">🔊 Son</button>
           </div>
+          <div class="hi" style="opacity:.8;margin-top:8px">Meilleur: <span id="bestMenu">0</span></div>
         </div>
-      </div>
-
-      <div id="markers">
-        <div id="mkF" class="mk" title="Perso">F</div>
-        <div id="mkD" class="mk" title="Mannequin">M</div>
-        <div id="grid" class="grid"></div>
       </div>
     </div>
   </div>
 
-  <footer>Zone fixe 1536×1160. Ciel 1:1. Perso/Mannequin réduits. Le reste inchangé.</footer>
+  <footer>Scène fixe 1536×1160. Ciel 1:1. Deux mannequins (dummy & dummy2). Titre Permanent Marker.</footer>
 </div>
 
 <script>
@@ -124,20 +102,12 @@
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
+const bestMenuEl=document.getElementById('bestMenu');
 const menu=document.getElementById('menu');
 const startBtn=document.getElementById('startBtn');
 const muteBtn=document.getElementById('muteBtn');
-const editBtn=document.getElementById('editBtn');
-const editBar=document.getElementById('editBar');
-const saveBtn=document.getElementById('saveBtn');
-const resetBtn=document.getElementById('resetBtn');
-const scaleF=document.getElementById('scaleF');
-const scaleD=document.getElementById('scaleD');
 const onoImg=document.getElementById('onoImg');
 const flash=document.getElementById('flash');
-const mkF=document.getElementById('mkF');
-const mkD=document.getElementById('mkD');
-const grid=document.getElementById('grid');
 
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 
@@ -155,13 +125,14 @@ Object.values(SFX).forEach(a=>a.preload='auto');
 let muted=false; muteBtn.onclick=()=>{muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});};
 const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
-/* ====== images (liens directs) ====== */
-/* CIEL FIXE, AUCUN ZOOM: on dessine 1:1 exactement 1536×1160 */
+/* ====== images BG ====== */
+/* CIEL FIXE 1:1 */
 const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';   // 1536×1160 exact
-const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // mêmes dims
-const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // mêmes dims
-const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // sol (peut être différent, on tuilera)
+const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // montagnes loin
+const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // montagnes proches
+const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // allée
 
+/* ====== sprites ====== */
 const IM = {
   fighter: {
     bon:   'https://i.imgur.com/CG30Yh6.png',
@@ -175,6 +146,10 @@ const IM = {
     tanDuring: 'https://i.imgur.com/3abOAT3.png',
     tanAfter:  'https://i.imgur.com/fHGNzYR.png'
   },
+  /* mannequin2: pour l’instant un état neutre (ton lien). Donne-moi d’autres poses si tu veux l’animer. */
+  dummy2: {
+    neutral: 'https://i.imgur.com/fHGNzYR.png'
+  },
   ono: {
     pak:   'https://i.imgur.com/Y4EEnZg.png',
     tan:   'https://i.imgur.com/ELUj44i.png',
@@ -187,26 +162,23 @@ const IMG={};
 for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
 for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
 for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
+for(const k in IM.dummy2)  IMG['d2_'+k]=load(IM.dummy2[k]);
 
 /* ====== canvas ====== */
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160; // FIXE
 
-/* ====== config placement (réduction ~70%) ====== */
-/* Avant on était autour de 0.20 et 0.18. On passe à 0.14 et 0.126. */
+/* ====== config placement ====== */
 const DEFAULT_CFG = {
-  fighter: { w: 0.14, x: 0.35, bottom: 0.06 },
+  fighter: { w: 0.14,  x: 0.35, bottom: 0.06 },
   dummy:   { w: 0.126, x: 0.40, bottom: 0.06 },
-  alleyH:  0.24,
-  parallax:{ sky:0, far:0.20, near:0.42 } // ciel fixe
+  dummy2:  { w: 0.120, x: 0.62, bottom: 0.06 },  // ← nouveau: taille/position indépendantes
+  parallax:{ sky:0, far:0.20, near:0.42 }
 };
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
-/* sliders init selon nouvelles bornes */
-scaleF.value = CFG.fighter.w;
-scaleD.value = CFG.dummy.w;
 
-/* ====== tuilage NATIVE-SIZE (pas d’échelle) ====== */
+/* ====== tuilage native ====== */
 function tileNative(img, offsetX, y){
   if(!img.complete || !img.naturalWidth) return;
   const iw = img.naturalWidth; // attendu 1536
@@ -214,38 +186,29 @@ function tileNative(img, offsetX, y){
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
-  function drawImageScaled(img, offsetX, y, scale=1) {
-  if (!img.complete || !img.naturalWidth) return;
-  const iw = img.naturalWidth * scale;
-  const ih = img.naturalHeight * scale;
-  let x = offsetX % iw;
-  if (x > 0) x -= iw;
-  for (; x < W; x += iw) ctx.drawImage(img, x, y, iw, ih);
-}
-
 /* ====== rendu BG + sprites ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  // Ciel 1:1 FIXE
-  if (SKY.complete) ctx.drawImage(SKY, 0, 0);
-
-  // Montagnes: tuilées en taille native, défilement léger
+  if (SKY.complete) ctx.drawImage(SKY, 0, 0);         // ciel 1:1
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
+  tileNative(MT_FAR,  offFar,  185);                  // tu peux ajuster le Y ici
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
 
-  // Allée: collée en bas, à sa hauteur native, tuilée si besoin
+  // allée en bas à sa hauteur native
   if (ALLEY.complete && ALLEY.naturalWidth){
     const y = H - ALLEY.naturalHeight;
     tileNative(ALLEY, 0, y);
   }
 }
 
+/* états courants */
 let currentFighter = IMG['f_pak'];
 let currentDummy   = IMG['d_pakAfter'];
+let currentDummy2  = IMG['d2_neutral']; // mannequin2 statique pour l’instant
 
+/* dessin mannequins & fighter */
 function drawDummy(){
   const img=currentDummy; if(!img || !img.complete) return;
   const targetW = Math.max(90, CFG.dummy.w*W);
@@ -253,6 +216,15 @@ function drawDummy(){
   const targetH = img.naturalHeight * s;
   const x = W*CFG.dummy.x;
   const y = H - targetH - H*CFG.dummy.bottom;
+  ctx.drawImage(img, x, y, targetW, targetH);
+}
+function drawDummy2(){
+  const img=currentDummy2; if(!img || !img.complete) return;
+  const targetW = Math.max(90, CFG.dummy2.w*W);
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const x = W*CFG.dummy2.x;
+  const y = H - targetH - H*CFG.dummy2.bottom;
   ctx.drawImage(img, x, y, targetW, targetH);
 }
 function drawFighter(){
@@ -275,17 +247,22 @@ function showOno(tech){
 
 /* ====== Simon ====== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
-bestEl.textContent=best;
+bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); b.classList.toggle('lit',on); b.classList.toggle(TECH_TO_COLOR[tech],on); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
+
 function setSpritesFor(tech){
   currentFighter = IMG['f_'+tech] || currentFighter;
+  // mannequin principal réagit comme avant
   if(tech==='pak'||tech==='bon'){ currentDummy=IMG['d_pakDuring']; setTimeout(()=>currentDummy=IMG['d_pakAfter'],260); }
   else { currentDummy=IMG['d_tanDuring']; setTimeout(()=>currentDummy=IMG['d_tanAfter'],260); }
+  // mannequin2 pour l’instant ne change pas d’état (neutral)
+  // Si tu me files ses poses, on calquera la même logique ici pour currentDummy2.
 }
+
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
@@ -305,7 +282,7 @@ async function press(tech){
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('wcs_best',best);}
+    if(score>best){best=score;bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best; localStorage.setItem('wcs_best',best);}
     seq.push(randTech()); await sleep(420); playSequence();
   }
 }
@@ -318,67 +295,19 @@ function startGame(){
 }
 startBtn.addEventListener('click',startGame);
 
-/* ====== mode ÉDITION (inchangé) ====== */
-let editing=false, sel=null;
-function setEditing(on){
-  editing=on;
-  editBar.style.display = on?'flex':'none';
-  mkF.style.display = mkD.style.display = on?'grid':'none';
-  grid.style.display = on?'block':'none';
-  editBtn.textContent = on?'Quitter édition':'Édition';
-}
-function syncMarkers(){
-  mkF.style.left = (CFG.fighter.x*100)+'%';
-  mkD.style.left = (CFG.dummy.x*100)+'%';
-  mkF.style.top = (100 - (CFG.fighter.bottom*100))+'%';
-  mkD.style.top = (100 - (CFG.dummy.bottom*100))+'%';
-}
-function applyScales(){ CFG.fighter.w=+scaleF.value; CFG.dummy.w=+scaleD.value; }
-scaleF.oninput=applyScales; scaleD.oninput=applyScales;
-
-function markerDrag(mk, onMove){
-  let dragging=false;
-  mk.addEventListener('pointerdown', e=>{ dragging=true; sel=mk; mk.classList.add('sel'); mk.setPointerCapture(e.pointerId); });
-  mk.addEventListener('pointermove', e=>{
-    if(!dragging) return;
-    const rect = cx.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    onMove(x,y); syncMarkers();
-  });
-  mk.addEventListener('pointerup', e=>{ dragging=false; mk.classList.remove('sel'); mk.releasePointerCapture(e.pointerId); });
-}
-markerDrag(mkF, (x,y)=>{
-  CFG.fighter.x = Math.min(0.9, Math.max(0.0, x));
-  CFG.fighter.bottom = Math.min(0.30, Math.max(0.02, 1 - y));
-});
-markerDrag(mkD, (x,y)=>{
-  CFG.dummy.x = Math.min(0.9, Math.max(0.0, x));
-  CFG.dummy.bottom = Math.min(0.30, Math.max(0.02, 1 - y));
-});
-
-editBtn.onclick = ()=> setEditing(!editing);
-saveBtn.onclick = ()=>{
-  localStorage.setItem('wcs_layout', JSON.stringify(CFG));
-  console.log('CFG sauvegardé:', CFG);
-};
-resetBtn.onclick = ()=>{
-  CFG = JSON.parse(JSON.stringify(DEFAULT_CFG));
-  scaleF.value=CFG.fighter.w; scaleD.value=CFG.dummy.w;
-  syncMarkers();
-};
-
 /* ====== boucle ====== */
 let last=performance.now();
 function loop(t=performance.now()){
   const dt = Math.min(33, t-last) / (1000/60); last=t;
   ctx.clearRect(0,0,W,H);
-  drawBG(dt); drawDummy(); drawFighter();
+  drawBG(dt);
+  drawDummy();   // mannequin 1
+  drawDummy2();  // mannequin 2 (nouveau)
+  drawFighter(); // perso au premier plan
   requestAnimationFrame(loop);
 }
 
 /* ====== init ====== */
-syncMarkers();
 requestAnimationFrame(loop);
 </script>
 </body>
