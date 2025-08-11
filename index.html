@@ -18,7 +18,7 @@
   #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
   
-  /* Boutons techniques en ligne */
+  /* Boutons techniques */
   #board{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
     color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;
@@ -87,7 +87,6 @@
 </div>
 
 <script>
-/* ======== SONS ======== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
   tan:   new Audio('assets/sounds/tan.wav'),
@@ -97,10 +96,8 @@ const SFX = {
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
 SFX.music.loop = true; SFX.music.volume = 0.5;
-
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
-/* ======== ETAT ======== */
 const pads = [...document.querySelectorAll('.pad')];
 const scoreEl = document.getElementById('score');
 const bestEl  = document.getElementById('best');
@@ -110,6 +107,7 @@ const startBtn = document.getElementById('startBtn');
 const muteBtn  = document.getElementById('muteBtn');
 const onom  = document.getElementById('onom');
 const flash = document.getElementById('flash');
+
 let muted=false; 
 muteBtn.onclick=()=>{
   muted=!muted; 
@@ -121,17 +119,19 @@ const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 let seq=[], userIndex=0, locked=true, score=0;
 let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
 
-/* ======== MAPPINGS ======== */
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ======== CANVAS ======== */
 const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=cx.width,H=cx.height;
 const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';
 const bgNear=new Image(); bgNear.src='https://i.imgur.com/D772Q4m.png';
-const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
+
+// Images fixes premier plan
+const alleyImg = new Image(); alleyImg.src = 'https://i.imgur.com/ukcEfib.png';
+const dummyImg = new Image(); dummyImg.src = 'https://i.imgur.com/DprtxP7.png';
+const heroImg  = new Image(); heroImg.src  = 'URL_DE_TON_PERSONNAGE_TRANSPARENT';
 
 let parallaxX=0;
 function drawBG(){
@@ -145,23 +145,29 @@ function drawBG(){
     ctx.drawImage(bgNear,parallaxX*1.5+W,0,W,H);
   }
   ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
+
+  // Allée fixe
+  if(alleyImg.complete){
+    ctx.drawImage(alleyImg, 0, H - alleyImg.height, W, alleyImg.height);
+  }
 }
 
 function drawDummy(){
-  const x=W*0.66,y=H-100;
-  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
-  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);
-  ctx.fillRect(x-8,y-46, 34,6);
-  ctx.fillRect(x-6,y-12, 12,28);
+  if(dummyImg.complete){
+    const scale = 0.3;
+    const dw = dummyImg.width * scale;
+    const dh = dummyImg.height * scale;
+    ctx.drawImage(dummyImg, W*0.65, H - dh - 10, dw, dh);
+  }
 }
 
-const fighter={x:W*0.42,y:H-64,pose:'idle'};
+const fighter={x:W*0.4,y:H-10,pose:'idle'};
 function drawFighter(){
-  if(fighter.pose==='pak' && pakImg.complete){
-    ctx.drawImage(pakImg,fighter.x-60,fighter.y-120,120,120);
-  } else {
-    ctx.fillStyle='#1b1d20'; ctx.fillRect(fighter.x-40,fighter.y-112,56,68);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(fighter.x-20,fighter.y-132,24,24);
+  if(heroImg.complete){
+    const scale = 0.3;
+    const dw = heroImg.width * scale;
+    const dh = heroImg.height * scale;
+    ctx.drawImage(heroImg, fighter.x, H - dh - 10, dw, dh);
   }
 }
 
