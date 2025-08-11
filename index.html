@@ -2,72 +2,133 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon Game</title>
 
-<!-- Police stylée -->
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
   :root{
-    --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
-    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
+    --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8;
+    --red:#d34b43; --blue:#3d74d6; --green:#4cb36c; --gold:#d1a341;
+
+    /* Fix 100vh mobile: --vh est set en JS = innerHeight*0.01 */
+    --vh: 1vh;
+
+    /* Hauteur cible des contrôles en portrait (sera ajustée dynamiquement) */
+    --controls-height: 220px;
+
+    /* Décalage de la scène pour qu’on voie TOUT au-dessus des boutons */
+    --raiseY: 160px;
   }
-  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-  header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322}
+
+  html,body{
+    margin:0; height:100%;
+    background:#0b0a0a; color:#eee;
+    font-family:system-ui,Segoe UI,Roboto,Arial;
+    overflow:hidden;
+  }
+
+  #app{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border-bottom:1px solid #2a2322;
+  }
   header .score{font-size:14px} header .best{opacity:.8}
-  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
-  #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
-  #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
-  canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
-  
-  /* Boutons techniques */
-  #board{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
-  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
-    color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;
-    box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s}
-  .pad:active{transform:translateY(2px)}
-  .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
-  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
-  
-  /* Menu */
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10}
-  .panel{background:rgba(0,0,0,0.6);border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center}
-  .title-main{
-    font-family: 'Permanent Marker', cursive;
-    font-size:72px;
-    color:#d1a341;
-    text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);
-    margin:0;
+
+  footer{
+    padding:6px 12px; font-size:12px; opacity:.6; text-align:center;
+    background:linear-gradient(180deg,var(--panel2),#120f0f);
   }
-  .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px 0}
-  .subtitle{font-size:18px;color:#fff;margin-bottom:20px}
-  .actions{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
-  .btn{background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
-       padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px}
+
+  #stageWrap{position:relative; overflow:hidden; background:#0f0e0e}
+  /* PC par défaut */
+  #stage{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(100vw,960px); height:min(56vw,540px); max-height:72vh;
+  }
+  canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    image-rendering:pixelated; image-rendering:crisp-edges; touch-action:none;
+  }
+
+  /* Boutons PC: en ligne */
+  #board{
+    position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
+    display:flex; gap:14px; z-index:20;
+  }
+  .pad{
+    width:132px; height:100px; border-radius:14px;
+    background:linear-gradient(#2a2a2a,#1e1e1e);
+    color:#cfcfcf; display:flex; align-items:center; justify-content:center; font-weight:700;
+    box-shadow:inset 0 0 0 2px #000, 0 6px 22px rgba(0,0,0,.45);
+    cursor:pointer; transition:transform .06s ease, filter .12s; -webkit-tap-highlight-color:transparent;
+  }
+  .pad:active{transform:translateY(2px)}
+  .lit{filter:brightness(1.7); box-shadow:inset 0 0 0 2px #fff3, 0 0 42px currentColor}
+  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
+
+  /* Menu */
+  #menu{
+    position:absolute; inset:0; display:grid; place-items:center;
+    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat; z-index:10;
+  }
+  .panel{
+    background:rgba(0,0,0,.6); border-radius:16px; padding:28px 24px;
+    width:min(760px,92vw); box-shadow:0 20px 80px rgba(0,0,0,.6); text-align:center;
+  }
+  .title-main{
+    font-family:'Permanent Marker', cursive;
+    font-size:72px; color:#d1a341;
+    text-shadow:0 2px 0 #000, 0 0 24px rgba(209,163,65,.35); margin:0;
+  }
+  .title-sub{font-size:32px; color:#e8d6b8; margin:5px 0 15px}
+  .subtitle{font-size:18px; color:#fff; margin-bottom:20px}
+  .actions{display:flex; gap:20px; justify-content:center; flex-wrap:wrap}
+  .btn{
+    background:linear-gradient(180deg,#2a221f,#1f1a18); border:1px solid #3a302d; color:#e9d9bc;
+    padding:14px 26px; border-radius:10px; font-weight:700; cursor:pointer; font-size:18px;
+  }
   .btn:hover{filter:brightness(1.08)}
-  .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
-  
-  /* Onomatopée + flash erreur */
-  #onom{position:absolute;left:50%;top:12%;transform:translate(-50%,0) scale(.6);font-size:72px;font-weight:900;color:#ffe9a8;text-shadow:0 4px 0 #000,0 0 22px #ffec9a;opacity:0;pointer-events:none;z-index:6}
+  .hi{font-size:14px; text-align:center; margin-top:10px; opacity:.85}
+
+  /* Onomatopées + flash */
+  #onom{position:absolute; left:50%; top:12%; transform:translate(-50%,0) scale(.6);
+    font-size:72px; font-weight:900; color:#ffe9a8; text-shadow:0 4px 0 #000, 0 0 22px #ffec9a;
+    opacity:0; pointer-events:none; z-index:7;}
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
   @keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}28%{opacity:1;transform:translate(-50%,0) scale(1.07)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
-  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
-  .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
+  #flash{position:absolute; inset:0; background:#ff000022; opacity:0; pointer-events:none; z-index:8}
+  .boom{animation:boom .4s ease} @keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* 📱 Adaptation mobile portrait */
-  @media (max-width: 768px) and (orientation: portrait) {
-    #stage{top:0;transform:translateX(-50%);height:100vh;max-height:none}
-    #board{
-      flex-wrap:wrap;
-      width:70%;
-      gap:10px;
-      bottom:20px;
-      display:grid;
-      grid-template-columns:1fr 1fr;
+  /* ===== Mobile portrait: PLEIN ÉCRAN + boutons 2x2 visibles ===== */
+  @media (max-width:768px) and (orientation:portrait){
+    body.touch #stage{
+      position:fixed; left:0; top:0; transform:none;
+      width:100vw; height:calc(var(--vh) * 100); /* plein écran fiable */
     }
-    .pad{width:100px;height:80px;font-size:14px}
+    body.touch #board{
+      position:fixed;
+      left:50%;
+      bottom:calc(env(safe-area-inset-bottom) + 10px);
+      transform:translateX(-50%);
+      display:grid; grid-template-columns:repeat(2, minmax(110px, 44vw));
+      gap:12px; width:min(94vw,560px);
+      z-index:30;
+    }
+    body.touch .pad{
+      width:100%;
+      height:clamp(70px, 14vh, 120px);
+      font-size:clamp(16px, 4vh, 22px);
+    }
+    body.touch #onom{ top:5% }
+    header, footer{
+      padding-left:max(12px, env(safe-area-inset-left));
+      padding-right:max(12px, env(safe-area-inset-right));
+    }
   }
 </style>
 </head>
@@ -80,7 +141,7 @@
 
   <div id="stageWrap">
     <div id="stage">
-      <canvas id="cx" width="768" height="432"></canvas>
+      <canvas id="cx"></canvas>
 
       <div id="board" aria-label="Boutons">
         <button class="pad" data-tech="pak">Pak Sao</button>
@@ -107,10 +168,23 @@
     </div>
   </div>
 
-  <footer>Canvas “64-bit style”. Sons WAV dans <code>assets/sounds/</code>.</footer>
+  <footer>PC inchangé. Mobile portrait plein écran fiable. Parallaxe fond, premier plan fixe.</footer>
 </div>
 
 <script>
+/* 1) Fix 100vh mobile: calcule --vh à chaque resize/orientation */
+function setVhVar(){
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+window.addEventListener('resize', setVhVar);
+window.addEventListener('orientationchange', ()=>setTimeout(setVhVar, 150));
+setVhVar();
+
+/* 2) Limiter l’adaptation aux appareils tactiles */
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+if(isTouch) document.body.classList.add('touch');
+
 /* ======== SONS ======== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
@@ -123,76 +197,148 @@ const SFX = {
 SFX.music.loop = true; SFX.music.volume = 0.5;
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
-/* ======== ETAT ======== */
-const pads = [...document.querySelectorAll('.pad')];
-const scoreEl = document.getElementById('score');
-const bestEl  = document.getElementById('best');
-const bestMenuEl  = document.getElementById('bestMenu');
-const menu   = document.getElementById('menu');
-const startBtn = document.getElementById('startBtn');
-const muteBtn  = document.getElementById('muteBtn');
-const onom  = document.getElementById('onom');
-const flash = document.getElementById('flash');
-let muted=false; 
+/* ======== ÉTAT ======== */
+const pads=[...document.querySelectorAll('.pad')];
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const bestMenuEl=document.getElementById('bestMenu');
+const menu=document.getElementById('menu');
+const startBtn=document.getElementById('startBtn');
+const muteBtn=document.getElementById('muteBtn');
+const onom=document.getElementById('onom');
+const flash=document.getElementById('flash');
+
+let muted=false;
 muteBtn.onclick=()=>{
-  muted=!muted; 
-  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son'; 
+  muted=!muted;
+  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play();
 };
-const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
+const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
 let seq=[], userIndex=0, locked=true, score=0;
-let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
+let best=+localStorage.getItem('wcs_best')||0;
+bestEl.textContent=best; bestMenuEl.textContent=best;
 
-/* ======== MAPPINGS ======== */
+/* ======== CANVAS + IMAGES ======== */
+const cx=document.getElementById('cx');
+const ctx=cx.getContext('2d', {alpha:true});
+ctx.imageSmoothingEnabled=false;
+
+let W=0,H=0,DPR=1;
+let parallaxX=0;
+
+/* arrière-plan en parallaxe (pas de déformation: on “couvre” via tuilage) */
+const bgFar  = new Image(); bgFar.src  = 'https://i.imgur.com/heR2x5A.png';
+const bgNear = new Image(); bgNear.src = 'https://i.imgur.com/heR2x5A.png';
+
+/* premier plan fixe */
+const alleyImg = new Image(); alleyImg.src = 'https://i.imgur.com/ukcEfib.png';
+const dummyImg = new Image(); dummyImg.src = 'https://i.imgur.com/DprtxP7.png';
+const heroImg  = new Image(); heroImg.src  = 'URL_DE_TON_PERSONNAGE_TRANSPARENT'; // remplace
+
+/* Mesure la hauteur réelle des boutons pour ne jamais les recouvrir */
+let controlsH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--controls-height'))||220;
+function measureControls(){
+  const board = document.getElementById('board');
+  const rect = board.getBoundingClientRect();
+  if(rect.height) controlsH = Math.max(180, Math.min(320, Math.ceil(rect.height)));
+}
+
+/* Resize pixel-perfect */
+function resizeCanvas(){
+  const rect = cx.parentElement.getBoundingClientRect();
+  DPR = Math.max(1, Math.min(3, window.devicePixelRatio||1));
+  W = Math.floor(rect.width * DPR);
+  H = Math.floor(rect.height * DPR);
+  cx.width = W; cx.height = H;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(DPR, DPR);
+
+  measureControls();
+}
+window.addEventListener('resize', ()=>{ resizeCanvas(); });
+window.addEventListener('orientationchange', ()=>setTimeout(()=>{ setVhVar(); resizeCanvas(); },150));
+
+/* Y de base: remonte foreground pour dégager les boutons */
+function currentRaiseY(){
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  if(document.body.classList.contains('touch') && isPortrait){
+    // on prend le max entre la variable CSS et ~2/3 des contrôles
+    const cssRaise = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--raiseY')) || 160;
+    return Math.max(cssRaise, Math.round(controlsH * 0.66));
+  }
+  return 0;
+}
+
+/* Helpers: dessine une image en couvrant l’écran horizontalement sans déformation */
+function drawCoverX(img, y, w, h, shift){
+  if(!img.complete) return;
+  const CW = w, CH = h;
+  const x = shift % CW;
+  ctx.drawImage(img, x - CW, y, CW, CH);
+  ctx.drawImage(img, x,      y, CW, CH);
+}
+
+/* BG parallaxe sans étirer verticalement de travers */
+function drawBG(){
+  const CW = W/DPR, CH = H/DPR;
+  parallaxX = (parallaxX - 0.3 + CW) % CW;
+  drawCoverX(bgFar,  0, CW, CH, parallaxX);
+  drawCoverX(bgNear, 0, CW, CH, parallaxX*1.5);
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.fillRect(0, 0, CW, CH);
+}
+
+/* Foreground: allée + dummy + héros, posés au-dessus des boutons */
+function drawForeground(){
+  const CW = W/DPR, CH = H/DPR;
+  const raise = currentRaiseY();
+
+  // Allée largeur écran, posée en bas de la zone visible remontée
+  if(alleyImg.complete){
+    const targetW = CW;
+    const ratio = alleyImg.height / alleyImg.width;
+    const targetH = targetW * ratio;
+    const y = CH - targetH - raise;
+    ctx.drawImage(alleyImg, 0, y, targetW, targetH);
+  }
+
+  // Mannequin
+  if(dummyImg.complete){
+    const dw = Math.max(120, CW*0.22);
+    const dh = dw * (dummyImg.height/dummyImg.width);
+    const x  = CW*0.66;
+    const y  = CH - dh - 8 - raise;
+    ctx.drawImage(dummyImg, x, y, dw, dh);
+  }
+
+  // Perso
+  if(heroImg.complete){
+    const dw = Math.max(110, CW*0.24);
+    const dh = dw * (heroImg.height/heroImg.width);
+    const x  = CW*0.38;
+    const y  = CH - dh - 8 - raise;
+    ctx.drawImage(heroImg, x, y, dw, dh);
+  } else {
+    ctx.fillStyle='#1b1d20';
+    ctx.fillRect(CW*0.38, CH-140-raise, 56, 68);
+    ctx.fillStyle='#c7a880';
+    ctx.fillRect(CW*0.38+18, CH-160-raise, 24, 24);
+  }
+}
+
+/* UI effets */
+function shout(txt){
+  onom.textContent=txt;
+  onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
+}
+
+/* Simon */
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
-
-/* ======== CANVAS ======== */
-const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
-const W=cx.width,H=cx.height;
-const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';
-const bgNear=new Image(); bgNear.src='https://i.imgur.com/ukcEfib.png';
-const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
-
-let parallaxX=0;
-function drawBG(){
-  parallaxX = (parallaxX - 0.3) % W;
-  if(bgFar.complete){
-    ctx.drawImage(bgFar,parallaxX,0,W,H);
-    ctx.drawImage(bgFar,parallaxX+W,0,W,H);
-  }
-  if(bgNear.complete){
-    ctx.drawImage(bgNear,parallaxX*1.5,H-100,W,100);
-    ctx.drawImage(bgNear,parallaxX*1.5+W,H-100,W,100);
-  }
-  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
-}
-
-function drawDummy(){
-  const x=W*0.66,y=H-100;
-  ctx.fillStyle='#8a552b'; ctx.fillRect(x-10,y-92,20,90);
-  ctx.fillStyle='#7a4b27'; ctx.fillRect(x-8,y-74, 38,6);
-  ctx.fillRect(x-8,y-46, 34,6);
-  ctx.fillRect(x-6,y-12, 12,28);
-}
-
-const fighter={x:W*0.42,y:H-64,pose:'idle'};
-function drawFighter(){
-  if(fighter.pose==='pak' && pakImg.complete){
-    ctx.drawImage(pakImg,fighter.x-60,fighter.y-120,120,120);
-  } else {
-    ctx.fillStyle='#1b1d20'; ctx.fillRect(fighter.x-40,fighter.y-112,56,68);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(fighter.x-20,fighter.y-132,24,24);
-  }
-}
-
-function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
-function doPose(name){ fighter.pose=name; setTimeout(()=>{fighter.pose='idle';}, 280); }
-
-function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
-async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function setLit(tech,on){
   const btn=pads.find(b=>b.dataset.tech===tech);
@@ -203,33 +349,36 @@ function setLit(tech,on){
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
+    setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
     await sleep(460);
-    setLit(tech,false);
-    await sleep(160);
+    setLit(tech,false); await sleep(160);
   }
   locked=false; userIndex=0;
 }
 
 async function press(tech){
   if(locked) return;
-  setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
-  await sleep(200);
-  setLit(tech,false);
+  setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
+  await sleep(200); setLit(tech,false);
 
   if(tech!==seq[userIndex]){
-    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    play(SFX.wrong);
+    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){best=score;bestEl.textContent=best;bestMenuEl.textContent=best;localStorage.setItem('wcs_best',best);}
-    seq.push(randTech()); await sleep(420); playSequence();
+    if(score>best){best=score; bestEl.textContent=best; bestMenuEl.textContent=best; localStorage.setItem('wcs_best',best);}
+    seq.push(TECHS[Math.random()*TECHS.length|0]); await sleep(420); playSequence();
   }
 }
 
-pads.forEach(b=>b.addEventListener('click',()=>press(b.dataset.tech)));
+/* Entrées */
+pads.forEach(b=>{
+  b.addEventListener('click',()=>press(b.dataset.tech));
+  b.addEventListener('touchstart',(e)=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
+});
 window.addEventListener('keydown',e=>{
   if(e.key==='1') press('pak');
   if(e.key==='2') press('tan');
@@ -237,18 +386,37 @@ window.addEventListener('keydown',e=>{
   if(e.key==='4') press('punch');
 });
 
+/* Démarrage */
+let best=+localStorage.getItem('wcs_best')||0;
+let score=0; let userIndex=0; let locked=true;
+const startBtn=document.getElementById('startBtn');
+const muteBtn=document.getElementById('muteBtn');
+startBtn.addEventListener('click', startGame);
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play();
-  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
+  seq=[TECHS[Math.random()*TECHS.length|0]];
+  score=0; scoreEl.textContent=0; playSequence();
 }
-startBtn.addEventListener('click',startGame);
 
+/* Boucle */
 function loop(){
-  drawBG(); drawDummy(); drawFighter();
+  ctx.clearRect(0,0,W/DPR,H/DPR);
+  drawBG();         // parallaxe fond
+  drawForeground(); // FG fixe correctement remonté
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
+
+/* Init */
+function init(){
+  // fixe taille logique au CSS réel
+  const rect = cx.getBoundingClientRect();
+  cx.width  = rect.width  * (window.devicePixelRatio||1);
+  cx.height = rect.height * (window.devicePixelRatio||1);
+  resizeCanvas();
+  requestAnimationFrame(loop);
+}
+init();
 </script>
 </body>
 </html>
