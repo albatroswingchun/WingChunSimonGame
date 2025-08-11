@@ -22,7 +22,7 @@
   #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,960px);height:min(56vw,540px);max-height:72vh}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 
-  /* Boutons */
+  /* Boutons (ligne) */
   #board{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;transition:transform .06s ease,filter .12s;-webkit-tap-highlight-color:transparent}
   .pad:active{transform:translateY(2px)}
@@ -30,7 +30,7 @@
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
 
   /* Menu */
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10}
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:url('https://i.imgur.com/bLV8zWf.png') center/cover no-repeat;z-index:10}
   .panel{background:rgba(0,0,0,.6);border-radius:16px;padding:28px 24px;width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center}
   .title-main{font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
   .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px}
@@ -40,11 +40,10 @@
   .btn:hover{filter:brightness(1.08)}
   .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
 
-  /* Onomatopées en image avec fondu */
+  /* Onomatopées image + fondu */
   #onoImg{position:absolute;left:50%;top:12%;transform:translate(-50%,0);width:auto;height:min(26vh,200px);opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
-
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
@@ -102,7 +101,7 @@
 </div>
 
 <script>
-/* tactile = layout mobile */
+/* Détection tactile pour layout mobile */
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 if(isTouch) document.body.classList.add('touch');
 
@@ -118,7 +117,7 @@ const SFX = {
 SFX.music.loop = true; SFX.music.volume = 0.5;
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
-/* ======== ETAT UI ======== */
+/* ======== ÉTAT UI ======== */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
@@ -141,7 +140,14 @@ let seq=[], userIndex=0, locked=true, score=0;
 let best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best; bestMenuEl.textContent=best;
 
-/* ======== ASSETS (liens directs Imgur) ======== */
+/* ======== ASSETS ======== */
+/* Couches 1536x1160 */
+const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';
+const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/D2n1796.png';
+const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';
+const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';
+
+/* Perso + mannequin + onomatopées (déjà fournis précédemment) */
 const IM = {
   fighter: {
     bon:   'https://i.imgur.com/CG30Yh6.png',
@@ -150,10 +156,8 @@ const IM = {
     punch: 'https://i.imgur.com/JYL2S46.png'
   },
   dummy: {
-    // Pak & Bon partagent les mêmes états
     pakDuring: 'https://i.imgur.com/c5FD1Up.png',
     pakAfter:  'https://i.imgur.com/6ZKmReD.png',
-    // Tan & Punch
     tanDuring: 'https://i.imgur.com/3abOAT3.png',
     tanAfter:  'https://i.imgur.com/fHGNzYR.png'
   },
@@ -162,28 +166,44 @@ const IM = {
     tan:   'https://i.imgur.com/ELUj44i.png',
     bon:   'https://i.imgur.com/6pHczNb.png',
     punch: 'https://i.imgur.com/dVISKcB.png'
-  },
-  bgFar:  'https://i.imgur.com/heR2x5A.png',
-  bgNear: 'https://i.imgur.com/D772Q4m.png'
+  }
 };
-
 function load(url){ const img=new Image(); img.src=url; return img; }
-const BG_FAR  = load(IM.bgFar);
-const BG_NEAR = load(IM.bgNear);
-/* cache d’images perso/dummy/ono */
 const IMG = {};
 for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
 for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
 for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
 
-/* ======== CANVAS / PARALLAX ======== */
+/* ======== CANVAS / DIMENSIONS ======== */
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 
 let DPR=1, W=0, H=0;
-let parallaxX=0;
 let raiseY=0;
+
+/* Mise à l’échelle basée sur ta compo 1536×1160 */
+const BASE_W=1536, BASE_H=1160;
+
+/* Parallaxe: vitesses relatives (px/frame @60fps) */
+const PAR = document.body.classList.contains('touch')
+  ? { sky:0.08, far:0.18, near:0.36 }
+  : { sky:0.10, far:0.22, near:0.45 };
+
+let offSky=0, offFar=0, offNear=0, offAlley=0;
+
+/* Placement et tailles: calés sur ta réf (ratios), ajustables vite fait */
+const CFG = document.body.classList.contains('touch')
+  ? {
+      fighter: { w: 0.19, x: 0.33, bottom: 0.06 },
+      dummy:   { w: 0.17, x: 0.50, bottom: 0.06 },
+      alleyH:  0.24       // hauteur de l'allée vs écran
+    }
+  : {
+      fighter: { w: 0.20, x: 0.35, bottom: 0.06 },
+      dummy:   { w: 0.18, x: 0.52, bottom: 0.06 },
+      alleyH:  0.24
+    };
 
 function updateRaiseY(){
   const isPortrait = matchMedia('(orientation: portrait)').matches;
@@ -204,51 +224,68 @@ function resizeCanvas(){
 window.addEventListener('resize', resizeCanvas, {passive:true});
 window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,150), {passive:true});
 
-function drawBG(){
-  const CW=W/DPR, CH=H/DPR;
-  parallaxX = (parallaxX - 0.3 + CW) % CW;
-  if(BG_FAR.complete){
-    ctx.drawImage(BG_FAR, parallaxX - CW, -raiseY, CW, CH);
-    ctx.drawImage(BG_FAR, parallaxX,       -raiseY, CW, CH);
+/* Outils dessin tuilé */
+function tile(img, offset, y, targetH){
+  if(!img.complete || !img.naturalWidth) return;
+  const CW=W/DPR;
+  const s = targetH / img.height;
+  const w = img.width * s;
+  let x = offset % w; if(x>0)x-=w;
+  for(; x < CW; x += w){
+    ctx.drawImage(img, 0, 0, img.width, img.height, x, y, w, targetH);
   }
-  if(BG_NEAR.complete){
-    const nx = (parallaxX*1.5) % CW;
-    ctx.drawImage(BG_NEAR, nx - CW, -raiseY, CW, CH);
-    ctx.drawImage(BG_NEAR, nx,      -raiseY, CW, CH);
-  }
-  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(0, -raiseY, CW, CH);
 }
 
-/* ======== Rendu perso + mannequin (par images) ======== */
-let currentFighter = IMG['f_pak']; // base visuelle quand idle
-let currentDummy   = IMG['d_pakAfter']; // état “neutre” par défaut
+function drawBG(dt){
+  const CW=W/DPR, CH=H/DPR;
+  // avance offsets
+  offSky  -= PAR.sky   * dt;
+  offFar  -= PAR.far   * dt;
+  offNear -= PAR.near  * dt;
+
+  // ciel, montagnes lointaines, montagnes proches
+  tile(SKY,    offSky,  -raiseY, CH);
+  tile(MT_FAR, offFar,  -raiseY, CH);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,-raiseY,CW,CH); // léger voile
+  tile(MT_NEAR,offNear, -raiseY, CH);
+
+  // allée fixe
+  const alleyH = Math.max(0.18, CFG.alleyH) * CH;
+  const y = CH - alleyH - raiseY;
+  tile(ALLEY, 0, y, alleyH);
+}
+
+/* Sprites actifs */
+let currentFighter = IMG['f_pak'];
+let currentDummy   = IMG['d_pakAfter'];
 
 function drawDummy(){
   const CW=W/DPR, CH=H/DPR;
-  const dw = Math.max(120, CW*0.22);
-  const dh = currentDummy.height ? dw * (currentDummy.height/currentDummy.width) : dw*2;
-  const x  = CW*0.66;
-  const y  = CH - dh - 8 - raiseY;
-  if(currentDummy && currentDummy.complete) ctx.drawImage(currentDummy, x, y, dw, dh);
+  const img=currentDummy; if(!img || !img.complete) return;
+  const w = Math.max(120, CFG.dummy.w*CW);
+  const s = w / img.width;
+  const h = img.height*s;
+  const x = CW*CFG.dummy.x;
+  const y = CH - h - CH*CFG.dummy.bottom - raiseY;
+  ctx.drawImage(img, x, y, w, h);
 }
-
 function drawFighter(){
   const CW=W/DPR, CH=H/DPR;
-  const dw = Math.max(110, CW*0.24);
-  const dh = currentFighter.height ? dw * (currentFighter.height/currentFighter.width) : dw*2;
-  const x  = CW*0.38;
-  const y  = CH - dh - 8 - raiseY;
-  if(currentFighter && currentFighter.complete) ctx.drawImage(currentFighter, x, y, dw, dh);
+  const img=currentFighter; if(!img || !img.complete) return;
+  const w = Math.max(120, CFG.fighter.w*CW);
+  const s = w / img.width;
+  const h = img.height*s;
+  const x = CW*CFG.fighter.x;
+  const y = CH - h - CH*CFG.fighter.bottom - raiseY;
+  ctx.drawImage(img, x, y, w, h);
 }
 
-/* ======== Onomatopées (fondu) ======== */
+/* Onomatopées */
 function showOno(tech){
   const img = IMG['o_'+tech];
   if(!img) return;
   onoImg.src = img.src;
-  onoImg.classList.remove('onoShow');
-  void onoImg.offsetWidth; // reflow pour relancer l'anim
-  onoImg.classList.add('onoShow');
+  onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
 /* ======== SIMON ======== */
@@ -260,14 +297,11 @@ function setLit(tech,on){
   btn.classList.toggle('lit',on);
   btn.classList.toggle(TECH_TO_COLOR[tech],on);
 }
-
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
 
 function setSpritesFor(tech){
-  // perso
   currentFighter = IMG['f_'+tech] || currentFighter;
-  // mannequin selon paire
   if(tech==='pak' || tech==='bon'){
     currentDummy = IMG['d_pakDuring'];
     setTimeout(()=>{ currentDummy = IMG['d_pakAfter']; }, 260);
@@ -333,10 +367,13 @@ function startGame(){
 }
 document.getElementById('startBtn').addEventListener('click',startGame);
 
-/* Boucle de rendu */
-function loop(){
+/* Boucle — dt basé sur raf pour parallaxe douce partout */
+let last=performance.now();
+function loop(t=performance.now()){
+  const dt = Math.min(33, t - last) / (1000/60); // normalise ~60fps
+  last = t;
   ctx.clearRect(0,0,cx.width,cx.height);
-  drawBG(); drawDummy(); drawFighter();
+  drawBG(dt); drawDummy(); drawFighter();
   requestAnimationFrame(loop);
 }
 
