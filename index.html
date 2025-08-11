@@ -214,6 +214,15 @@ function tileNative(img, offsetX, y){
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
+  function drawImageScaled(img, offsetX, y, scale=1) {
+  if (!img.complete || !img.naturalWidth) return;
+  const iw = img.naturalWidth * scale;
+  const ih = img.naturalHeight * scale;
+  let x = offsetX % iw;
+  if (x > 0) x -= iw;
+  for (; x < W; x += iw) ctx.drawImage(img, x, y, iw, ih);
+}
+
 /* ====== rendu BG + sprites ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
@@ -223,7 +232,7 @@ function drawBG(dt){
   // Montagnes: tuilées en taille native, défilement léger
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  0);
+  tileNative(MT_FAR,  offFar,  200);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
   tileNative(MT_NEAR, offNear, 0);
 
