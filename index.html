@@ -2,92 +2,369 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Wing Chun – Plateau 1536×1160</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Wing Chun Simon – 1536×1160</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial}
-  /* Conteneur centré, TAILLE FIXE demandée */
-  #frame{
-    position:fixed; inset:0; display:grid; place-items:center; overflow:auto;
+  :root{
+    --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
+    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
   }
-  .stageWrap{
-    width:1536px; height:1160px; position:relative;
-    outline:1px solid #000; background:#000;
-  }
-  canvas{
-    position:absolute; inset:0;
-    width:1536px; height:1160px;           /* même taille CSS = pas de zoom */
-    image-rendering:pixelated; image-rendering:crisp-edges;
-  }
-  /* Juste pour voir où cliquer plus tard, rien de fancy */
-  #board{position:absolute; left:50%; bottom:24px; transform:translateX(-50%); display:flex; gap:12px}
-  .btn{background:#222;border:1px solid #444;color:#ddd;padding:10px 16px;border-radius:10px}
+
+  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+
+  header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
+  header .left, header .right{display:flex;align-items:center;gap:8px}
+  .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+  .btn:hover{filter:brightness(1.08)}
+  .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
+  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
+
+  /* Zone d’affichage FIXE 1536×1160 centrée */
+  #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
+  #stage{position:relative;width:1536px;height:1160px}
+  canvas{position:absolute;inset:0;width:1536px;height:1160px;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+
+  /* Boutons jeu */
+  #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer}
+  .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
+  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
+
+  /* Onomatopées image + fondu */
+  #onoImg{position:absolute;left:50%;top:12%;transform:translate(-50%,0);width:auto;height:200px;opacity:0;pointer-events:none;z-index:6}
+  .onoShow{animation:onoFade .9s ease forwards}
+  @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
+  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
+  .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
+
+  /* Overlay édition (inchangé) */
+  #editBar{display:none;gap:10px;align-items:center}
+  #editBar .range{display:flex;align-items:center;gap:6px}
+  #editBar input[type=range]{width:160px}
+  #markers{position:absolute;inset:0;pointer-events:none}
+  .mk{position:absolute;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#ec4;box-shadow:0 0 0 2px #0008;transform:translate(-50%,-50%);display:none;place-items:center;font-size:12px;color:#000;font-weight:900}
+  .mk.sel{background:#4cf}
+  .grid{position:absolute;inset:0;background-image:linear-gradient(#fff2 1px,transparent 1px),linear-gradient(90deg,#fff2 1px,transparent 1px);background-size:40px 40px;display:none}
+  .help{display:none;margin-left:8px;opacity:.8}
+
+  /* Menu */
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
+  .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:20px 18px;text-align:center;border:1px solid #2f2724}
+  .panel h1{margin:0 0 6px 0;color:#d1a341}
+  .panel .actions{display:flex;gap:10px;justify-content:center}
+  .panel .btn{padding:10px 16px}
 </style>
 </head>
 <body>
-<div id="frame">
-  <div class="stageWrap">
-    <canvas id="cx" width="1536" height="1160"></canvas>
+<div id="app">
+  <header>
+    <div class="left">
+      <strong>Wing Chun Simon</strong>
+      <span class="chip">Score: <span id="score">0</span></span>
+      <span class="chip">Meilleur: <span id="best">0</span></span>
+    </div>
+    <div class="right">
+      <div id="editBar">
+        <button id="saveBtn" class="btn">Sauver</button>
+        <button id="resetBtn" class="btn">Reset</button>
+        <!-- tailles à ~70% de l’ancien: bornes adaptées -->
+        <div class="range">Taille perso <input id="scaleF" type="range" min="0.08" max="0.22" step="0.002"></div>
+        <div class="range">Taille mannequin <input id="scaleD" type="range" min="0.08" max="0.22" step="0.002"></div>
+        <span class="help">Glisse les marqueurs pour placer. Les sliders redimensionnent.</span>
+      </div>
+      <button id="editBtn" class="btn">Édition</button>
+      <button id="muteBtn" class="btn">🔊 Son</button>
+    </div>
+  </header>
 
-    <!-- on garde 4 boutons pour tester si besoin, mais pas obligatoire ici -->
-    <div id="board">
-      <button class="btn">Pak Sao</button>
-      <button class="btn">Tan Sao</button>
-      <button class="btn">Bon Sao</button>
-      <button class="btn">Punch</button>
+  <div id="stageWrap">
+    <div id="stage">
+      <canvas id="cx" width="1536" height="1160"></canvas>
+
+      <div id="board">
+        <button class="pad" data-tech="pak">Pak Sao</button>
+        <button class="pad" data-tech="tan">Tan Sao</button>
+        <button class="pad" data-tech="bon">Bon Sao</button>
+        <button class="pad" data-tech="punch">Punch</button>
+      </div>
+
+      <img id="onoImg" alt="Onomatopée"/>
+      <div id="flash"></div>
+
+      <div id="menu">
+        <div class="panel">
+          <h1>Wing Chun<br><small>Simon Game</small></h1>
+          <p>Reproduis les techniques dans le bon ordre !</p>
+          <div class="actions">
+            <button id="startBtn" class="btn">Commencer</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="markers">
+        <div id="mkF" class="mk" title="Perso">F</div>
+        <div id="mkD" class="mk" title="Mannequin">M</div>
+        <div id="grid" class="grid"></div>
+      </div>
     </div>
   </div>
+
+  <footer>Zone fixe 1536×1160. Ciel 1:1. Perso/Mannequin réduits. Le reste inchangé.</footer>
 </div>
 
 <script>
-/* ====== Images ====== */
-/* CIEL SANS ZOOM: on dessine 1:1 sur un canvas 1536×1160 */
-const SKY = new Image();
-SKY.src = 'https://i.imgur.com/bLV8zWf.png';
+/* ====== helpers ====== */
+const pads=[...document.querySelectorAll('.pad')];
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const menu=document.getElementById('menu');
+const startBtn=document.getElementById('startBtn');
+const muteBtn=document.getElementById('muteBtn');
+const editBtn=document.getElementById('editBtn');
+const editBar=document.getElementById('editBar');
+const saveBtn=document.getElementById('saveBtn');
+const resetBtn=document.getElementById('resetBtn');
+const scaleF=document.getElementById('scaleF');
+const scaleD=document.getElementById('scaleD');
+const onoImg=document.getElementById('onoImg');
+const flash=document.getElementById('flash');
+const mkF=document.getElementById('mkF');
+const mkD=document.getElementById('mkD');
+const grid=document.getElementById('grid');
 
-/* Placeholders actuels perso/mannequin (tu as déjà les liens finaux, on branchera après) */
-const FIGHTER = new Image(); FIGHTER.src = 'https://i.imgur.com/AweXMem.png';   // Pak par défaut
-const DUMMY   = new Image(); DUMMY.src   = 'https://i.imgur.com/6ZKmReD.png';   // état neutre
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 
-/* ====== Canvas ====== */
-const cx = document.getElementById('cx');
-const ctx = cx.getContext('2d', { alpha:true });
-ctx.imageSmoothingEnabled = false;
-
-/* ====== Placement : TAILLES RÉDUITES (en pixels, pas en %) ====== */
-/* Tu veux plus petit encore ? baisse ces nombres. */
-const layout = {
-  sky:   { x:0, y:0 },                     // taille native = canvas, pas de zoom
-  fighter: { w: 220, x: 520, bottom: 90 }, // AVANT: ~300+, maintenant réduit à 220 px de large
-  dummy:   { w: 200, x: 760, bottom: 86 }  // idem, réduit
+/* ====== sons ====== */
+const SFX = {
+  pak:   new Audio('assets/sounds/pak.wav'),
+  tan:   new Audio('assets/sounds/tan.wav'),
+  bon:   new Audio('assets/sounds/bon.wav'),
+  punch: new Audio('assets/sounds/punch.wav'),
+  wrong: new Audio('assets/sounds/wrong.wav'),
+  music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
-/* Astuce: bottom = marge en pixels depuis le bas de l’écran (ancrage au sol). */
+SFX.music.loop=true; SFX.music.volume=0.5;
+Object.values(SFX).forEach(a=>a.preload='auto');
+let muted=false; muteBtn.onclick=()=>{muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});};
+const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
-function drawSky(){
-  if (!SKY.complete) return;
-  // Pas de zoom, l'image fait 1536×1160 comme le canvas → dessin brut
-  ctx.drawImage(SKY, 0, 0);
+/* ====== images (liens directs) ====== */
+/* CIEL FIXE, AUCUN ZOOM: on dessine 1:1 exactement 1536×1160 */
+const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';   // 1536×1160 exact
+const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/D2n1796.png';   // mêmes dims
+const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // mêmes dims
+const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // sol (peut être différent, on tuilera)
+
+const IM = {
+  fighter: {
+    bon:   'https://i.imgur.com/CG30Yh6.png',
+    tan:   'https://i.imgur.com/ZrLk97U.png',
+    pak:   'https://i.imgur.com/AweXMem.png',
+    punch: 'https://i.imgur.com/JYL2S46.png'
+  },
+  dummy: {
+    pakDuring: 'https://i.imgur.com/c5FD1Up.png',
+    pakAfter:  'https://i.imgur.com/6ZKmReD.png',
+    tanDuring: 'https://i.imgur.com/3abOAT3.png',
+    tanAfter:  'https://i.imgur.com/fHGNzYR.png'
+  },
+  ono: {
+    pak:   'https://i.imgur.com/Y4EEnZg.png',
+    tan:   'https://i.imgur.com/ELUj44i.png',
+    bon:   'https://i.imgur.com/6pHczNb.png',
+    punch: 'https://i.imgur.com/dVISKcB.png'
+  }
+};
+function load(url){ const img=new Image(); img.src=url; return img; }
+const IMG={};
+for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
+for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
+for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
+
+/* ====== canvas ====== */
+const cx=document.getElementById('cx');
+const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
+const W=1536, H=1160; // FIXE
+
+/* ====== config placement (réduction ~70%) ====== */
+/* Avant on était autour de 0.20 et 0.18. On passe à 0.14 et 0.126. */
+const DEFAULT_CFG = {
+  fighter: { w: 0.14, x: 0.35, bottom: 0.06 },
+  dummy:   { w: 0.126, x: 0.52, bottom: 0.06 },
+  alleyH:  0.24,
+  parallax:{ sky:0, far:0.20, near:0.42 } // ciel fixe
+};
+let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
+/* sliders init selon nouvelles bornes */
+scaleF.value = CFG.fighter.w;
+scaleD.value = CFG.dummy.w;
+
+/* ====== tuilage NATIVE-SIZE (pas d’échelle) ====== */
+function tileNative(img, offsetX, y){
+  if(!img.complete || !img.naturalWidth) return;
+  const iw = img.naturalWidth; // attendu 1536
+  let x = offsetX % iw; if(x>0) x -= iw;
+  for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
-function drawSprite(img, w, x, bottom){
-  if (!img.complete || !img.naturalWidth) return;
-  const s = w / img.naturalWidth;
-  const h = img.naturalHeight * s;
-  const y = cx.height - h - bottom;
-  ctx.drawImage(img, x, y, w, h);
+/* ====== rendu BG + sprites ====== */
+let offFar=0, offNear=0;
+function drawBG(dt){
+  // Ciel 1:1 FIXE
+  if (SKY.complete) ctx.drawImage(SKY, 0, 0);
+
+  // Montagnes: tuilées en taille native, défilement léger
+  offFar  -= CFG.parallax.far  * dt;
+  offNear -= CFG.parallax.near * dt;
+  tileNative(MT_FAR,  offFar,  0);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
+  tileNative(MT_NEAR, offNear, 0);
+
+  // Allée: collée en bas, à sa hauteur native, tuilée si besoin
+  if (ALLEY.complete && ALLEY.naturalWidth){
+    const y = H - ALLEY.naturalHeight;
+    tileNative(ALLEY, 0, y);
+  }
 }
 
-function render(){
-  ctx.clearRect(0,0,cx.width,cx.height);
-  drawSky();                                                      // couche 1 (fixe, 1:1)
-  drawSprite(DUMMY, layout.dummy.w, layout.dummy.x, layout.dummy.bottom);     // couche 2 (derrière)
-  drawSprite(FIGHTER, layout.fighter.w, layout.fighter.x, layout.fighter.bottom); // couche 3 (devant)
-  requestAnimationFrame(render);
-}
-render();
+let currentFighter = IMG['f_pak'];
+let currentDummy   = IMG['d_pakAfter'];
 
-/* Juste au cas où on charge lentement */
-[SKY,FIGHTER,DUMMY].forEach(img=>img.addEventListener('load', ()=>{}));
+function drawDummy(){
+  const img=currentDummy; if(!img || !img.complete) return;
+  const targetW = Math.max(90, CFG.dummy.w*W);
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const x = W*CFG.dummy.x;
+  const y = H - targetH - H*CFG.dummy.bottom;
+  ctx.drawImage(img, x, y, targetW, targetH);
+}
+function drawFighter(){
+  const img=currentFighter; if(!img || !img.complete) return;
+  const targetW = Math.max(90, CFG.fighter.w*W);
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const x = W*CFG.fighter.x;
+  const y = H - targetH - H*CFG.fighter.bottom;
+  ctx.drawImage(img, x, y, targetW, targetH);
+}
+
+/* ====== onomatopées ====== */
+function showOno(tech){
+  const img = IMG['o_'+tech];
+  if(!img) return;
+  onoImg.src = img.src;
+  onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
+}
+
+/* ====== Simon ====== */
+let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
+bestEl.textContent=best;
+const TECHS=['pak','tan','bon','punch'];
+const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
+function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); b.classList.toggle('lit',on); b.classList.toggle(TECH_TO_COLOR[tech],on); }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const randTech=()=>TECHS[Math.random()*TECHS.length|0];
+function setSpritesFor(tech){
+  currentFighter = IMG['f_'+tech] || currentFighter;
+  if(tech==='pak'||tech==='bon'){ currentDummy=IMG['d_pakDuring']; setTimeout(()=>currentDummy=IMG['d_pakAfter'],260); }
+  else { currentDummy=IMG['d_tanDuring']; setTimeout(()=>currentDummy=IMG['d_tanAfter'],260); }
+}
+async function playSequence(){
+  locked=true; await sleep(560);
+  for(const tech of seq){
+    setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
+    await sleep(460); setLit(tech,false); await sleep(160);
+  }
+  locked=false; userIndex=0;
+}
+async function press(tech){
+  if(locked) return;
+  setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
+  await sleep(200); setLit(tech,false);
+  if(tech!==seq[userIndex]){
+    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
+  }
+  userIndex++;
+  if(userIndex===seq.length){
+    score++; scoreEl.textContent=score;
+    if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('wcs_best',best);}
+    seq.push(randTech()); await sleep(420); playSequence();
+  }
+}
+pads.forEach(b=>{ b.addEventListener('click',()=>press(b.dataset.tech)); b.addEventListener('touchstart',e=>{e.preventDefault();press(b.dataset.tech)},{passive:false}); });
+
+function startGame(){
+  menu.style.display='none';
+  if(!muted) SFX.music.play().catch(()=>{});
+  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
+}
+startBtn.addEventListener('click',startGame);
+
+/* ====== mode ÉDITION (inchangé) ====== */
+let editing=false, sel=null;
+function setEditing(on){
+  editing=on;
+  editBar.style.display = on?'flex':'none';
+  mkF.style.display = mkD.style.display = on?'grid':'none';
+  grid.style.display = on?'block':'none';
+  editBtn.textContent = on?'Quitter édition':'Édition';
+}
+function syncMarkers(){
+  mkF.style.left = (CFG.fighter.x*100)+'%';
+  mkD.style.left = (CFG.dummy.x*100)+'%';
+  mkF.style.top = (100 - (CFG.fighter.bottom*100))+'%';
+  mkD.style.top = (100 - (CFG.dummy.bottom*100))+'%';
+}
+function applyScales(){ CFG.fighter.w=+scaleF.value; CFG.dummy.w=+scaleD.value; }
+scaleF.oninput=applyScales; scaleD.oninput=applyScales;
+
+function markerDrag(mk, onMove){
+  let dragging=false;
+  mk.addEventListener('pointerdown', e=>{ dragging=true; sel=mk; mk.classList.add('sel'); mk.setPointerCapture(e.pointerId); });
+  mk.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const rect = cx.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    onMove(x,y); syncMarkers();
+  });
+  mk.addEventListener('pointerup', e=>{ dragging=false; mk.classList.remove('sel'); mk.releasePointerCapture(e.pointerId); });
+}
+markerDrag(mkF, (x,y)=>{
+  CFG.fighter.x = Math.min(0.9, Math.max(0.0, x));
+  CFG.fighter.bottom = Math.min(0.30, Math.max(0.02, 1 - y));
+});
+markerDrag(mkD, (x,y)=>{
+  CFG.dummy.x = Math.min(0.9, Math.max(0.0, x));
+  CFG.dummy.bottom = Math.min(0.30, Math.max(0.02, 1 - y));
+});
+
+editBtn.onclick = ()=> setEditing(!editing);
+saveBtn.onclick = ()=>{
+  localStorage.setItem('wcs_layout', JSON.stringify(CFG));
+  console.log('CFG sauvegardé:', CFG);
+};
+resetBtn.onclick = ()=>{
+  CFG = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  scaleF.value=CFG.fighter.w; scaleD.value=CFG.dummy.w;
+  syncMarkers();
+};
+
+/* ====== boucle ====== */
+let last=performance.now();
+function loop(t=performance.now()){
+  const dt = Math.min(33, t-last) / (1000/60); last=t;
+  ctx.clearRect(0,0,W,H);
+  drawBG(dt); drawDummy(); drawFighter();
+  requestAnimationFrame(loop);
+}
+
+/* ====== init ====== */
+syncMarkers();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
