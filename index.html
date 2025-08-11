@@ -2,114 +2,131 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon Game</title>
 <style>
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
-    --portrait-stage-offset: 42%; /* Décalage vertical en mode portrait mobile */
+    /* Décalage vertical de la scène en mobile portrait (plus petit chiffre = scène plus haute) */
+    --portrait-stage-offset: 28%;
   }
+
   html,body{
     margin:0;height:100%;
     background:#0b0a0a;color:#eee;
     font-family:system-ui,Segoe UI,Roboto,Arial;
     overflow:hidden
   }
+
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-  header{display:flex;align-items:center;justify-content:space-between;
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;
     padding:10px 14px;
     background:linear-gradient(180deg,var(--panel),var(--panel2));
-    border-bottom:1px solid #2a2322}
-  header .score{font-size:14px} header .best{opacity:.8}
-  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;
-    background:linear-gradient(180deg,var(--panel2),#120f0f)}
+    border-bottom:1px solid #2a2322
+  }
+  header .score{font-size:14px}
+  header .best{opacity:.8}
+
+  footer{
+    padding:6px 12px;font-size:12px;opacity:.6;text-align:center;
+    background:linear-gradient(180deg,var(--panel2),#120f0f)
+  }
+
   #stageWrap{position:relative;overflow:hidden;background:#0f0e0e}
   #stage{
     position:absolute;left:50%;top:50%;
     transform:translate(-50%,-50%);
-    width:min(100vw,960px);height:min(56vw,540px);
+    width:min(100vw,960px);
+    height:min(56vw,540px);
     max-height:72vh
   }
   canvas{
     position:absolute;inset:0;
     width:100%;height:100%;
-    image-rendering:pixelated;image-rendering:crisp-edges
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    touch-action:none
   }
-  
-  /* Boutons techniques en ligne (PC) */
-  #board{position:absolute;left:50%;bottom:20px;
-    transform:translateX(-50%);
-    display:flex;gap:14px;z-index:5}
+
+  /* Boutons PC (inchangés) */
+  #board{
+    position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+    display:flex;gap:14px;z-index:5
+  }
   .pad{
     width:132px;height:100px;border-radius:14px;
     background:linear-gradient(#2a2a2a,#1e1e1e);
     color:#cfcfcf;display:flex;align-items:center;justify-content:center;
     font-weight:700;
     box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
-    cursor:pointer;transition:transform .06s ease,filter .12s
+    cursor:pointer;transition:transform .06s ease,filter .12s;
+    -webkit-tap-highlight-color:transparent
   }
   .pad:active{transform:translateY(2px)}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)}
   .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
-  
+
   /* Menu */
-  #menu{position:absolute;inset:0;display:grid;place-items:center;
-    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10}
-  .panel{background:rgba(0,0,0,0.6);border-radius:16px;
-    padding:28px 24px;width:min(760px,92vw);
-    box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center}
-  .title-main{font-size:48px;color:#d1a341;
-    text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
-  .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px 0}
+  #menu{
+    position:absolute;inset:0;display:grid;place-items:center;
+    background:url('https://i.imgur.com/heR2x5A.png') center/cover no-repeat;z-index:10
+  }
+  .panel{
+    background:rgba(0,0,0,.6);border-radius:16px;padding:28px 24px;
+    width:min(760px,92vw);box-shadow:0 20px 80px rgba(0,0,0,.6);text-align:center
+  }
+  .title-main{font-size:48px;color:#d1a341;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35);margin:0}
+  .title-sub{font-size:32px;color:#e8d6b8;margin:5px 0 15px}
   .subtitle{font-size:18px;color:#fff;margin-bottom:20px}
-  .actions{display:flex;gap:20px;justify-content:center}
+  .actions{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
   .btn{
-    background:linear-gradient(180deg,#2a221f,#1f1a18);
-    border:1px solid #3a302d;color:#e9d9bc;
-    padding:14px 26px;border-radius:10px;
-    font-weight:700;cursor:pointer;font-size:18px
+    background:linear-gradient(180deg,#2a221f,#1f1a18);border:1px solid #3a302d;color:#e9d9bc;
+    padding:14px 26px;border-radius:10px;font-weight:700;cursor:pointer;font-size:18px
   }
   .btn:hover{filter:brightness(1.08)}
   .hi{font-size:14px;text-align:center;margin-top:10px;opacity:.85}
-  
+
   /* Onomatopée + flash erreur */
-  #onom{position:absolute;left:50%;top:12%;
+  #onom{
+    position:absolute;left:50%;top:12%;
     transform:translate(-50%,0) scale(.6);
     font-size:72px;font-weight:900;color:#ffe9a8;
     text-shadow:0 4px 0 #000,0 0 22px #ffec9a;
-    opacity:0;pointer-events:none;z-index:6}
+    opacity:0;pointer-events:none;z-index:6
+  }
   .pop{animation:pop .65s cubic-bezier(.2,.8,.2,1)}
   @keyframes pop{
     0%{opacity:0;transform:translate(-50%,0) scale(.6)}
     28%{opacity:1;transform:translate(-50%,0) scale(1.07)}
     100%{opacity:0;transform:translate(-50%,0) scale(1)}
   }
-  #flash{position:absolute;inset:0;background:#ff000022;
-    opacity:0;pointer-events:none;z-index:7}
+  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}
   @keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* === Portrait mobile uniquement === */
-  @media (max-width: 768px) and (orientation:portrait) {
-    body.touch #stage {
+  /* ===== Portrait mobile uniquement ===== */
+  @media (max-width:768px) and (orientation:portrait){
+    body.touch #stage{
       top: var(--portrait-stage-offset);
-      transform: translate(-50%, 0);
-      height: calc(100vh - 220px);
+      transform: translate(-50%,0);
+      height: calc(100vh - 280px); /* libère de la place pour les boutons */
     }
-    body.touch #board {
-      bottom: 10px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(80px, 40vw));
-      gap: 12px;
-      left: 50%;
-      transform: translateX(-50%);
+    body.touch #board{
+      position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+      display:grid;grid-template-columns:repeat(2, minmax(92px, 40vw));
+      gap:10px;width:min(92vw,520px)
     }
-    body.touch .pad {
-      width: 100%;
-      height: clamp(64px, 14vh, 120px);
-      font-size: clamp(16px, 4vh, 22px);
+    body.touch .pad{
+      width:100%;height:clamp(64px,13vh,110px);
+      font-size:clamp(16px,3.8vh,22px)
+    }
+    #onom{top:4%}
+    header, footer{
+      padding-left:max(12px, env(safe-area-inset-left));
+      padding-right:max(12px, env(safe-area-inset-right));
     }
   }
 </style>
@@ -123,7 +140,7 @@
 
   <div id="stageWrap">
     <div id="stage">
-      <canvas id="cx" width="768" height="432"></canvas>
+      <canvas id="cx"></canvas>
 
       <div id="board" aria-label="Boutons">
         <button class="pad" data-tech="pak">Pak Sao</button>
@@ -150,11 +167,12 @@
     </div>
   </div>
 
-  <footer>Canvas “64-bit style”. Sons WAV dans <code>assets/sounds/</code>.</footer>
+  <footer>Canvas optimisé. Sons WAV dans <code>assets/sounds/</code>.</footer>
 </div>
 
 <script>
-const isTouch = 'ontouchstart' in window;
+/* Détection tactile pour limiter l’adaptation aux mobiles/tablettes */
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 if(isTouch) document.body.classList.add('touch');
 
 /* ======== SONS ======== */
@@ -170,75 +188,128 @@ SFX.music.loop = true; SFX.music.volume = 0.5;
 Object.values(SFX).forEach(a=>{a.preload='auto';});
 
 /* ======== ETAT ======== */
-const pads = [...document.querySelectorAll('.pad')];
-const scoreEl = document.getElementById('score');
-const bestEl  = document.getElementById('best');
-const bestMenuEl  = document.getElementById('bestMenu');
-const menu   = document.getElementById('menu');
-const startBtn = document.getElementById('startBtn');
-const muteBtn  = document.getElementById('muteBtn');
-const onom  = document.getElementById('onom');
-const flash = document.getElementById('flash');
-let muted=false; 
+const pads=[...document.querySelectorAll('.pad')];
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const bestMenuEl=document.getElementById('bestMenu');
+const menu=document.getElementById('menu');
+const startBtn=document.getElementById('startBtn');
+const muteBtn=document.getElementById('muteBtn');
+const onom=document.getElementById('onom');
+const flash=document.getElementById('flash');
+
+let muted=false;
 muteBtn.onclick=()=>{
-  muted=!muted; 
-  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son'; 
+  muted=!muted;
+  muteBtn.textContent = muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play();
 };
-const play=(a)=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
+const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
 let seq=[], userIndex=0, locked=true, score=0;
-let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best; bestMenuEl.textContent=best;
+let best=+localStorage.getItem('wcs_best')||0;
+bestEl.textContent=best; bestMenuEl.textContent=best;
 
 /* ======== MAPPINGS ======== */
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 const TECH_TO_SHOUT={pak:'PAK!',tan:'TAN!',bon:'BON!',punch:'PUNCH!'};
 
-/* ======== CANVAS ======== */
-const cx=document.getElementById('cx'); const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
-const W=cx.width,H=cx.height;
-const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';
-const bgNear=new Image(); bgNear.src='https://i.imgur.com/ukcEfib.png';
-const pakImg=new Image(); pakImg.src='https://i.imgur.com/Z6CpQAb.png';
+/* ======== CANVAS + IMAGES ======== */
+const cx=document.getElementById('cx');
+const ctx=cx.getContext('2d',{alpha:true});
+ctx.imageSmoothingEnabled=false;
 
+let W=0,H=0,DPR=1;
 let parallaxX=0;
+let raiseY=0; // décalage vertical important en mobile portrait
+
+const bgFar=new Image(); bgFar.src='https://i.imgur.com/heR2x5A.png';   // montagnes
+const bgNear=new Image(); bgNear.src='https://i.imgur.com/heR2x5A.png';  // on réutilise, décalé
+const alleyImg=new Image(); alleyImg.src='https://i.imgur.com/ukcEfib.png'; // allée largeur page
+const dummyImg=new Image(); dummyImg.src='https://i.imgur.com/DprtxP7.png'; // mannequin
+const heroImg =new Image(); heroImg.src ='URL_DE_TON_PERSONNAGE_TRANSPARENT'; // à remplacer
+
+function resizeCanvas(){
+  const rect = cx.parentElement.getBoundingClientRect();
+  DPR = Math.max(1, Math.min(3, window.devicePixelRatio||1));
+  W = Math.floor(rect.width*DPR);
+  H = Math.floor(rect.height*DPR);
+  cx.width=W; cx.height=H;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(DPR,DPR);
+  updateRaiseY();
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,150));
+
+function updateRaiseY(){
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  raiseY = (document.body.classList.contains('touch') && isPortrait) ? 140 : 0;
+  // 140px = “beaucoup”. Monte à 180/200 si tu veux encore plus haut.
+}
+
 function drawBG(){
-  parallaxX = (parallaxX - 0.3) % W;
+  const CW = W/DPR, CH = H/DPR;
+  parallaxX = (parallaxX - 0.3 + CW) % CW;
+
   if(bgFar.complete){
-    ctx.drawImage(bgFar,parallaxX,0,W,H);
-    ctx.drawImage(bgFar,parallaxX+W,0,W,H);
+    ctx.drawImage(bgFar, parallaxX - CW, -raiseY, CW, CH);
+    ctx.drawImage(bgFar, parallaxX,       -raiseY, CW, CH);
   }
   if(bgNear.complete){
-    ctx.drawImage(bgNear,parallaxX*1.5,H-150,W,150); // Décalé en bas
-    ctx.drawImage(bgNear,parallaxX*1.5+W,H-150,W,150);
+    const nx = (parallaxX*1.5) % CW;
+    ctx.drawImage(bgNear, nx - CW, -raiseY, CW, CH);
+    ctx.drawImage(bgNear, nx,      -raiseY, CW, CH);
   }
-  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0, -raiseY, CW, CH);
+
+  // Allée fixe en bas (premier plan, mais on la remonte visuellement pour cohérence mobile)
+  if(alleyImg.complete){
+    const targetW = CW;
+    const ratio   = alleyImg.height / alleyImg.width;
+    const targetH = targetW * ratio;
+    ctx.drawImage(alleyImg, 0, CH - targetH - raiseY, targetW, targetH);
+  }
 }
 
 function drawDummy(){
-  const dummy=new Image();
-  dummy.src="https://i.imgur.com/DprtxP7.png";
-  if(dummy.complete){
-    ctx.drawImage(dummy,W*0.66,H-190,120,160);
-  }
+  if(!dummyImg.complete) return;
+  const CW=W/DPR, CH=H/DPR;
+  const dw = Math.max(120, CW*0.22);
+  const dh = dw * (dummyImg.height/dummyImg.width);
+  const x  = CW*0.66;
+  const y  = CH - dh - 8 - raiseY;
+  ctx.drawImage(dummyImg, x, y, dw, dh);
 }
 
-const fighter={x:W*0.42,y:H-64,pose:'idle'};
 function drawFighter(){
-  if(fighter.pose==='pak' && pakImg.complete){
-    ctx.drawImage(pakImg,fighter.x-60,fighter.y-120,120,120);
-  } else {
-    ctx.fillStyle='#1b1d20'; ctx.fillRect(fighter.x-40,fighter.y-112,56,68);
-    ctx.fillStyle='#c7a880'; ctx.fillRect(fighter.x-20,fighter.y-132,24,24);
+  if(!heroImg.complete){
+    // Placeholder clean si l'image n'est pas encore chargée
+    const CW=W/DPR, CH=H/DPR;
+    ctx.fillStyle='#1b1d20'; ctx.fillRect(CW*0.38, CH-140-raiseY, 56, 68);
+    ctx.fillStyle='#c7a880'; ctx.fillRect(CW*0.38+18, CH-160-raiseY, 24, 24);
+    return;
   }
+  const CW=W/DPR, CH=H/DPR;
+  const dw = Math.max(110, CW*0.24);
+  const dh = dw * (heroImg.height/heroImg.width);
+  const x  = CW*0.38;
+  const y  = CH - dh - 8 - raiseY;
+  ctx.drawImage(heroImg, x, y, dw, dh);
 }
 
-function shout(txt){ onom.textContent=txt; onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop'); }
-function doPose(name){ fighter.pose=name; setTimeout(()=>{fighter.pose='idle';}, 280); }
+/* Effets UI */
+function shout(txt){
+  const onom=document.getElementById('onom');
+  onom.textContent=txt;
+  onom.classList.remove('pop'); void onom.offsetWidth; onom.classList.add('pop');
+}
 
+/* Simon logic */
 function randTech(){ return TECHS[Math.random()*TECHS.length|0]; }
-async function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function setLit(tech,on){
   const btn=pads.find(b=>b.dataset.tech===tech);
@@ -249,7 +320,7 @@ function setLit(tech,on){
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
+    setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
@@ -259,12 +330,14 @@ async function playSequence(){
 
 async function press(tech){
   if(locked) return;
-  setLit(tech,true); play(SFX[tech]); doPose(tech); shout(TECH_TO_SHOUT[tech]);
+  setLit(tech,true); play(SFX[tech]); shout(TECH_TO_SHOUT[tech]);
   await sleep(200);
   setLit(tech,false);
 
   if(tech!==seq[userIndex]){
-    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    play(SFX.wrong);
+    const flash=document.getElementById('flash');
+    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
@@ -275,7 +348,11 @@ async function press(tech){
   }
 }
 
-pads.forEach(b=>b.addEventListener('click',()=>press(b.dataset.tech)));
+/* Entrées */
+pads.forEach(b=>{
+  b.addEventListener('click',()=>press(b.dataset.tech));
+  b.addEventListener('touchstart',(e)=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
+});
 window.addEventListener('keydown',e=>{
   if(e.key==='1') press('pak');
   if(e.key==='2') press('tan');
@@ -283,6 +360,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='4') press('punch');
 });
 
+/* Démarrage */
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play();
@@ -290,10 +368,15 @@ function startGame(){
 }
 startBtn.addEventListener('click',startGame);
 
+/* Boucle */
 function loop(){
+  ctx.clearRect(0,0,W/DPR,H/DPR);
   drawBG(); drawDummy(); drawFighter();
   requestAnimationFrame(loop);
 }
+
+/* Init */
+resizeCanvas();
 requestAnimationFrame(loop);
 </script>
 </body>
