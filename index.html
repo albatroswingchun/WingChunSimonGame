@@ -4,6 +4,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon – 1536×1160</title>
+
+<!-- Ajout police Permanent Marker -->
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
@@ -54,6 +58,9 @@
   .panel h1{margin:0 0 6px 0;color:#d1a341}
   .panel .actions{display:flex;gap:10px;justify-content:center}
   .panel .btn{padding:10px 16px}
+
+  /* Classe Permanent Marker */
+  .pm { font-family: 'Permanent Marker', cursive; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -68,7 +75,6 @@
       <div id="editBar">
         <button id="saveBtn" class="btn">Sauver</button>
         <button id="resetBtn" class="btn">Reset</button>
-        <!-- tailles à ~70% de l’ancien: bornes adaptées -->
         <div class="range">Taille perso <input id="scaleF" type="range" min="0.08" max="0.22" step="0.002"></div>
         <div class="range">Taille mannequin <input id="scaleD" type="range" min="0.08" max="0.22" step="0.002"></div>
         <span class="help">Glisse les marqueurs pour placer. Les sliders redimensionnent.</span>
@@ -94,7 +100,7 @@
 
       <div id="menu">
         <div class="panel">
-          <h1>Wing Chun<br><small>Simon Game</small></h1>
+          <h1><span class="pm">Wing Chun</span><br><small>Simon Game</small></h1>
           <p>Reproduis les techniques dans le bon ordre !</p>
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
@@ -365,6 +371,7 @@ function loop(t=performance.now()){
 /* ====== init ====== */
 syncMarkers();
 requestAnimationFrame(loop);
+const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';
 </script>
 </body>
 </html>
