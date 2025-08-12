@@ -49,7 +49,6 @@
   .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
   .subtitle{opacity:.95;margin:0 0 16px}
   .actions{display:flex;gap:12px;justify-content:center}
-
 </style>
 </head>
 <body>
@@ -60,9 +59,7 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
-    <div class="right">
-      <!-- plus de bouton/onglet d’édition -->
-    </div>
+    <div class="right"><!-- plus d’édition, on garde ça propre --></div>
   </header>
 
   <div id="stageWrap">
@@ -94,15 +91,14 @@
     </div>
   </div>
 
-  <footer>Scène fixe 1536×1160. Ciel 1:1. Deux mannequins (dummy & dummy2). Titre Permanent Marker.</footer>
+  <footer>Scène 1536×1160. Ciel 1:1. Deux mannequins centrés. Titre Permanent Marker.</footer>
 </div>
 
 <script>
-/* ====== helpers ====== */
+/* ====== refs ====== */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
-const bestMenuEl=document.getElementById('bestMenu');
 const menu=document.getElementById('menu');
 const startBtn=document.getElementById('startBtn');
 const muteBtn=document.getElementById('muteBtn');
@@ -117,7 +113,7 @@ const SFX = {
   tan:   new Audio('assets/sounds/tan.wav'),
   bon:   new Audio('assets/sounds/bon.wav'),
   punch: new Audio('assets/sounds/punch.wav'),
-  wrong: new Audio('assets/sounds/wrong.wav'),
+  wrong: new Audio('assets/sounds/wrong.mp3'),
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
 SFX.music.loop=true; SFX.music.volume=0.5;
@@ -128,7 +124,7 @@ const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 /* ====== images BG ====== */
 /* CIEL FIXE 1:1 */
 const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';   // 1536×1160 exact
-const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // montagnes loin
+const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // montagnes loin (nouvelles)
 const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // montagnes proches
 const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // allée
 
@@ -140,15 +136,17 @@ const IM = {
     pak:   'https://i.imgur.com/AweXMem.png',
     punch: 'https://i.imgur.com/JYL2S46.png'
   },
+  // Mannequin principal: on garde les états "during/after" pour réactions
   dummy: {
     pakDuring: 'https://i.imgur.com/c5FD1Up.png',
     pakAfter:  'https://i.imgur.com/6ZKmReD.png',
     tanDuring: 'https://i.imgur.com/3abOAT3.png',
-    tanAfter:  'https://i.imgur.com/fHGNzYR.png'
+    tanAfter:  'https://i.imgur.com/fHGNzYR.png',
+    neutral:   'https://i.imgur.com/VS52QCf.png' // nouveau design fourni
   },
-  /* mannequin2: pour l’instant un état neutre (ton lien). Donne-moi d’autres poses si tu veux l’animer. */
+  // Mannequin2: visible seulement pour Tan & Punch
   dummy2: {
-    neutral: 'https://i.imgur.com/fHGNzYR.png'
+    neutral: 'https://i.imgur.com/04PP8Bo.png'   // nouveau design fourni
   },
   ono: {
     pak:   'https://i.imgur.com/Y4EEnZg.png',
@@ -157,12 +155,13 @@ const IM = {
     punch: 'https://i.imgur.com/dVISKcB.png'
   }
 };
+/* chargeur */
 function load(url){ const img=new Image(); img.src=url; return img; }
 const IMG={};
 for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
 for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
-for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
 for(const k in IM.dummy2)  IMG['d2_'+k]=load(IM.dummy2[k]);
+for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
 
 /* ====== canvas ====== */
 const cx=document.getElementById('cx');
@@ -170,10 +169,11 @@ const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160; // FIXE
 
 /* ====== config placement ====== */
+/* fighter.x est la position gauche; dummy.centerX / dummy2.centerX = centre horizontal partagé */
 const DEFAULT_CFG = {
-  fighter: { w: 0.14,  x: 0.35, bottom: 0.06 },
-  dummy:   { w: 0.126, x: 0.40, bottom: 0.06 },
-  dummy2:  { w: 0.120, x: 0.62, bottom: 0.06 },  // ← nouveau: taille/position indépendantes
+  fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },  // perso bien visible à gauche
+  dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
+  dummy2:  { w: 0.120, centerX: 0.58, bottom: 0.06 }, // même centre que dummy pour se superposer
   parallax:{ sky:0, far:0.20, near:0.42 }
 };
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
@@ -192,7 +192,7 @@ function drawBG(dt){
   if (SKY.complete) ctx.drawImage(SKY, 0, 0);         // ciel 1:1
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);                  // tu peux ajuster le Y ici
+  tileNative(MT_FAR,  offFar,  185);                  // ajuste Y si tu veux les descendre/monter
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
 
@@ -205,28 +205,11 @@ function drawBG(dt){
 
 /* états courants */
 let currentFighter = IMG['f_pak'];
-let currentDummy   = IMG['d_pakAfter'];
-let currentDummy2  = IMG['d2_neutral']; // mannequin2 statique pour l’instant
+let currentDummy   = IMG['d_neutral'];     // par défaut: nouveau design
+let currentDummy2  = IMG['d2_neutral'];    // mannequin2
+let showDummy2     = false;                // visible seulement pour Tan & Punch
 
-/* dessin mannequins & fighter */
-function drawDummy(){
-  const img=currentDummy; if(!img || !img.complete) return;
-  const targetW = Math.max(90, CFG.dummy.w*W);
-  const s = targetW / img.naturalWidth;
-  const targetH = img.naturalHeight * s;
-  const x = W*CFG.dummy.x;
-  const y = H - targetH - H*CFG.dummy.bottom;
-  ctx.drawImage(img, x, y, targetW, targetH);
-}
-function drawDummy2(){
-  const img=currentDummy2; if(!img || !img.complete) return;
-  const targetW = Math.max(90, CFG.dummy2.w*W);
-  const s = targetW / img.naturalWidth;
-  const targetH = img.naturalHeight * s;
-  const x = W*CFG.dummy2.x;
-  const y = H - targetH - H*CFG.dummy2.bottom;
-  ctx.drawImage(img, x, y, targetW, targetH);
-}
+/* dessin utilitaires */
 function drawFighter(){
   const img=currentFighter; if(!img || !img.complete) return;
   const targetW = Math.max(90, CFG.fighter.w*W);
@@ -235,6 +218,27 @@ function drawFighter(){
   const x = W*CFG.fighter.x;
   const y = H - targetH - H*CFG.fighter.bottom;
   ctx.drawImage(img, x, y, targetW, targetH);
+}
+function drawDummy(){
+  const img=currentDummy; if(!img || !img.complete) return;
+  const targetW = Math.max(90, CFG.dummy.w*W);
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const cxCenter = W*CFG.dummy.centerX;
+  const xLeft = cxCenter - targetW/2;
+  const y = H - targetH - H*CFG.dummy.bottom;
+  ctx.drawImage(img, xLeft, y, targetW, targetH);
+}
+function drawDummy2(){
+  if(!showDummy2) return;
+  const img=currentDummy2; if(!img || !img.complete) return;
+  const targetW = Math.max(90, CFG.dummy2.w*W);
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const cxCenter = W*CFG.dummy2.centerX;
+  const xLeft = cxCenter - targetW/2;
+  const y = H - targetH - H*CFG.dummy2.bottom;
+  ctx.drawImage(img, xLeft, y, targetW, targetH);
 }
 
 /* ====== onomatopées ====== */
@@ -247,27 +251,46 @@ function showOno(tech){
 
 /* ====== Simon ====== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
-bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best;
+bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
-function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); b.classList.toggle('lit',on); b.classList.toggle(TECH_TO_COLOR[tech],on); }
+
+function setLit(tech,on){
+  const b=pads.find(x=>x.dataset.tech===tech);
+  b.classList.toggle('lit',on);
+  b.classList.toggle(TECH_TO_COLOR[tech],on);
+}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
 
+/* Affichage conditionnel des mannequins et réactions */
 function setSpritesFor(tech){
   currentFighter = IMG['f_'+tech] || currentFighter;
-  // mannequin principal réagit comme avant
-  if(tech==='pak'||tech==='bon'){ currentDummy=IMG['d_pakDuring']; setTimeout(()=>currentDummy=IMG['d_pakAfter'],260); }
-  else { currentDummy=IMG['d_tanDuring']; setTimeout(()=>currentDummy=IMG['d_tanAfter'],260); }
-  // mannequin2 pour l’instant ne change pas d’état (neutral)
-  // Si tu me files ses poses, on calquera la même logique ici pour currentDummy2.
+
+  // mannequin principal: réactions "during/after" si dispo
+  if(tech==='pak' || tech==='bon'){
+    currentDummy = IMG['d_pakDuring'] || IMG['d_neutral'];
+    setTimeout(()=> currentDummy = IMG['d_pakAfter'] || IMG['d_neutral'], 260);
+  }else if(tech==='tan' || tech==='punch'){
+    currentDummy = IMG['d_tanDuring'] || IMG['d_neutral'];
+    setTimeout(()=> currentDummy = IMG['d_tanAfter'] || IMG['d_neutral'], 260);
+  }else{
+    currentDummy = IMG['d_neutral'];
+  }
+
+  // mannequin2: visible uniquement pour Tan & Punch
+  showDummy2 = (tech==='tan' || tech==='punch');
+  currentDummy2 = IMG['d2_neutral'];
 }
 
 async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
-    setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
-    await sleep(460); setLit(tech,false); await sleep(160);
+    setSpritesFor(tech);
+    setLit(tech,true); play(SFX[tech]); showOno(tech);
+    await sleep(460);
+    setLit(tech,false);
+    await sleep(160);
   }
   locked=false; userIndex=0;
 }
@@ -275,19 +298,27 @@ async function press(tech){
   if(locked) return;
   setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
   await sleep(200); setLit(tech,false);
+
   if(tech!==seq[userIndex]){
     play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
+
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){best=score;bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best; localStorage.setItem('wcs_best',best);}
+    if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('wcs_best',best);}
     seq.push(randTech()); await sleep(420); playSequence();
   }
 }
-pads.forEach(b=>{ b.addEventListener('click',()=>press(b.dataset.tech)); b.addEventListener('touchstart',e=>{e.preventDefault();press(b.dataset.tech)},{passive:false}); });
 
+/* Entrées */
+pads.forEach(b=>{
+  b.addEventListener('click',()=>press(b.dataset.tech));
+  b.addEventListener('touchstart',e=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
+});
+
+/* Démarrage */
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play().catch(()=>{});
@@ -301,9 +332,9 @@ function loop(t=performance.now()){
   const dt = Math.min(33, t-last) / (1000/60); last=t;
   ctx.clearRect(0,0,W,H);
   drawBG(dt);
-  drawDummy();   // mannequin 1
-  drawDummy2();  // mannequin 2 (nouveau)
-  drawFighter(); // perso au premier plan
+  drawDummy();    // mannequin principal
+  drawDummy2();   // mannequin 2 (uniquement Tan & Punch)
+  drawFighter();  // perso devant
   requestAnimationFrame(loop);
 }
 
