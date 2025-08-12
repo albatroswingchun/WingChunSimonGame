@@ -149,8 +149,11 @@ const W=1536, H=1160;
 const DEFAULT_CFG = {
   fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },
   dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
-  parallax:{ sky:0, far:0.20, near:0.42 }
+  parallax:{ sky:0, far:0.20, near:0.42 },
+  // décalage fin par technique, en pixels (positif = vers la DROITE)
+  fighterDxPxByTech: { pak: 12, tan: 0, bon: 0, punch: 0 }
 };
+
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
 
 /* ====== tiling ====== */
@@ -178,9 +181,18 @@ function drawBG(dt){
 
 /* ====== état sprites ====== */
 let currentFighter = IMG.f_pak;
-let dummyPhase = { img: IMG.d_neutral, until: 0 }; // expire par timestamp
+let dummyPhase = { img: IMG.d_neutral, until: 0 };
+
+// tech courante et petite anim d'action
+let currentTech = 'pak';
+let actionAnim = { until: 0, lunge: 0, scale: 1 }; // lunge en px, scale multiplicatif
+
 
 function setSpritesFor(tech){
+  currentTech = tech;
+  const now = performance.now();
+  actionAnim = { until: now + 260, lunge: 10, scale: 1.03 }; // impulsion courte
+  
   currentFighter = IMG['f_'+tech] || currentFighter;
   const now = performance.now();
   if(tech==='pak' || tech==='bon'){
@@ -194,13 +206,40 @@ function setSpritesFor(tech){
 }
 
 function drawFighter(){
-  const img=currentFighter; if(!img||!img.complete||!img.naturalWidth) return;
-  const targetW = Math.max(90, CFG.fighter.w*W);
-  const s = targetW / img.naturalWidth;
-  const targetH = img.naturalHeight * s;
-  const x = W*CFG.fighter.x;
-  const y = H - targetH - H*CFG.fighter.bottom;
-  ctx.drawImage(img, x, y, targetW, targetH);
+  const img = currentFighter;
+  if(!img || !img.complete || !img.naturalWidth) return;
+
+  // tailles de base
+  const baseW = Math.max(90, CFG.fighter.w*W);
+  const baseScale = baseW / img.naturalWidth;
+  const baseH = img.naturalHeight * baseScale;
+
+  // offset fin par technique
+  const dxTech = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
+
+  // animation: idle bob + impulsion d'action
+  const now = performance.now();
+
+  // idle: léger "bob" vertical quand aucune action
+  const idleBob = (now > actionAnim.until) ? Math.sin(now/420)*3 : 0;
+
+  // action: lunge + petit scale progressif
+  let extraX = 0, extraY = 0, scaleMul = 1;
+  if(now < actionAnim.until){
+    const dur = actionAnim.until - (now - 260);  // ~260ms
+    const t = 1 - Math.max(0,(actionAnim.until - now)/Math.max(1,dur));
+    const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    extraX = actionAnim.lunge * ease;           // pousse un peu vers l’adversaire
+    scaleMul = 1 + (actionAnim.scale - 1) * ease;
+    extraY = -2 * ease;                         // micro impulsion vers le haut
+  }
+
+  // position finale
+  const xBase = W*CFG.fighter.x + dxTech + extraX;
+  const yBase = H - (baseH*scaleMul) - H*CFG.fighter.bottom + idleBob + extraY;
+
+  // rendu
+  ctx.drawImage(img, xBase, yBase, baseW*scaleMul, baseH*scaleMul);
 }
 function drawDummy(){
   const now=performance.now();
