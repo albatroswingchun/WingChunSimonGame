@@ -116,11 +116,18 @@ muteBtn.onclick=()=>{
 };
 const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(e){} } };
 
-/* ====== images BG ====== */
-const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/QW70yEx.png';
-const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';
-const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';
-const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';
+/* ====== BG loader (robuste) ====== */
+function loadBG(url){
+  const i = new Image();
+  i.crossOrigin = 'anonymous';
+  i.onerror = ()=>console.warn('BG introuvable:', url);
+  i.src = url;
+  return i;
+}
+const SKY    = loadBG('https://i.imgur.com/QW70yEx.png'); // nouveau ciel
+const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
+const MT_NEAR= loadBG('https://i.imgur.com/6Hnun6T.png');
+const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 
 /* ====== sprites ====== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
@@ -146,15 +153,18 @@ const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160;
 
 /* ====== config ====== */
+// Neutralise l'ancien layout pour appliquer nos nouveaux offsets immédiatement
+localStorage.removeItem('wcs_layout');
+
 const DEFAULT_CFG = {
   fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },
   dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
   parallax:{ sky:0, far:0.20, near:0.42 },
-  // décalage fin par technique, en pixels (positif = vers la DROITE)
+  // Décalage fin par technique (positif = vers la DROITE)
   fighterDxPxByTech: { pak: 12, tan: 150, bon: 0, punch: 150 }
 };
 
-let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
+let CFG = DEFAULT_CFG;
 
 /* ====== tiling ====== */
 function tileNative(img, offsetX, y){
@@ -167,11 +177,10 @@ function tileNative(img, offsetX, y){
 /* ====== BG + sprites ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  // ciel : dessiner seulement si l'image est vraiment prête
+  // ciel : dessiner seulement si l'image est prête, sinon fallback dégradé
   if (SKY.complete && SKY.naturalWidth){
     ctx.drawImage(SKY, 0, 0);
   } else {
-    // fallback visuel pour éviter l'écran noir pendant le chargement/erreur
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#0a0c12');
     g.addColorStop(1, '#1a1f2a');
@@ -192,7 +201,6 @@ function drawBG(dt){
   }
 }
 
-
 /* ====== état sprites ====== */
 let currentFighter = IMG.f_pak;
 let dummyPhase = { img: IMG.d_neutral, until: 0 };
@@ -201,13 +209,14 @@ let dummyPhase = { img: IMG.d_neutral, until: 0 };
 let currentTech = 'pak';
 let actionAnim = { until: 0, lunge: 0, scale: 1 }; // lunge en px, scale multiplicatif
 
-
 function setSpritesFor(tech){
   currentTech = tech;
   const now = performance.now();
 
-  // petite impulsion sur le personnage
-  actionAnim = { until: now + 260, lunge: 10, scale: 1.03 };
+  // impulsion courte personnalisable
+  const LUNGE = { pak: 10, tan: 12, bon: 8,  punch: 14 };
+  const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
+  actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
 
   // sprite du perso
   currentFighter = IMG['f_'+tech] || currentFighter;
@@ -230,7 +239,6 @@ function setSpritesFor(tech){
   }
 }
 
-
 function drawFighter(){
   const img = currentFighter;
   if(!img || !img.complete || !img.naturalWidth) return;
@@ -240,8 +248,9 @@ function drawFighter(){
   const baseScale = baseW / img.naturalWidth;
   const baseH = img.naturalHeight * baseScale;
 
-  // offset fin par technique
-  const dxTech = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
+  // offset fin par technique, avec clamp de sécurité
+  const rawDx = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) ?? 0;
+  const dxTech = Math.max(-500, Math.min(500, rawDx));
 
   // animation: idle bob + impulsion d'action
   const now = performance.now();
@@ -252,8 +261,8 @@ function drawFighter(){
   // action: lunge + petit scale progressif
   let extraX = 0, extraY = 0, scaleMul = 1;
   if(now < actionAnim.until){
-    const dur = actionAnim.until - (now - 260);  // ~260ms
-    const t = 1 - Math.max(0,(actionAnim.until - now)/Math.max(1,dur));
+    const dur = 260;
+    const t = 1 - Math.max(0,(actionAnim.until - now)/dur);
     const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
     extraX = actionAnim.lunge * ease;           // pousse un peu vers l’adversaire
     scaleMul = 1 + (actionAnim.scale - 1) * ease;
@@ -339,8 +348,7 @@ async function press(tech){
 pads.forEach(b=>{
   b.addEventListener('pointerdown',e=>{
     e.preventDefault();
-    const tech=b.dataset.tech;
-    press(tech);
+    press(b.dataset.tech);
   }, {passive:false});
 });
 
