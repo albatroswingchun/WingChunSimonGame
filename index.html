@@ -5,44 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun Simon – 1536×1160</title>
 
-<!-- Police Permanent Marker pour le titre -->
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
-
 <style>
   :root{
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
   }
-
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-
   header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
   header .left, header .right{display:flex;align-items:center;gap:8px}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
   footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
-
-  /* Zone d’affichage FIXE 1536×1160 centrée */
   #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
   #stage{position:relative;width:1536px;height:1160px}
   canvas{position:absolute;inset:0;width:1536px;height:1160px;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 
-  /* Boutons jeu */
   #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
-  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer}
+  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
   .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
 
-  /* Onomatopées image + fondu */
   #onoImg{position:absolute;left:50%;top:12%;transform:translate(-50%,0);width:auto;height:200px;opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  /* Menu */
   #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
   .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
   .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
@@ -59,7 +50,7 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
-    <div class="right"><!-- pas d’édition --></div>
+    <div class="right"></div>
   </header>
 
   <div id="stageWrap">
@@ -80,7 +71,7 @@
         <div class="panel">
           <h1 class="title-main">Wing Chun</h1>
           <div class="title-sub">Simon Game</div>
-          <p class="subtitle">Reproduis les techniques dans le bon ordre !</p>
+          <p class="subtitle">Reproduis les techniques dans le bon ordre.</p>
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
             <button id="muteBtn"  class="btn">🔊 Son</button>
@@ -91,7 +82,7 @@
     </div>
   </div>
 
-  <footer>Scène 1536×1160. Ciel 1:1. Deux mannequins centrés. Titre Permanent Marker.</footer>
+  <footer>Scène 1536×1160. Parallax. Un seul mannequin. Permanent Marker.</footer>
 </div>
 
 <script>
@@ -106,8 +97,6 @@ const muteBtn=document.getElementById('muteBtn');
 const onoImg=document.getElementById('onoImg');
 const flash=document.getElementById('flash');
 
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
-
 /* ====== sons ====== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
@@ -119,110 +108,93 @@ const SFX = {
 };
 SFX.music.loop=true; SFX.music.volume=0.5;
 Object.values(SFX).forEach(a=>a.preload='auto');
-let muted=false; muteBtn.onclick=()=>{muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});};
-const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
+let muted=false;
+muteBtn.onclick=()=>{
+  muted=!muted;
+  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
+  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
+};
+const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(e){} } };
 
 /* ====== images BG ====== */
-/* CIEL FIXE 1:1 */
-const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';   // 1536×1160 exact
-const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // montagnes loin (nouvelles)
-const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // montagnes proches
-const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // allée
+const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';
+const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';
+const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';
+const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';
 
 /* ====== sprites ====== */
-const IM = {
-  fighter: {
-    bon:   'https://i.imgur.com/CG30Yh6.png',
-    tan:   'https://i.imgur.com/ZrLk97U.png',
-    pak:   'https://i.imgur.com/AweXMem.png',
-    punch: 'https://i.imgur.com/JYL2S46.png'
-  },
-  // Mannequin principal (avec réactions)
-  dummy: {
-    neutral:   'https://i.imgur.com/VS52QCf.png',
-    pakDuring: 'https://i.imgur.com/c5FD1Up.png',
-    pakAfter:  'https://i.imgur.com/6ZKmReD.png',
-    tanDuring: 'https://i.imgur.com/3abOAT3.png',
-    tanAfter:  'https://i.imgur.com/fHGNzYR.png'
-  },
-  // Mannequin 2: visible seulement pour Tan & Punch
-  dummy2: {
-    neutral: 'https://i.imgur.com/04PP8Bo.png'
-  },
-  ono: {
-    pak:   'https://i.imgur.com/Y4EEnZg.png',
-    tan:   'https://i.imgur.com/ELUj44i.png',
-    bon:   'https://i.imgur.com/6pHczNb.png',
-    punch: 'https://i.imgur.com/dVISKcB.png'
-  }
+function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
+const IMG={
+  f_pak:   load('https://i.imgur.com/AweXMem.png'),
+  f_tan:   load('https://i.imgur.com/ZrLk97U.png'),
+  f_bon:   load('https://i.imgur.com/CG30Yh6.png'),
+  f_punch: load('https://i.imgur.com/JYL2S46.png'),
+  d_neutral:   load('https://i.imgur.com/VS52QCf.png'),
+  d_pak:       load('https://i.imgur.com/c5FD1Up.png'),
+  d_tan:       load('https://i.imgur.com/3abOAT3.png'),
+  d_afterPak:  load('https://i.imgur.com/6ZKmReD.png'),
+  d_afterTan:  load('https://i.imgur.com/fHGNzYR.png'),
+  o_pak:   load('https://i.imgur.com/Y4EEnZg.png'),
+  o_tan:   load('https://i.imgur.com/ELUj44i.png'),
+  o_bon:   load('https://i.imgur.com/6pHczNb.png'),
+  o_punch: load('https://i.imgur.com/dVISKcB.png')
 };
-/* chargeur robuste */
-function load(url){
-  const img=new Image();
-  img.crossOrigin='anonymous';
-  img.onerror=()=>console.error('Image introuvable:',url);
-  img.src=url;
-  return img;
-}
-const IMG={};
-for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
-for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
-for(const k in IM.dummy2)  IMG['d2_'+k]=load(IM.dummy2[k]);
-for(const k in IM.ono)     IMG['o_'+k]=load(IM.ono[k]);
 
 /* ====== canvas ====== */
 const cx=document.getElementById('cx');
-const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
-const W=1536, H=1160; // FIXE
+const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const W=1536, H=1160;
 
-/* ====== config placement ====== */
-/* fighter.x est la position gauche; dummy.centerX / dummy2.centerX = centre horizontal partagé */
+/* ====== config ====== */
 const DEFAULT_CFG = {
-  fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },  // perso à gauche, bien visible
+  fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },
   dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
-  dummy2:  { w: 0.120, centerX: 0.58, bottom: 0.06 }, // centre identique pour superposition
   parallax:{ sky:0, far:0.20, near:0.42 }
 };
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
 
-/* ====== tuilage native ====== */
+/* ====== tiling ====== */
 function tileNative(img, offsetX, y){
   if(!img.complete || !img.naturalWidth) return;
-  const iw = img.naturalWidth; // attendu 1536
+  const iw = img.naturalWidth;
   let x = offsetX % iw; if(x>0) x -= iw;
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
-/* ====== rendu BG + sprites ====== */
+/* ====== BG + sprites ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  if (SKY.complete) ctx.drawImage(SKY, 0, 0);         // ciel 1:1
+  if (SKY.complete) ctx.drawImage(SKY, 0, 0);
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);                  // ajuste Y pour descendre/monter les montagnes lointaines
+  tileNative(MT_FAR,  offFar,  185);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
-
-  // allée en bas à sa hauteur native
   if (ALLEY.complete && ALLEY.naturalWidth){
     const y = H - ALLEY.naturalHeight;
     tileNative(ALLEY, 0, y);
   }
 }
 
-/* états courants */
-let currentFighter = IMG['f_pak'];
-let currentDummy   = IMG['d_neutral'];     // nouveau design par défaut
-let currentDummy2  = IMG['d2_neutral'];    // mannequin2
-let showDummy2     = false;                // visible seulement pour Tan & Punch
+/* ====== état sprites ====== */
+let currentFighter = IMG.f_pak;
+let dummyPhase = { img: IMG.d_neutral, until: 0 }; // expire par timestamp
 
-/* dessin utilitaires */
-function drawFighter(){
-  const img=currentFighter;
-  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
-    console.error('Sprite fighter introuvable');
-    return;
+function setSpritesFor(tech){
+  currentFighter = IMG['f_'+tech] || currentFighter;
+  const now = performance.now();
+  if(tech==='pak' || tech==='bon'){
+    dummyPhase = { img: IMG.d_pak || IMG.d_neutral, until: now + 260 };
+    // après-impulsion douce
+    setTimeout(()=>{ if(performance.now()>dummyPhase.until) dummyPhase={img:IMG.d_afterPak||IMG.d_neutral, until: performance.now()+200}; }, 260);
+  }else if(tech==='tan' || tech==='punch'){
+    dummyPhase = { img: IMG.d_tan || IMG.d_neutral, until: now + 260 };
+    setTimeout(()=>{ if(performance.now()>dummyPhase.until) dummyPhase={img:IMG.d_afterTan||IMG.d_neutral, until: performance.now()+200}; }, 260);
   }
+}
+
+function drawFighter(){
+  const img=currentFighter; if(!img||!img.complete||!img.naturalWidth) return;
   const targetW = Math.max(90, CFG.fighter.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
@@ -231,32 +203,15 @@ function drawFighter(){
   ctx.drawImage(img, x, y, targetW, targetH);
 }
 function drawDummy(){
-  const img=currentDummy;
-  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
-    console.error('Sprite dummy introuvable');
-    return;
-  }
+  const now=performance.now();
+  const active = now < dummyPhase.until ? dummyPhase.img : IMG.d_neutral;
+  const img=active; if(!img||!img.complete||!img.naturalWidth) return;
   const targetW = Math.max(90, CFG.dummy.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
   const cxCenter = W*CFG.dummy.centerX;
   const xLeft = cxCenter - targetW/2;
   const y = H - targetH - H*CFG.dummy.bottom;
-  ctx.drawImage(img, xLeft, y, targetW, targetH);
-}
-function drawDummy2(){
-  if(!showDummy2) return;
-  const img=currentDummy2;
-  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
-    console.error('Sprite dummy2 introuvable');
-    return;
-  }
-  const targetW = Math.max(90, CFG.dummy2.w*W);
-  const s = targetW / img.naturalWidth;
-  const targetH = img.naturalHeight * s;
-  const cxCenter = W*CFG.dummy2.centerX;
-  const xLeft = cxCenter - targetW/2;
-  const y = H - targetH - H*CFG.dummy2.bottom;
   ctx.drawImage(img, xLeft, y, targetW, targetH);
 }
 
@@ -270,43 +225,18 @@ function showOno(tech){
 
 /* ====== Simon ====== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
-bestEl.textContent=best; const bestMenu=document.getElementById('bestMenu'); if(bestMenu) bestMenu.textContent=best;
+bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 
 function setLit(tech,on){
   const b=pads.find(x=>x.dataset.tech===tech);
+  if(!b) return;
   b.classList.toggle('lit',on);
   b.classList.toggle(TECH_TO_COLOR[tech],on);
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
-
-/* Affichage conditionnel des mannequins et réactions */
-function setSpritesFor(tech){
-  currentFighter = IMG['f_'+tech] || currentFighter;
-
-  // mannequin principal: réactions "during/after" si dispo
-  if(tech==='pak' || tech==='bon'){
-    currentDummy = IMG['d_pakDuring'] || IMG['d_neutral'];
-    setTimeout(()=> currentDummy = IMG['d_pakAfter'] || IMG['d_neutral'], 260);
-  }else if(tech==='tan' || tech==='punch'){
-    currentDummy = IMG['d_tanDuring'] || IMG['d_neutral'];
-    setTimeout(()=> currentDummy = IMG['d_tanAfter'] || IMG['d_neutral'], 260);
-  }else{
-    currentDummy = IMG['d_neutral'];
-  }
-
-   // mannequin2: visible uniquement pour Tan & Punch si le sprite existe
-  const d2 = IMG['d2_neutral'];
-  const readyD2 = d2 && d2.complete && d2.naturalWidth && d2.naturalHeight;
-  showDummy2 = (tech==='tan' || tech==='punch') && readyD2;
-  if(showDummy2){
-    currentDummy2 = d2;
-  }else if((tech==='tan' || tech==='punch') && !readyD2){
-    console.error('Sprite dummy2 introuvable');
-  }
-}
 
 async function playSequence(){
   locked=true; await sleep(560);
@@ -325,34 +255,38 @@ async function press(tech){
   await sleep(200); setLit(tech,false);
 
   if(tech!==seq[userIndex]){
-    play(SFX.wrong); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    play(SFX.wrong);
+    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
-
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
     if(score>best){
-      best=score; bestEl.textContent=best; if(bestMenu) bestMenu.textContent=best;
+      best=score; bestEl.textContent=best; if(bestMenuEl) bestMenuEl.textContent=best;
       localStorage.setItem('wcs_best',best);
     }
     seq.push(randTech()); await sleep(420); playSequence();
   }
 }
 
-/* Entrées */
+/* ====== Entrées unifiées ====== */
 pads.forEach(b=>{
-  b.addEventListener('click',()=>press(b.dataset.tech));
-  b.addEventListener('touchstart',e=>{e.preventDefault();press(b.dataset.tech)},{passive:false});
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    const tech=b.dataset.tech;
+    press(tech);
+  }, {passive:false});
 });
 
-/* Démarrage */
+/* ====== Démarrage ====== */
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play().catch(()=>{});
+  dummyPhase={img:IMG.d_neutral, until:0};
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-startBtn.addEventListener('click',startGame);
+startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 
 /* ====== boucle ====== */
 let last=performance.now();
@@ -360,9 +294,8 @@ function loop(t=performance.now()){
   const dt = Math.min(33, t-last) / (1000/60); last=t;
   ctx.clearRect(0,0,W,H);
   drawBG(dt);
-  drawDummy();    // mannequin principal
-  drawDummy2();   // mannequin 2 (uniquement Tan & Punch)
-  drawFighter();  // perso devant
+  drawDummy();
+  drawFighter();
   requestAnimationFrame(loop);
 }
 
