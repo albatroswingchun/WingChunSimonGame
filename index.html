@@ -151,7 +151,7 @@ const DEFAULT_CFG = {
   dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
   parallax:{ sky:0, far:0.20, near:0.42 },
   // décalage fin par technique, en pixels (positif = vers la DROITE)
-  fighterDxPxByTech: { pak: 12, tan: 2500, bon: 0, punch: 2500 }
+  fighterDxPxByTech: { pak: 12, tan: 150, bon: 0, punch: 150 }
 };
 
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
