@@ -218,7 +218,11 @@ let showDummy2     = false;                // visible seulement pour Tan & Punch
 
 /* dessin utilitaires */
 function drawFighter(){
-  const img=currentFighter; if(!img || !img.complete) return;
+  const img=currentFighter;
+  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
+    console.error('Sprite fighter introuvable');
+    return;
+  }
   const targetW = Math.max(90, CFG.fighter.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
@@ -227,7 +231,11 @@ function drawFighter(){
   ctx.drawImage(img, x, y, targetW, targetH);
 }
 function drawDummy(){
-  const img=currentDummy; if(!img || !img.complete) return;
+  const img=currentDummy;
+  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
+    console.error('Sprite dummy introuvable');
+    return;
+  }
   const targetW = Math.max(90, CFG.dummy.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
@@ -238,7 +246,11 @@ function drawDummy(){
 }
 function drawDummy2(){
   if(!showDummy2) return;
-  const img=currentDummy2; if(!img || !img.complete) return;
+  const img=currentDummy2;
+  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight){
+    console.error('Sprite dummy2 introuvable');
+    return;
+  }
   const targetW = Math.max(90, CFG.dummy2.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
@@ -285,9 +297,15 @@ function setSpritesFor(tech){
     currentDummy = IMG['d_neutral'];
   }
 
-  // mannequin2: visible uniquement pour Tan & Punch
-  showDummy2 = (tech==='tan' || tech==='punch');
-  currentDummy2 = IMG['d2_neutral'];
+   // mannequin2: visible uniquement pour Tan & Punch si le sprite existe
+  const d2 = IMG['d2_neutral'];
+  const readyD2 = d2 && d2.complete && d2.naturalWidth && d2.naturalHeight;
+  showDummy2 = (tech==='tan' || tech==='punch') && readyD2;
+  if(showDummy2){
+    currentDummy2 = d2;
+  }else if((tech==='tan' || tech==='punch') && !readyD2){
+    console.error('Sprite dummy2 introuvable');
+  }
 }
 
 async function playSequence(){
