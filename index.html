@@ -167,17 +167,31 @@ function tileNative(img, offsetX, y){
 /* ====== BG + sprites ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  if (SKY.complete) ctx.drawImage(SKY, 0, 0);
+  // ciel : dessiner seulement si l'image est vraiment prête
+  if (SKY.complete && SKY.naturalWidth){
+    ctx.drawImage(SKY, 0, 0);
+  } else {
+    // fallback visuel pour éviter l'écran noir pendant le chargement/erreur
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0a0c12');
+    g.addColorStop(1, '#1a1f2a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
+
   tileNative(MT_FAR,  offFar,  185);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
+
   if (ALLEY.complete && ALLEY.naturalWidth){
     const y = H - ALLEY.naturalHeight;
     tileNative(ALLEY, 0, y);
   }
 }
+
 
 /* ====== état sprites ====== */
 let currentFighter = IMG.f_pak;
@@ -191,19 +205,31 @@ let actionAnim = { until: 0, lunge: 0, scale: 1 }; // lunge en px, scale multipl
 function setSpritesFor(tech){
   currentTech = tech;
   const now = performance.now();
-  actionAnim = { until: now + 260, lunge: 10, scale: 1.03 }; // impulsion courte
-  
+
+  // petite impulsion sur le personnage
+  actionAnim = { until: now + 260, lunge: 10, scale: 1.03 };
+
+  // sprite du perso
   currentFighter = IMG['f_'+tech] || currentFighter;
-  const now = performance.now();
+
+  // mannequin: phase during -> after
   if(tech==='pak' || tech==='bon'){
     dummyPhase = { img: IMG.d_pak || IMG.d_neutral, until: now + 260 };
-    // après-impulsion douce
-    setTimeout(()=>{ if(performance.now()>dummyPhase.until) dummyPhase={img:IMG.d_afterPak||IMG.d_neutral, until: performance.now()+200}; }, 260);
-  }else if(tech==='tan' || tech==='punch'){
+    setTimeout(()=>{
+      if (performance.now() > dummyPhase.until){
+        dummyPhase = { img: IMG.d_afterPak || IMG.d_neutral, until: performance.now() + 200 };
+      }
+    }, 260);
+  } else if(tech==='tan' || tech==='punch'){
     dummyPhase = { img: IMG.d_tan || IMG.d_neutral, until: now + 260 };
-    setTimeout(()=>{ if(performance.now()>dummyPhase.until) dummyPhase={img:IMG.d_afterTan||IMG.d_neutral, until: performance.now()+200}; }, 260);
+    setTimeout(()=>{
+      if (performance.now() > dummyPhase.until){
+        dummyPhase = { img: IMG.d_afterTan || IMG.d_neutral, until: performance.now() + 200 };
+      }
+    }, 260);
   }
 }
+
 
 function drawFighter(){
   const img = currentFighter;
