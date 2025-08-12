@@ -59,7 +59,7 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
-    <div class="right"><!-- plus d’édition, on garde ça propre --></div>
+    <div class="right"><!-- pas d’édition --></div>
   </header>
 
   <div id="stageWrap">
@@ -99,6 +99,7 @@
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
+const bestMenuEl=document.getElementById('bestMenu');
 const menu=document.getElementById('menu');
 const startBtn=document.getElementById('startBtn');
 const muteBtn=document.getElementById('muteBtn');
@@ -113,7 +114,7 @@ const SFX = {
   tan:   new Audio('assets/sounds/tan.wav'),
   bon:   new Audio('assets/sounds/bon.wav'),
   punch: new Audio('assets/sounds/punch.wav'),
-  wrong: new Audio('assets/sounds/wrong.mp3'),
+  wrong: new Audio('assets/sounds/wrong.wav'),
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
 SFX.music.loop=true; SFX.music.volume=0.5;
@@ -123,7 +124,7 @@ const play=a=>{ if(!muted){ try{a.currentTime=0;a.play()}catch(e){} } };
 
 /* ====== images BG ====== */
 /* CIEL FIXE 1:1 */
-const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/bLV8zWf.png';   // 1536×1160 exact
+const SKY    = new Image(); SKY.src    = 'https://i.imgur.com/QW70yEx.png';   // 1536×1160 exact
 const MT_FAR = new Image(); MT_FAR.src = 'https://i.imgur.com/I4gOsXm.png';   // montagnes loin (nouvelles)
 const MT_NEAR= new Image(); MT_NEAR.src= 'https://i.imgur.com/6Hnun6T.png';   // montagnes proches
 const ALLEY  = new Image(); ALLEY.src  = 'https://i.imgur.com/hVGwPdp.png';   // allée
@@ -136,17 +137,17 @@ const IM = {
     pak:   'https://i.imgur.com/AweXMem.png',
     punch: 'https://i.imgur.com/JYL2S46.png'
   },
-  // Mannequin principal: on garde les états "during/after" pour réactions
+  // Mannequin principal (avec réactions)
   dummy: {
+    neutral:   'https://i.imgur.com/VS52QCf.png',
     pakDuring: 'https://i.imgur.com/c5FD1Up.png',
     pakAfter:  'https://i.imgur.com/6ZKmReD.png',
     tanDuring: 'https://i.imgur.com/3abOAT3.png',
-    tanAfter:  'https://i.imgur.com/fHGNzYR.png',
-    neutral:   'https://i.imgur.com/VS52QCf.png' // nouveau design fourni
+    tanAfter:  'https://i.imgur.com/fHGNzYR.png'
   },
-  // Mannequin2: visible seulement pour Tan & Punch
+  // Mannequin 2: visible seulement pour Tan & Punch
   dummy2: {
-    neutral: 'https://i.imgur.com/04PP8Bo.png'   // nouveau design fourni
+    neutral: 'https://i.imgur.com/04PP8Bo.png'
   },
   ono: {
     pak:   'https://i.imgur.com/Y4EEnZg.png',
@@ -155,8 +156,14 @@ const IM = {
     punch: 'https://i.imgur.com/dVISKcB.png'
   }
 };
-/* chargeur */
-function load(url){ const img=new Image(); img.src=url; return img; }
+/* chargeur robuste */
+function load(url){
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onerror=()=>console.error('Image introuvable:',url);
+  img.src=url;
+  return img;
+}
 const IMG={};
 for(const k in IM.fighter) IMG['f_'+k]=load(IM.fighter[k]);
 for(const k in IM.dummy)   IMG['d_'+k]=load(IM.dummy[k]);
@@ -171,9 +178,9 @@ const W=1536, H=1160; // FIXE
 /* ====== config placement ====== */
 /* fighter.x est la position gauche; dummy.centerX / dummy2.centerX = centre horizontal partagé */
 const DEFAULT_CFG = {
-  fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },  // perso bien visible à gauche
+  fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },  // perso à gauche, bien visible
   dummy:   { w: 0.126, centerX: 0.58, bottom: 0.06 },
-  dummy2:  { w: 0.120, centerX: 0.58, bottom: 0.06 }, // même centre que dummy pour se superposer
+  dummy2:  { w: 0.120, centerX: 0.58, bottom: 0.06 }, // centre identique pour superposition
   parallax:{ sky:0, far:0.20, near:0.42 }
 };
 let CFG = JSON.parse(localStorage.getItem('wcs_layout')||'null') || DEFAULT_CFG;
@@ -192,7 +199,7 @@ function drawBG(dt){
   if (SKY.complete) ctx.drawImage(SKY, 0, 0);         // ciel 1:1
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);                  // ajuste Y si tu veux les descendre/monter
+  tileNative(MT_FAR,  offFar,  185);                  // ajuste Y pour descendre/monter les montagnes lointaines
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
 
@@ -205,7 +212,7 @@ function drawBG(dt){
 
 /* états courants */
 let currentFighter = IMG['f_pak'];
-let currentDummy   = IMG['d_neutral'];     // par défaut: nouveau design
+let currentDummy   = IMG['d_neutral'];     // nouveau design par défaut
 let currentDummy2  = IMG['d2_neutral'];    // mannequin2
 let showDummy2     = false;                // visible seulement pour Tan & Punch
 
@@ -251,7 +258,7 @@ function showOno(tech){
 
 /* ====== Simon ====== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
-bestEl.textContent=best;
+bestEl.textContent=best; const bestMenu=document.getElementById('bestMenu'); if(bestMenu) bestMenu.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
 const TECH_TO_COLOR={pak:'gold',tan:'green',bon:'blue',punch:'red'};
 
@@ -307,7 +314,10 @@ async function press(tech){
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('wcs_best',best);}
+    if(score>best){
+      best=score; bestEl.textContent=best; if(bestMenu) bestMenu.textContent=best;
+      localStorage.setItem('wcs_best',best);
+    }
     seq.push(randTech()); await sleep(420); playSequence();
   }
 }
