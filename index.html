@@ -126,20 +126,19 @@ const SFX = {
 };
 SFX.music.loop = true;
 SFX.music.volume = 0.5;
-  // Baisser le volume des cris Yah uniquement (-20%)
+// Baisser le volume des cris Yah uniquement (-20%)
 SFX.voice_pak.volume   = 0.8;
 SFX.voice_tan.volume   = 0.8;
 SFX.voice_bon.volume   = 0.8;
 SFX.voice_punch.volume = 0.8;
 
-
 /* --- pool audio qui respecte le volume d'origine --- */
 const POOL = {};
 function poolify(key, audio, n = 4){
-  const baseVol = audio.volume;               // mémorise le volume (0.8 pour les Yah)
+  const baseVol = audio.volume;
   const clones = Array.from({length: n-1}, ()=>{
     const c = audio.cloneNode();
-    c.volume = baseVol;                       // copie le volume sur chaque clone
+    c.volume = baseVol;
     return c;
   });
   POOL[key] = [audio, ...clones];
@@ -148,16 +147,12 @@ function playKey(key){
   if (muted) return;
   const arr = POOL[key];
   if (!arr) return;
-
-  // essaie un canal libre
   let a = arr.find(x => x.paused);
-
-  // sinon, crée un clone supplémentaire en gardant le volume d'origine
   if (!a) {
     const template = arr[0];
     a = template.cloneNode();
-    a.volume = template.volume;              // très important: garder le volume
-    if (arr.length < 6) arr.push(a);         // petit plafond pour éviter l’infini
+    a.volume = template.volume;
+    if (arr.length < 6) arr.push(a);
   }
   try { a.currentTime = 0; a.play().catch(()=>{}); } catch(_) {}
 }
@@ -242,19 +237,37 @@ window.addEventListener('orientationchange', resize);
 const CFG = {
   fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{ sky:0, far:0.20, near:0.42 },
+  parallax:{
+    // vitesses horizontales
+    far:  0.20,
+    near: 0.42,
+    // ancrages verticaux proportionnels à H (depuis le bas)
+    // ajuste ces trois valeurs pour caler visuellement ton décor
+    farBottomPct:   0.34,   // la crête lointaine repose à 34% de H au-dessus du bas
+    nearBottomPct:  0.05,   // la chaîne proche à 5%
+    alleyBottomPct: 0       // la ruelle touche le bas
+  },
   fighterDxPxByTech: { pak: -110, tan: 110, bon: -110, punch: 110 }
 };
 
-/* ====== décor (parallax) ====== */
+/* ====== décor (helpers & parallax) ====== */
 function tileNative(img, offsetX, y){
   if(!img.complete || !img.naturalWidth) return;
   const iw = img.naturalWidth;
   let x = offsetX % iw; if(x>0) x -= iw;
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
+
+// ancrage en pourcentage de H, depuis le bas
+function tileBottomAnchoredPct(img, offsetX, bottomPct){
+  if(!img.complete || !img.naturalWidth) return;
+  const y = Math.round(H - img.naturalHeight - (H * bottomPct));
+  tileNative(img, offsetX, y);
+}
+
 let offFar=0, offNear=0;
 function drawBG(dt){
+  // ciel (fallback gradient si pas encore chargé)
   if (SKY.complete && SKY.naturalWidth){
     ctx.drawImage(SKY, 0, 0);
   } else {
@@ -262,15 +275,16 @@ function drawBG(dt){
     g.addColorStop(0, '#0a0c12'); g.addColorStop(1, '#1a1f2a');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
+
+  // parallax horizontal
   offFar  -= CFG.parallax.far  * dt;
   offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
-  tileNative(MT_NEAR, offNear, 400);
-  if (ALLEY.complete && ALLEY.naturalWidth){
-    const y = H - ALLEY.naturalHeight;
-    tileNative(ALLEY, 0, y);
-  }
+
+  // calques ancrés au bas, en proportion de H
+  tileBottomAnchoredPct(MT_FAR,  offFar,  CFG.parallax.farBottomPct);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
+  tileBottomAnchoredPct(MT_NEAR, offNear, CFG.parallax.nearBottomPct);
+  tileBottomAnchoredPct(ALLEY,   0,       CFG.parallax.alleyBottomPct);
 }
 
 /* ====== mannequin animé (centré derrière) ====== */
