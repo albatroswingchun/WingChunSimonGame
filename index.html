@@ -114,13 +114,13 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(e){} } };
+const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(_){/* silence, pas de popup */} } };
 
 /* ====== BG loader robuste ====== */
 function loadBG(url){
   const i = new Image();
   i.crossOrigin = 'anonymous';
-  i.onerror = ()=>{ /* silencieux */ };
+  i.onerror = ()=>{}; // pas de bruit
   i.src = url;
   return i;
 }
@@ -152,12 +152,13 @@ const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160;
 
-/* ====== config (pas de localStorage, pas de surprises) ====== */
+/* ====== config (simple, sans storage) ====== */
 const CFG = {
   fighter: { w: 0.16,  x: 0.25, bottom: 0.08 },
-  dummy:   { w: 0.126, centerX: 0.5, bottom: 0.06 },
+  dummy:   { w: 0.126, centerX: 0.50, bottom: 0.06 }, // pile au milieu
   parallax:{ sky:0, far:0.20, near:0.42 },
-  fighterDxPxByTech: { pak: 0, tan: 150, bon: 0, punch: 150 } // le cœur de ta demande
+  // Décalage fin par technique (px, + = droite)
+  fighterDxPxByTech: { pak: 20, tan: 150, bon: 20, punch: 150 }
 };
 
 /* ====== tiling ====== */
@@ -196,7 +197,11 @@ function drawBG(dt){
 
 /* ====== état sprites ====== */
 let currentFighter = IMG.f_pak;
-let dummyPhase = { img: IMG.d_neutral, until: 0 };
+
+// Phase du mannequin pilotée par temps (pas de setTimeout qui supprime l'image)
+const PHASE = { NONE:0, PAK:1, TAN:2 };
+let dummyState = { phase: PHASE.NONE, start: 0 };
+
 let currentTech = 'pak';
 let actionAnim = { until: 0, lunge: 0, scale: 1 };
 
@@ -204,26 +209,21 @@ function setSpritesFor(tech){
   currentTech = tech;
   const now = performance.now();
 
+  // impulsion courte personnalisée
   const LUNGE = { pak: 10, tan: 12, bon: 8,  punch: 14 };
   const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
   actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
 
+  // sprite du perso
   currentFighter = IMG['f_'+tech] || currentFighter;
 
+  // phase du mannequin: PAK pour pak/bon, TAN pour tan/punch
   if(tech==='pak' || tech==='bon'){
-    dummyPhase = { img: IMG.d_pak || IMG.d_neutral, until: now + 260 };
-    setTimeout(()=>{
-      if (performance.now() > dummyPhase.until){
-        dummyPhase = { img: IMG.d_afterPak || IMG.d_neutral, until: performance.now() + 200 };
-      }
-    }, 260);
+    dummyState = { phase: PHASE.PAK, start: now };
   } else if(tech==='tan' || tech==='punch'){
-    dummyPhase = { img: IMG.d_tan || IMG.d_neutral, until: now + 260 };
-    setTimeout(()=>{
-      if (performance.now() > dummyPhase.until){
-        dummyPhase = { img: IMG.d_afterTan || IMG.d_neutral, until: performance.now() + 200 };
-      }
-    }, 260);
+    dummyState = { phase: PHASE.TAN, start: now };
+  } else {
+    dummyState = { phase: PHASE.NONE, start: now };
   }
 }
 
@@ -236,7 +236,7 @@ function drawFighter(){
   const baseH = img.naturalHeight * baseScale;
 
   const rawDx = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) ?? 0;
-  const dxTech = Math.max(-500, Math.min(500, rawDx));
+  const dxTech = Math.max(-500, Math.min(500, rawDx)); // ceinture de sécurité
 
   const now = performance.now();
   const idleBob = (now > actionAnim.until) ? Math.sin(now/420)*3 : 0;
@@ -258,14 +258,37 @@ function drawFighter(){
 }
 
 function drawDummy(){
-  const now=performance.now();
-  const img = (now < dummyPhase.until ? dummyPhase.img : IMG.d_neutral);
+  // Choix d'image 100% en lecture, jamais de disparition
+  const now = performance.now();
+  const t = now - dummyState.start;
+  const DUR = 260, AFTER = 200; // fenêtres temporelles
+
+  let candidate = IMG.d_neutral;
+  if(dummyState.phase === PHASE.PAK){
+    if (t < DUR && IMG.d_pak && IMG.d_pak.complete && IMG.d_pak.naturalWidth) {
+      candidate = IMG.d_pak;
+    } else if (t < DUR+AFTER && IMG.d_afterPak && IMG.d_afterPak.complete && IMG.d_afterPak.naturalWidth) {
+      candidate = IMG.d_afterPak;
+    }
+  } else if(dummyState.phase === PHASE.TAN){
+    if (t < DUR && IMG.d_tan && IMG.d_tan.complete && IMG.d_tan.naturalWidth) {
+      candidate = IMG.d_tan;
+    } else if (t < DUR+AFTER && IMG.d_afterTan && IMG.d_afterTan.complete && IMG.d_afterTan.naturalWidth) {
+      candidate = IMG.d_afterTan;
+    }
+  }
+  // fallback neutre si l'image choisie n'est pas prête
+  if(!candidate || !candidate.complete || !candidate.naturalWidth){
+    candidate = IMG.d_neutral;
+  }
+
+  const img = candidate;
   if(!img || !img.complete || !img.naturalWidth) return;
 
   const targetW = Math.max(90, CFG.dummy.w*W);
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
-  const cxCenter = W*CFG.dummy.centerX;
+  const cxCenter = W*CFG.dummy.centerX; // pile centre
   const xLeft = cxCenter - targetW/2;
   const y = H - targetH - H*CFG.dummy.bottom;
   ctx.drawImage(img, xLeft, y, targetW, targetH);
@@ -338,7 +361,7 @@ pads.forEach(b=>{
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play().catch(()=>{});
-  dummyPhase={img:IMG.d_neutral, until:0};
+  dummyState={phase:PHASE.NONE, start:performance.now()};
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
