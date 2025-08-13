@@ -117,6 +117,10 @@ const SFX = {
   bon:   new Audio('assets/sounds/bon.wav'),
   punch: new Audio('assets/sounds/punch.wav'),
   wrong: new Audio('assets/sounds/wrong.wav'),
+  voice_pak: new Audio('assets/sounds/Yah1.wav'),
+  voice_tan: new Audio('assets/sounds/Yah2.wav'),
+  voice_bon: new Audio('assets/sounds/Yah3.wav'),
+  voice_punch: new Audio('assets/sounds/Yah4.wav'),
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
 SFX.music.loop=true; SFX.music.volume=0.5;
@@ -346,7 +350,7 @@ async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
     setSpritesFor(tech);
-    setLit(tech,true); play(SFX[tech]); showOno(tech);
+    setLit(tech,true); play(SFX['voice_'+tech]); showOno(tech);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
