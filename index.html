@@ -25,6 +25,7 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
+  /* Onomatopées (selon ton dernier snippet) */
   #onoImg{position:absolute;left:50%;top:40%;transform:translate(-50%,0);width:auto;height:350px;opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
@@ -117,21 +118,45 @@ const SFX = {
   bon:   new Audio('assets/sounds/bon.wav'),
   punch: new Audio('assets/sounds/punch.wav'),
   wrong: new Audio('assets/sounds/wrong.wav'),
-  voice_pak: new Audio('assets/sounds/Yah1.wav'),
-  voice_tan: new Audio('assets/sounds/Yah2.wav'),
-  voice_bon: new Audio('assets/sounds/Yah3.wav'),
+  voice_pak:   new Audio('assets/sounds/Yah1.wav'),
+  voice_tan:   new Audio('assets/sounds/Yah2.wav'),
+  voice_bon:   new Audio('assets/sounds/Yah3.wav'),
   voice_punch: new Audio('assets/sounds/Yah4.wav'),
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
-SFX.music.loop=true; SFX.music.volume=0.5;
+SFX.music.loop = true;
+SFX.music.volume = 0.5;
+
+/* --- pool audio pour éviter les coupures/overlaps --- */
+const POOL = {};
+function poolify(key, audio, n=4){
+  POOL[key] = [audio, ...Array.from({length:n-1}, ()=> audio.cloneNode())];
+}
+function playKey(key){
+  if(muted) return;
+  const arr = POOL[key]; if(!arr) return;
+  const a = arr.find(x=>x.paused) || arr[0].cloneNode();
+  try{ a.currentTime=0; a.play().catch(()=>{}); }catch(_){}
+  if(!arr.includes(a) && arr.length < 6) arr.push(a);
+}
+// prépare les pools
+['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music']
+  .forEach(k => { if(SFX[k]) poolify(k, SFX[k]); });
+
 Object.values(SFX).forEach(a=>a.preload='auto');
+
 let muted=false;
 muteBtn.onclick=()=>{
   muted=!muted;
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(_){/* pas de popup */} } };
+
+/* utilitaire: jouer les sons d'une technique */
+function playTechniqueSounds(tech){
+  playKey(tech);             // impact mannequin
+  playKey('voice_'+tech);    // cri "Yah"
+}
 
 /* ====== BG loader ====== */
 function loadBG(url){
@@ -149,7 +174,7 @@ const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 /* ====== sprites & skins ====== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
 
-/* Définis ici tes différents sets de sprites perso */
+/* Skins perso (remplace les URLs du second pour de vrais alt) */
 const SKINS = [
   {
     id:'classic',
@@ -164,7 +189,6 @@ const SKINS = [
     id:'classic_alt',
     name:'Classique (alt)',
     thumb:'https://i.imgur.com/ZrLk97U.png',
-    /* Remplace ces URLs par ton autre design */
     f:{ pak:'https://i.imgur.com/AweXMem.png',
         tan:'https://i.imgur.com/ZrLk97U.png',
         bon:'https://i.imgur.com/CG30Yh6.png',
@@ -172,16 +196,13 @@ const SKINS = [
   }
 ];
 
-/* Réceptacle IMG runtime: inclut onomatopées + mannequin */
+/* Réceptacle IMG runtime */
 const IMG={
-  // fighter sera fourni par le skin actif
   f_pak:null, f_tan:null, f_bon:null, f_punch:null,
-  // onomatopées
   o_pak:   load('https://i.imgur.com/Y4EEnZg.png'),
   o_tan:   load('https://i.imgur.com/ELUj44i.png'),
   o_bon:   load('https://i.imgur.com/6pHczNb.png'),
   o_punch: load('https://i.imgur.com/dVISKcB.png'),
-  // mannequin unique centré derrière
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
@@ -195,7 +216,6 @@ function applySkin(idx){
   IMG.f_bon   = load(skin.f.bon);
   IMG.f_punch = load(skin.f.punch);
   localStorage.setItem('wcs_skin_idx', idx);
-  // Si on est déjà en jeu, on recalcule le sprite courant selon la tech actuelle
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 /* UI Skins */
@@ -208,10 +228,7 @@ function renderSkins(){
       <img class="skinThumb" alt="${s.name}" src="${s.thumb}"/>
       <div style="font-weight:700">${s.name}</div>
     `;
-    card.onclick = ()=>{
-      applySkin(i);
-      renderSkins();
-    };
+    card.onclick = ()=>{ applySkin(i); renderSkins(); };
     skinsGrid.appendChild(card);
   });
 }
@@ -226,12 +243,11 @@ const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160;
 
-/* ====== config (centrage + offsets techniques + mannequin) ====== */
+/* ====== config ====== */
 const CFG = {
   fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
   parallax:{ sky:0, far:0.20, near:0.42 },
-  // offsets perso par technique (ta demande précédente)
   fighterDxPxByTech: { pak: -200, tan: 200, bon: -200, punch: 200 }
 };
 
@@ -254,7 +270,7 @@ function drawBG(dt){
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
   offFar  -= CFG.parallax.far  * dt;
-  offNear -= CFG.parallax.near * dt;
+  offNear -= CFG.parallax.near  * dt;
   tileNative(MT_FAR,  offFar,  185);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
@@ -268,7 +284,7 @@ function drawBG(dt){
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
-  const img = IMG.d_unique; if(!img || !img.complete) return;
+  const img = IMG.d_unique; if(!img || !img.complete || !img.naturalWidth) return;
   let scale=1;
   if(performance.now()<dummyAnim.until){
     const t=1-((dummyAnim.until-performance.now())/200);
@@ -299,7 +315,7 @@ function setSpritesFor(tech){
 }
 
 function drawFighter(){
-  const img = currentFighter; if(!img || !img.complete) return;
+  const img = currentFighter; if(!img || !img.complete || !img.naturalWidth) return;
   const baseW = Math.max(90, CFG.fighter.w*W);
   const baseScale = baseW / img.naturalWidth;
   const baseH = img.naturalHeight * baseScale;
@@ -350,7 +366,9 @@ async function playSequence(){
   locked=true; await sleep(560);
   for(const tech of seq){
     setSpritesFor(tech);
-    setLit(tech,true); play(SFX['voice_'+tech]); showOno(tech);
+    setLit(tech,true);
+    playTechniqueSounds(tech);   // impact + voix
+    showOno(tech);
     await sleep(460);
     setLit(tech,false);
     await sleep(160);
@@ -359,11 +377,14 @@ async function playSequence(){
 }
 async function press(tech){
   if(locked) return;
-  setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
+  setSpritesFor(tech);
+  setLit(tech,true);
+  playTechniqueSounds(tech);     // impact + voix
+  showOno(tech);
   await sleep(200); setLit(tech,false);
 
   if(tech!==seq[userIndex]){
-    play(SFX.wrong);
+    playKey('wrong');
     flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
@@ -405,8 +426,8 @@ function loop(t=performance.now()){
 }
 
 /* ====== init ====== */
-applySkin(activeSkinIdx);           // charge le skin mémorisé
-currentFighter = IMG.f_pak;        // sprite par défaut
+applySkin(activeSkinIdx);
+let currentFighter = IMG.f_pak; // sprite par défaut après applySkin
 requestAnimationFrame(loop);
 </script>
 </body>
