@@ -152,8 +152,20 @@ muteBtn.onclick=()=>{
 };
 /* utilitaire: jouer les sons d'une technique */
 function playTechniqueSounds(tech){
-  playKey(tech);             // impact mannequin
-  playKey('voice_'+tech);    // cri "Yah"
+  playKey(tech); // Impact mannequin uniquement
+}
+
+function setSpritesFor(tech){
+  currentTech = tech;
+  triggerDummyAnim(); 
+  const now = performance.now();
+  const LUNGE = { pak:10, tan:12, bon:8, punch:14 };
+  const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
+  actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
+  currentFighter = IMG['f_'+tech] || currentFighter;
+
+  // Cri Yah légèrement décalé pour coïncider avec le mouvement
+  setTimeout(()=> playKey('voice_'+tech), 100);
 }
 
 /* ====== BG loader ====== */
