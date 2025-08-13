@@ -237,16 +237,17 @@ window.addEventListener('orientationchange', resize);
 const CFG = {
   fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{
-    // vitesses horizontales
-    far:  0.20,
-    near: 0.42,
-    // ancrages verticaux proportionnels à H (depuis le bas)
-    // ajuste ces trois valeurs pour caler visuellement ton décor
-    farBottomPct:   0.34,   // la crête lointaine repose à 34% de H au-dessus du bas
-    nearBottomPct:  0.05,   // la chaîne proche à 5%
-    alleyBottomPct: 0       // la ruelle touche le bas
-  },
+  parallax: {
+  far:  0.20,
+  near: 0.42,
+  farBottomPct:   0.34,
+  nearBottomPct:  0.05,
+  alleyBottomPct: 0,
+  // ajustements manuels en pixels
+  farAdjustPx:   0,
+  nearAdjustPx:  40,   // ← par exemple, ça descend MT_NEAR de 40px
+  alleyAdjustPx: 0
+}
   fighterDxPxByTech: { pak: -110, tan: 110, bon: -110, punch: 110 }
 };
 
@@ -258,13 +259,12 @@ function tileNative(img, offsetX, y){
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
-// ancrage en pourcentage de H, depuis le bas
-function tileBottomAnchoredPct(img, offsetX, bottomPct){
+// ancrage depuis le bas, avec offset fixe en pixels en plus
+function tileBottomAnchored(img, offsetX, bottomPct, adjustPx){
   if(!img.complete || !img.naturalWidth) return;
-  const y = Math.round(H - img.naturalHeight - (H * bottomPct));
+  const y = Math.round(H - img.naturalHeight - (H * bottomPct) + adjustPx);
   tileNative(img, offsetX, y);
 }
-
 let offFar=0, offNear=0;
 function drawBG(dt){
   // ciel (fallback gradient si pas encore chargé)
@@ -281,10 +281,10 @@ function drawBG(dt){
   offNear -= CFG.parallax.near * dt;
 
   // calques ancrés au bas, en proportion de H
-  tileBottomAnchoredPct(MT_FAR,  offFar,  CFG.parallax.farBottomPct);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
-  tileBottomAnchoredPct(MT_NEAR, offNear, CFG.parallax.nearBottomPct);
-  tileBottomAnchoredPct(ALLEY,   0,       CFG.parallax.alleyBottomPct);
+ tileBottomAnchored(MT_FAR,  offFar,  CFG.parallax.farBottomPct,  CFG.parallax.farAdjustPx);
+ ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
+ tileBottomAnchored(MT_NEAR, offNear, CFG.parallax.nearBottomPct, CFG.parallax.nearAdjustPx);
+ tileBottomAnchored(ALLEY,   0,       CFG.parallax.alleyBottomPct, CFG.parallax.alleyAdjustPx);
 }
 
 /* ====== mannequin animé (centré derrière) ====== */
