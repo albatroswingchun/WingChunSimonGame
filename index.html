@@ -133,17 +133,33 @@ SFX.voice_bon.volume   = 0.8;
 SFX.voice_punch.volume = 0.8;
 
 
-/* --- pool audio pour éviter les coupures/overlaps --- */
+/* --- pool audio qui respecte le volume d'origine --- */
 const POOL = {};
-function poolify(key, audio, n=4){
-  POOL[key] = [audio, ...Array.from({length:n-1}, ()=> audio.cloneNode())];
+function poolify(key, audio, n = 4){
+  const baseVol = audio.volume;               // mémorise le volume (0.8 pour les Yah)
+  const clones = Array.from({length: n-1}, ()=>{
+    const c = audio.cloneNode();
+    c.volume = baseVol;                       // copie le volume sur chaque clone
+    return c;
+  });
+  POOL[key] = [audio, ...clones];
 }
 function playKey(key){
-  if(muted) return;
-  const arr = POOL[key]; if(!arr) return;
-  const a = arr.find(x=>x.paused) || arr[0].cloneNode();
-  try{ a.currentTime=0; a.play().catch(()=>{}); }catch(_){}
-  if(!arr.includes(a) && arr.length < 6) arr.push(a);
+  if (muted) return;
+  const arr = POOL[key];
+  if (!arr) return;
+
+  // essaie un canal libre
+  let a = arr.find(x => x.paused);
+
+  // sinon, crée un clone supplémentaire en gardant le volume d'origine
+  if (!a) {
+    const template = arr[0];
+    a = template.cloneNode();
+    a.volume = template.volume;              // très important: garder le volume
+    if (arr.length < 6) arr.push(a);         // petit plafond pour éviter l’infini
+  }
+  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(_) {}
 }
 ['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music']
   .forEach(k => { if(SFX[k]) poolify(k, SFX[k]); });
