@@ -25,7 +25,7 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées (position/dimension selon ton dernier snippet) */
+  /* Onomatopées */
   #onoImg{position:absolute;left:50%;top:40%;transform:translate(-50%,0);width:auto;height:350px;opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
@@ -150,22 +150,10 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-/* utilitaire: jouer les sons d'une technique */
+
+/* utilitaire: son d'impact (la voix est synchronisée dans setSpritesFor) */
 function playTechniqueSounds(tech){
-  playKey(tech); // Impact mannequin uniquement
-}
-
-function setSpritesFor(tech){
-  currentTech = tech;
-  triggerDummyAnim(); 
-  const now = performance.now();
-  const LUNGE = { pak:10, tan:12, bon:8, punch:14 };
-  const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
-  actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
-  currentFighter = IMG['f_'+tech] || currentFighter;
-
-  // Cri Yah légèrement décalé pour coïncider avec le mouvement
-  setTimeout(()=> playKey('voice_'+tech), 100);
+  playKey(tech); // impact mannequin uniquement
 }
 
 /* ====== BG loader ====== */
@@ -216,42 +204,6 @@ const IMG={
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* ====== perso/mannequin state ====== */
-let currentTech='pak';
-let currentFighter=null; // défini par applySkin plus bas
-
-/* Skin manager */
-let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
-function applySkin(idx){
-  const skin = SKINS[idx] || SKINS[0];
-  activeSkinIdx = idx;
-  IMG.f_pak   = load(skin.f.pak);
-  IMG.f_tan   = load(skin.f.tan);
-  IMG.f_bon   = load(skin.f.bon);
-  IMG.f_punch = load(skin.f.punch);
-  localStorage.setItem('wcs_skin_idx', idx);
-  currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
-}
-/* UI Skins */
-function renderSkins(){
-  skinsGrid.innerHTML = '';
-  SKINS.forEach((s, i)=>{
-    const card = document.createElement('button');
-    card.className = 'skinCard' + (i===activeSkinIdx?' skinActive':'');
-    card.innerHTML = `
-      <img class="skinThumb" alt="${s.name}" src="${s.thumb}"/>
-      <div style="font-weight:700">${s.name}</div>
-    `;
-    card.onclick = ()=>{ applySkin(i); renderSkins(); };
-    skinsGrid.appendChild(card);
-  });
-}
-skinsBtn.onclick=()=>{
-  const show = skinsPanel.style.display!=='block';
-  skinsPanel.style.display = show?'block':'none';
-  if(show) renderSkins();
-};
-
 /* ====== canvas ====== */
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
@@ -265,15 +217,13 @@ const CFG = {
   fighterDxPxByTech: { pak: -200, tan: 200, bon: -200, punch: 200 }
 };
 
-/* ====== tiling ====== */
+/* ====== décor (parallax) ====== */
 function tileNative(img, offsetX, y){
   if(!img.complete || !img.naturalWidth) return;
   const iw = img.naturalWidth;
   let x = offsetX % iw; if(x>0) x -= iw;
   for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
-
-/* ====== BG ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
   if (SKY.complete && SKY.naturalWidth){
@@ -284,7 +234,7 @@ function drawBG(dt){
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
   offFar  -= CFG.parallax.far  * dt;
-  offNear -= CFG.parallax.near  * dt;
+  offNear -= CFG.parallax.near * dt;
   tileNative(MT_FAR,  offFar,  185);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileNative(MT_NEAR, offNear, 0);
@@ -294,7 +244,7 @@ function drawBG(dt){
   }
 }
 
-/* ====== mannequin animé ====== */
+/* ====== mannequin animé (centré derrière) ====== */
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
@@ -313,17 +263,26 @@ function drawDummy(){
   ctx.drawImage(img, xLeft, yTop, targetW, targetH);
 }
 
-/* ====== perso ====== */
+/* ====== perso (animation + synchro voix) ====== */
+let currentTech='pak';
+let currentFighter=null; // défini par applySkin()
 let actionAnim={until:0,lunge:0,scale:1};
+
 function setSpritesFor(tech){
   currentTech = tech;
   triggerDummyAnim(); // secousse du mannequin
+
   const now = performance.now();
   const LUNGE = { pak:10, tan:12, bon:8, punch:14 };
   const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
   actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
+
   currentFighter = IMG['f_'+tech] || currentFighter;
+
+  // Synchronisation du cri "Yah" sur le mouvement du perso
+  setTimeout(()=> playKey('voice_'+tech), 100);
 }
+
 function drawFighter(){
   const img = currentFighter; if(!img || !img.complete || !img.naturalWidth) return;
   const baseW = Math.max(90, CFG.fighter.w*W);
@@ -364,6 +323,7 @@ function showOno(tech){
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
+
 function setLit(tech,on){
   const b=pads.find(x=>x.dataset.tech===tech);
   if(!b) return;
@@ -377,7 +337,7 @@ async function playSequence(){
   for(const tech of seq){
     setSpritesFor(tech);
     setLit(tech,true);
-    playTechniqueSounds(tech);   // impact + voix
+    playTechniqueSounds(tech);   // impact mannequin (voix lancée dans setSpritesFor)
     showOno(tech);
     await sleep(460);
     setLit(tech,false);
@@ -385,11 +345,12 @@ async function playSequence(){
   }
   locked=false; userIndex=0;
 }
+
 async function press(tech){
   if(locked) return;
   setSpritesFor(tech);
   setLit(tech,true);
-  playTechniqueSounds(tech);     // impact + voix
+  playTechniqueSounds(tech);     // impact mannequin (voix lancée dans setSpritesFor)
   showOno(tech);
   await sleep(200); setLit(tech,false);
 
@@ -423,6 +384,38 @@ function startGame(){
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
+
+/* ====== Skins UI ====== */
+let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
+function applySkin(idx){
+  const skin = SKINS[idx] || SKINS[0];
+  activeSkinIdx = idx;
+  IMG.f_pak   = load(skin.f.pak);
+  IMG.f_tan   = load(skin.f.tan);
+  IMG.f_bon   = load(skin.f.bon);
+  IMG.f_punch = load(skin.f.punch);
+  localStorage.setItem('wcs_skin_idx', idx);
+  // met à jour le sprite courant si besoin
+  currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
+}
+function renderSkins(){
+  skinsGrid.innerHTML = '';
+  SKINS.forEach((s, i)=>{
+    const card = document.createElement('button');
+    card.className = 'skinCard' + (i===activeSkinIdx?' skinActive':'');
+    card.innerHTML = `
+      <img class="skinThumb" alt="${s.name}" src="${s.thumb}"/>
+      <div style="font-weight:700">${s.name}</div>
+    `;
+    card.onclick = ()=>{ applySkin(i); renderSkins(); };
+    skinsGrid.appendChild(card);
+  });
+}
+skinsBtn.onclick=()=>{
+  const show = skinsPanel.style.display!=='block';
+  skinsPanel.style.display = show?'block':'none';
+  if(show) renderSkins();
+};
 
 /* ====== Boucle ====== */
 let last=performance.now();
