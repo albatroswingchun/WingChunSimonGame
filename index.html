@@ -266,7 +266,7 @@ function drawBG(dt){
   offNear -= CFG.parallax.near * dt;
   tileNative(MT_FAR,  offFar,  185);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
-  tileNative(MT_NEAR, offNear, 0);
+  tileNative(MT_NEAR, offNear, 100);
   if (ALLEY.complete && ALLEY.naturalWidth){
     const y = H - ALLEY.naturalHeight;
     tileNative(ALLEY, 0, y);
