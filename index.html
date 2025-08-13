@@ -20,21 +20,31 @@
   #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
   #stage{position:relative;width:1536px;height:1160px}
   canvas{position:absolute;inset:0;width:1536px;height:1160px;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+
   #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
-  .lit.red{color:var(--red)} .lit.blue{color:var(--blue)} .lit.green{color:var(--green)} .lit.gold{color:var(--gold)}
-  #onoImg{position:absolute;left:50%;top:12%;transform:translate(-50%,0);width:auto;height:200px;opacity:0;pointer-events:none;z-index:6}
+
+  #onoImg{position:absolute;left:50%;top:60%;transform:translate(-50%,0);width:auto;height:300px;opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
+
   #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
   .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
   .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
   .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
   .subtitle{opacity:.95;margin:0 0 16px}
   .actions{display:flex;gap:12px;justify-content:center}
+
+  /* Panneau Skins */
+  #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
+  #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
+  .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
+  .skinCard:hover{filter:brightness(1.05)}
+  .skinActive{outline:2px solid #d1a341}
+  .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
 </style>
 </head>
 <body>
@@ -45,18 +55,23 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
+    <div class="right"></div>
   </header>
+
   <div id="stageWrap">
     <div id="stage">
       <canvas id="cx" width="1536" height="1160"></canvas>
+
       <div id="board">
         <button class="pad" data-tech="pak">Pak Sao</button>
         <button class="pad" data-tech="tan">Tan Sao</button>
         <button class="pad" data-tech="bon">Bon Sao</button>
         <button class="pad" data-tech="punch">Punch</button>
       </div>
+
       <img id="onoImg" alt="Onomatopée"/>
       <div id="flash"></div>
+
       <div id="menu">
         <div class="panel">
           <h1 class="title-main">Wing Chun</h1>
@@ -65,26 +80,37 @@
           <div class="actions">
             <button id="startBtn" class="btn">Commencer</button>
             <button id="muteBtn"  class="btn">🔊 Son</button>
+            <button id="skinsBtn" class="btn">🎨 Skins</button>
+          </div>
+
+          <!-- Panneau de sélection des skins -->
+          <div id="skinsPanel">
+            <div style="margin-bottom:8px;opacity:.85">Choisis un skin de personnage</div>
+            <div id="skinsGrid"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <footer>Scène 1536×1160. Parallax. Personnage centré. Permanent Marker.</footer>
+
+  <footer>Scène 1536×1160. Parallax. Mannequin centré derrière, perso centré avec offsets par technique. Permanent Marker.</footer>
 </div>
 
 <script>
-/* refs */
+/* ====== refs ====== */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
 const menu=document.getElementById('menu');
 const startBtn=document.getElementById('startBtn');
 const muteBtn=document.getElementById('muteBtn');
+const skinsBtn=document.getElementById('skinsBtn');
+const skinsPanel=document.getElementById('skinsPanel');
+const skinsGrid=document.getElementById('skinsGrid');
 const onoImg=document.getElementById('onoImg');
 const flash=document.getElementById('flash');
 
-/* sons */
+/* ====== sons ====== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
   tan:   new Audio('assets/sounds/tan.wav'),
@@ -94,174 +120,289 @@ const SFX = {
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
 SFX.music.loop=true; SFX.music.volume=0.5;
+Object.values(SFX).forEach(a=>a.preload='auto');
 let muted=false;
 muteBtn.onclick=()=>{
   muted=!muted;
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(_){}}};
+const play=a=>{ if(!muted && a){ try{a.currentTime=0;a.play()}catch(_){/* pas de popup */} } };
 
-/* BG */
-function loadBG(url){const i=new Image();i.crossOrigin='anonymous';i.src=url;return i;}
+/* ====== BG loader ====== */
+function loadBG(url){
+  const i = new Image();
+  i.crossOrigin = 'anonymous';
+  i.onerror = ()=>{};
+  i.src = url;
+  return i;
+}
 const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');
 const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
 const MT_NEAR= loadBG('https://i.imgur.com/6Hnun6T.png');
 const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 
-/* sprites */
-function load(url){const img=new Image();img.crossOrigin='anonymous';img.src=url;return img;}
+/* ====== sprites & skins ====== */
+function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
+
+/* Définis ici tes différents sets de sprites perso */
+const SKINS = [
+  {
+    id:'classic',
+    name:'Classique',
+    thumb:'https://i.imgur.com/AweXMem.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png',
+        tan:'https://i.imgur.com/ZrLk97U.png',
+        bon:'https://i.imgur.com/CG30Yh6.png',
+        punch:'https://i.imgur.com/JYL2S46.png' }
+  },
+  {
+    id:'classic_alt',
+    name:'Classique (alt)',
+    thumb:'https://i.imgur.com/ZrLk97U.png',
+    /* Remplace ces URLs par ton autre design */
+    f:{ pak:'https://i.imgur.com/AweXMem.png',
+        tan:'https://i.imgur.com/ZrLk97U.png',
+        bon:'https://i.imgur.com/CG30Yh6.png',
+        punch:'https://i.imgur.com/JYL2S46.png' }
+  }
+];
+
+/* Réceptacle IMG runtime: inclut onomatopées + mannequin */
 const IMG={
-  f_pak:   load('https://i.imgur.com/AweXMem.png'),
-  f_tan:   load('https://i.imgur.com/ZrLk97U.png'),
-  f_bon:   load('https://i.imgur.com/CG30Yh6.png'),
-  f_punch: load('https://i.imgur.com/JYL2S46.png'),
+  // fighter sera fourni par le skin actif
+  f_pak:null, f_tan:null, f_bon:null, f_punch:null,
+  // onomatopées
   o_pak:   load('https://i.imgur.com/Y4EEnZg.png'),
   o_tan:   load('https://i.imgur.com/ELUj44i.png'),
   o_bon:   load('https://i.imgur.com/6pHczNb.png'),
   o_punch: load('https://i.imgur.com/dVISKcB.png'),
-  d_unique:load('https://i.imgur.com/LwBpPL3.png')
+  // mannequin unique centré derrière
+  d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* canvas */
+/* Skin manager */
+let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
+function applySkin(idx){
+  const skin = SKINS[idx] || SKINS[0];
+  activeSkinIdx = idx;
+  IMG.f_pak   = load(skin.f.pak);
+  IMG.f_tan   = load(skin.f.tan);
+  IMG.f_bon   = load(skin.f.bon);
+  IMG.f_punch = load(skin.f.punch);
+  localStorage.setItem('wcs_skin_idx', idx);
+  // Si on est déjà en jeu, on recalcule le sprite courant selon la tech actuelle
+  currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
+}
+/* UI Skins */
+function renderSkins(){
+  skinsGrid.innerHTML = '';
+  SKINS.forEach((s, i)=>{
+    const card = document.createElement('button');
+    card.className = 'skinCard' + (i===activeSkinIdx?' skinActive':'');
+    card.innerHTML = `
+      <img class="skinThumb" alt="${s.name}" src="${s.thumb}"/>
+      <div style="font-weight:700">${s.name}</div>
+    `;
+    card.onclick = ()=>{
+      applySkin(i);
+      renderSkins();
+    };
+    skinsGrid.appendChild(card);
+  });
+}
+skinsBtn.onclick=()=>{
+  const show = skinsPanel.style.display!=='block';
+  skinsPanel.style.display = show?'block':'none';
+  if(show) renderSkins();
+};
+
+/* ====== canvas ====== */
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d'); ctx.imageSmoothingEnabled=false;
 const W=1536, H=1160;
 
-/* config */
-const CFG={
-  fighter:{w:0.16,centerX:0.50,bottom:0.08},
-  dummy:{w:0.18,centerX:0.50,bottom:null},
-  parallax:{sky:0,far:0.20,near:0.42},
-  fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
+/* ====== config (centrage + offsets techniques + mannequin) ====== */
+const CFG = {
+  fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
+  dummy:   { w: 0.18, centerX: 0.50, bottom: null },
+  parallax:{ sky:0, far:0.20, near:0.42 },
+  // offsets perso par technique (ta demande précédente)
+  fighterDxPxByTech: { pak: -200, tan: 200, bon: -200, punch: 200 }
 };
 
-/* BG draw */
-function tileNative(img,offsetX,y){if(!img.complete)return;const iw=img.naturalWidth;let x=offsetX%iw;if(x>0)x-=iw;for(;x<W;x+=iw)ctx.drawImage(img,x,y);}
-let offFar=0, offNear=0;
-function drawBG(dt){
-  if(SKY.complete) ctx.drawImage(SKY,0,0);
-  offFar-=CFG.parallax.far*dt;offNear-=CFG.parallax.near*dt;
-  tileNative(MT_FAR,offFar,185);ctx.fillStyle='rgba(0,0,0,.10)';ctx.fillRect(0,0,W,H);
-  tileNative(MT_NEAR,offNear,0);
-  if(ALLEY.complete){const y=H-ALLEY.naturalHeight;tileNative(ALLEY,0,y);}
+/* ====== tiling ====== */
+function tileNative(img, offsetX, y){
+  if(!img.complete || !img.naturalWidth) return;
+  const iw = img.naturalWidth;
+  let x = offsetX % iw; if(x>0) x -= iw;
+  for(; x < W; x += iw) ctx.drawImage(img, x, y);
 }
 
-/* mannequin animation */
-let dummyAnim={until:0,scale:1};
-function triggerDummyAnim(){
-  dummyAnim.until=performance.now()+200;
+/* ====== BG ====== */
+let offFar=0, offNear=0;
+function drawBG(dt){
+  if (SKY.complete && SKY.naturalWidth){
+    ctx.drawImage(SKY, 0, 0);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0a0c12'); g.addColorStop(1, '#1a1f2a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  offFar  -= CFG.parallax.far  * dt;
+  offNear -= CFG.parallax.near * dt;
+  tileNative(MT_FAR,  offFar,  185);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
+  tileNative(MT_NEAR, offNear, 0);
+  if (ALLEY.complete && ALLEY.naturalWidth){
+    const y = H - ALLEY.naturalHeight;
+    tileNative(ALLEY, 0, y);
+  }
 }
+
+/* ====== mannequin animé ====== */
+let dummyAnim={until:0};
+function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
-  const img=IMG.d_unique;if(!img.complete)return;
+  const img = IMG.d_unique; if(!img || !img.complete) return;
   let scale=1;
   if(performance.now()<dummyAnim.until){
     const t=1-((dummyAnim.until-performance.now())/200);
-    scale=1+0.05*Math.sin(t*Math.PI); // petit rebond
+    scale=1+0.05*Math.sin(t*Math.PI);
   }
-  const targetW=Math.max(90,CFG.dummy.w*W)*scale;
-  const s=targetW/img.naturalWidth;
-  const targetH=img.naturalHeight*s;
-  const xLeft=Math.round(W*CFG.dummy.centerX-targetW/2);
-  const bottom=(CFG.dummy.bottom!=null)?CFG.dummy.bottom:CFG.fighter.bottom;
-  const yTop=Math.round(H-targetH-H*bottom);
-  ctx.drawImage(img,xLeft,yTop,targetW,targetH);
+  const targetW = Math.max(90, CFG.dummy.w*W)*scale;
+  const s = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * s;
+  const xLeft = Math.round(W*CFG.dummy.centerX - targetW/2);
+  const bottom = (CFG.dummy.bottom != null) ? CFG.dummy.bottom : CFG.fighter.bottom;
+  const yTop = Math.round(H - targetH - H*bottom);
+  ctx.drawImage(img, xLeft, yTop, targetW, targetH);
 }
 
-/* perso */
-let currentFighter=IMG.f_pak,currentTech='pak';
+/* ====== perso ====== */
+let currentTech='pak';
+let currentFighter=null;
 let actionAnim={until:0,lunge:0,scale:1};
+
 function setSpritesFor(tech){
-  currentTech=tech;
-  triggerDummyAnim(); // anime le mannequin
-  const now=performance.now();
-  const LUNGE={pak:10,tan:12,bon:8,punch:14};
-  const SCALE={pak:1.03,tan:1.035,bon:1.03,punch:1.04};
-  actionAnim={until:now+260,lunge:(LUNGE[tech]||10),scale:(SCALE[tech]||1.03)};
-  currentFighter=IMG['f_'+tech]||currentFighter;
+  currentTech = tech;
+  triggerDummyAnim(); // secousse du mannequin
+  const now = performance.now();
+  const LUNGE = { pak:10, tan:12, bon:8, punch:14 };
+  const SCALE = { pak:1.03, tan:1.035, bon:1.03, punch:1.04 };
+  actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
+  currentFighter = IMG['f_'+tech] || currentFighter;
 }
+
 function drawFighter(){
-  const img=currentFighter;if(!img.complete)return;
-  const baseW=Math.max(90,CFG.fighter.w*W);
-  const baseScale=baseW/img.naturalWidth;
-  const baseH=img.naturalHeight*baseScale;
-  const dxTech=CFG.fighterDxPxByTech[currentTech]||0;
-  const now=performance.now();
-  const idleBob=(now>actionAnim.until)?Math.sin(now/420)*3:0;
-  let extraX=0,extraY=0,scaleMul=1;
-  if(now<actionAnim.until){
-    const t=1-Math.max(0,(actionAnim.until-now)/260);
-    const ease=1-Math.pow(1-t,3);
-    extraX=actionAnim.lunge*ease;
-    scaleMul=1+(actionAnim.scale-1)*ease;
-    extraY=-2*ease;
+  const img = currentFighter; if(!img || !img.complete) return;
+  const baseW = Math.max(90, CFG.fighter.w*W);
+  const baseScale = baseW / img.naturalWidth;
+  const baseH = img.naturalHeight * baseScale;
+
+  const dxTech = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
+
+  const now = performance.now();
+  const idleBob = (now > actionAnim.until) ? Math.sin(now/420)*3 : 0;
+
+  let extraX=0, extraY=0, scaleMul=1;
+  if(now < actionAnim.until){
+    const t = 1 - Math.max(0,(actionAnim.until - now)/260);
+    const ease = 1 - Math.pow(1 - t, 3);
+    extraX = actionAnim.lunge * ease;
+    scaleMul = 1 + (actionAnim.scale - 1) * ease;
+    extraY = -2 * ease;
   }
-  const centerX=W*(CFG.fighter.centerX||0.5);
-  const finalW=baseW*scaleMul;
-  const xBase=Math.round(centerX-finalW/2+dxTech+extraX);
-  const yBase=Math.round(H-(baseH*scaleMul)-H*CFG.fighter.bottom+idleBob+extraY);
-  ctx.drawImage(img,xBase,yBase,finalW,baseH*scaleMul);
+
+  const centerX = W * (CFG.fighter.centerX || 0.5);
+  const finalW = baseW * scaleMul;
+  const xBase = Math.round(centerX - finalW/2 + dxTech + extraX);
+  const yBase = Math.round(H - (baseH*scaleMul) - H*CFG.fighter.bottom + idleBob + extraY);
+
+  ctx.drawImage(img, xBase, yBase, finalW, baseH*scaleMul);
 }
 
-/* ono */
+/* ====== onomatopées ====== */
 function showOno(tech){
-  const img=IMG['o_'+tech];if(!img)return;
-  onoImg.src=img.src;
-  onoImg.classList.remove('onoShow');void onoImg.offsetWidth;onoImg.classList.add('onoShow');
+  const img = IMG['o_'+tech];
+  if(!img) return;
+  onoImg.src = img.src;
+  onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
-/* simon */
-let seq=[],userIndex=0,locked=true,score=0,best=+localStorage.getItem('wcs_best')||0;
+/* ====== Simon ====== */
+let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
-function setLit(tech,on){const b=pads.find(x=>x.dataset.tech===tech);if(!b)return;b.classList.toggle('lit',on);}
+function setLit(tech,on){
+  const b=pads.find(x=>x.dataset.tech===tech);
+  if(!b) return;
+  b.classList.toggle('lit',on);
+}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
+
 async function playSequence(){
-  locked=true;await sleep(560);
+  locked=true; await sleep(560);
   for(const tech of seq){
-    setSpritesFor(tech);setLit(tech,true);play(SFX[tech]);showOno(tech);
-    await sleep(460);setLit(tech,false);await sleep(160);
+    setSpritesFor(tech);
+    setLit(tech,true); play(SFX[tech]); showOno(tech);
+    await sleep(460);
+    setLit(tech,false);
+    await sleep(160);
   }
-  locked=false;userIndex=0;
+  locked=false; userIndex=0;
 }
 async function press(tech){
-  if(locked)return;
-  setSpritesFor(tech);setLit(tech,true);play(SFX[tech]);showOno(tech);
-  await sleep(200);setLit(tech,false);
+  if(locked) return;
+  setSpritesFor(tech); setLit(tech,true); play(SFX[tech]); showOno(tech);
+  await sleep(200); setLit(tech,false);
+
   if(tech!==seq[userIndex]){
-    play(SFX.wrong);flash.classList.remove('boom');void flash.offsetWidth;flash.classList.add('boom');
-    seq=[];score=0;scoreEl.textContent=0;locked=true;await sleep(600);startGame();return;
+    play(SFX.wrong);
+    flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
+    seq=[]; score=0; scoreEl.textContent=0; locked=true; await sleep(600); startGame(); return;
   }
   userIndex++;
   if(userIndex===seq.length){
-    score++;scoreEl.textContent=score;
-    if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('wcs_best',best);}
-    seq.push(randTech());await sleep(420);playSequence();
+    score++; scoreEl.textContent=score;
+    if(score>best){
+      best=score; bestEl.textContent=best; localStorage.setItem('wcs_best',best);
+    }
+    seq.push(randTech()); await sleep(420); playSequence();
   }
 }
 
-/* inputs */
-pads.forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();press(b.dataset.tech);},{passive:false}));
+/* ====== Entrées ====== */
+pads.forEach(b=>{
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    press(b.dataset.tech);
+  }, {passive:false});
+});
 
-/* start */
+/* ====== Démarrage ====== */
 function startGame(){
   menu.style.display='none';
-  if(!muted)SFX.music.play().catch(()=>{});
-  seq=[randTech()];score=0;scoreEl.textContent=0;playSequence();
+  if(!muted) SFX.music.play().catch(()=>{});
+  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 
-/* loop */
+/* ====== Boucle ====== */
 let last=performance.now();
 function loop(t=performance.now()){
-  const dt=Math.min(33,t-last)/(1000/60);last=t;
+  const dt = Math.min(33, t-last) / (1000/60); last=t;
   ctx.clearRect(0,0,W,H);
   drawBG(dt);
-  drawDummy();
-  drawFighter();
+  drawDummy();    // derrière
+  drawFighter();  // devant
   requestAnimationFrame(loop);
 }
+
+/* ====== init ====== */
+applySkin(activeSkinIdx);           // charge le skin mémorisé
+currentFighter = IMG.f_pak;        // sprite par défaut
 requestAnimationFrame(loop);
 </script>
 </body>
