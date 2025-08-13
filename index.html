@@ -1,6 +1,11 @@
 <!doctype html>
 <html lang="fr">
 <head>
+  
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0b0a0a">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun - Simon Game</title>
@@ -462,5 +467,13 @@ resize();
 applySkin(activeSkinIdx);
 requestAnimationFrame(loop);
 </script>
+  <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js")
+    .then(() => console.log("Service Worker enregistré"))
+    .catch((err) => console.error("Erreur SW", err));
+}
+</script>
+
 </body>
 </html>
