@@ -1,4 +1,4 @@
-# WingChunSimonGame
+# WingChun-SimonGame
 
 Ce projet est un jeu "Simon" thématique inspiré du Wing Chun. Il propose
 une séquence de sons correspondant à des mouvements (`bon`, `pak`, `tan`,
