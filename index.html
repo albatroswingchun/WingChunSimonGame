@@ -1,59 +1,58 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  
-<link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#0b0a0a">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0b0a0a">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Wing Chun - Simon Game</title>
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
-    --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
-  }
-  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-  header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
-  .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
-  .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
-  .btn:hover{filter:brightness(1.08)}
-  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
-  #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
-  #stage{position:relative;width:100%;height:100%}
-  canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Wing Chun - Simon Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
+      --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
+    }
+    html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+    header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
+    .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
+    .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
+    .btn:hover{filter:brightness(1.08)}
+    footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
+    #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
+    #stage{position:relative;width:100%;height:100%}
+    canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 
-  #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
-  .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
-  .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
+    #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+    .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
+    .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées */
-  #onoImg{position:absolute;left:50%;top:30%;transform:translate(-50%,0);width:auto;height:360px;opacity:0;pointer-events:none;z-index:6}
-  .onoShow{animation:onoFade .9s ease forwards}
-  @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
-  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
-  .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
+    /* Onomatopées */
+    #onoImg{position:absolute;left:50%;top:30%;transform:translate(-50%,0);width:auto;height:360px;opacity:0;pointer-events:none;z-index:6}
+    .onoShow{animation:onoFade .9s ease forwards}
+    @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
+    #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
+    .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
-  .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
-  .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
-  .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
-  .subtitle{opacity:.95;margin:0 0 16px}
-  .actions{display:flex;gap:12px;justify-content:center}
+    #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
+    .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
+    .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
+    .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
+    .subtitle{opacity:.95;margin:0 0 16px}
+    .actions{display:flex;gap:12px;justify-content:center}
 
-  /* Panneau Skins */
-  #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
-  #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
-  .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
-  .skinCard:hover{filter:brightness(1.05)}
-  .skinActive{outline:2px solid #d1a341}
-  .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
-</style>
+    /* Panneau Skins */
+    #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
+    #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
+    .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
+    .skinCard:hover{filter:brightness(1.05)}
+    .skinActive{outline:2px solid #d1a341}
+    .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
+  </style>
 </head>
 <body>
 <div id="app">
@@ -68,7 +67,7 @@
 
   <div id="stageWrap">
     <div id="stage">
-       <canvas id="cx"></canvas>
+      <canvas id="cx"></canvas>
 
       <div id="board">
         <button class="pad" data-tech="pak">Pak Sao</button>
@@ -91,7 +90,6 @@
             <button id="skinsBtn" class="btn">🎨 Skins</button>
           </div>
 
-          <!-- Panneau de sélection des skins -->
           <div id="skinsPanel">
             <div style="margin-bottom:8px;opacity:.85">Choisis un skin de personnage</div>
             <div id="skinsGrid"></div>
@@ -101,7 +99,7 @@
     </div>
   </div>
 
-  <footer>Scène adaptative. Parallax. Mannequin centré derrière, perso centré avec offsets par technique. Permanent Marker.</footer>
+  <footer>Scène adaptative. Fonds en cover centrés. Mannequin centré derrière, perso centré avec offsets par technique. Permanent Marker.</footer>
 </div>
 
 <script>
@@ -133,44 +131,33 @@ const SFX = {
 };
 SFX.music.loop = true;
 SFX.music.volume = 0.5;
-  // Baisser le volume des cris Yah uniquement (-20%)
+// Volume seulement pour les YAH (-20%)
 SFX.voice_pak.volume   = 0.8;
 SFX.voice_tan.volume   = 0.8;
 SFX.voice_bon.volume   = 0.8;
 SFX.voice_punch.volume = 0.8;
 
-
-/* --- pool audio qui respecte le volume d'origine --- */
+/* --- pool audio (garde les volumes) --- */
 const POOL = {};
 function poolify(key, audio, n = 4){
-  const baseVol = audio.volume;               // mémorise le volume (0.8 pour les Yah)
+  const baseVol = audio.volume;
   const clones = Array.from({length: n-1}, ()=>{
-    const c = audio.cloneNode();
-    c.volume = baseVol;                       // copie le volume sur chaque clone
-    return c;
+    const c = audio.cloneNode(); c.volume = baseVol; return c;
   });
   POOL[key] = [audio, ...clones];
 }
 function playKey(key){
   if (muted) return;
-  const arr = POOL[key];
-  if (!arr) return;
-
-  // essaie un canal libre
-  let a = arr.find(x => x.paused);
-
-  // sinon, crée un clone supplémentaire en gardant le volume d'origine
-  if (!a) {
-    const template = arr[0];
-    a = template.cloneNode();
-    a.volume = template.volume;              // très important: garder le volume
-    if (arr.length < 6) arr.push(a);         // petit plafond pour éviter l’infini
+  const arr = POOL[key]; if(!arr) return;
+  let a = arr.find(x=>x.paused);
+  if(!a){
+    const t=arr[0]; a=t.cloneNode(); a.volume=t.volume;
+    if(arr.length<6) arr.push(a);
   }
-  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(_) {}
+  try{ a.currentTime=0; a.play().catch(()=>{});}catch(_){}
 }
 ['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music']
   .forEach(k => { if(SFX[k]) poolify(k, SFX[k]); });
-
 Object.values(SFX).forEach(a=>a.preload='auto');
 
 let muted=false;
@@ -179,20 +166,10 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-
-/* utilitaire: son d'impact (la voix est synchronisée dans setSpritesFor) */
-function playTechniqueSounds(tech){
-  playKey(tech); // impact mannequin uniquement
-}
+function playTechniqueSounds(tech){ playKey(tech); }
 
 /* ====== BG loader ====== */
-function loadBG(url){
-  const i = new Image();
-  i.crossOrigin = 'anonymous';
-  i.onerror = ()=>{};
-  i.src = url;
-  return i;
-}
+function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=url; return i; }
 const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');
 const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
 const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');
@@ -200,30 +177,14 @@ const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 
 /* ====== sprites & skins ====== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
-
-/* Skins perso */
 const SKINS = [
-  {
-    id:'classic',
-    name:'Classique',
-    thumb:'https://i.imgur.com/AweXMem.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png',
-        tan:'https://i.imgur.com/ZrLk97U.png',
-        bon:'https://i.imgur.com/CG30Yh6.png',
-        punch:'https://i.imgur.com/JYL2S46.png' }
-  },
-  {
-    id:'classic_alt',
-    name:'Classique (alt)',
-    thumb:'https://i.imgur.com/ZrLk97U.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png',
-        tan:'https://i.imgur.com/ZrLk97U.png',
-        bon:'https://i.imgur.com/CG30Yh6.png',
-        punch:'https://i.imgur.com/JYL2S46.png' }
-  }
+  { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png',
+        bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
+  { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png',
+        bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } }
 ];
-
-/* Réceptacle IMG runtime */
 const IMG={
   f_pak:null, f_tan:null, f_bon:null, f_punch:null,
   o_pak:   load('https://i.imgur.com/pVF4bt1.png'),
@@ -233,51 +194,67 @@ const IMG={
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* ====== canvas ====== */
+/* ====== canvas HiDPI ====== */
 const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
-const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
+const ctx=cx.getContext('2d',{alpha:true});
+ctx.imageSmoothingEnabled=false;
 let W=0, H=0;
 function resize(){
-  W = cx.width = stage.clientWidth;
-  H = cx.height = stage.clientHeight;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  W = stage.clientWidth;
+  H = stage.clientHeight;
+  cx.width  = Math.round(W * dpr);
+  cx.height = Math.round(H * dpr);
+  cx.style.width = '100%';
+  cx.style.height = '100%';
+  ctx.setTransform(dpr,0,0,dpr,0,0); // toutes les tailles suivantes sont en CSS px
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
 /* ====== config ====== */
 const CFG = {
-  fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
+  fighter: { w: 0.12, centerX: 0.50, bottom: 0.08 }, // taille réduite
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{ sky:0, far:0.20, near:0.42 },
+  parallax:{ sky:0.00, far:0.08, near:0.18 },        // léger parallax
   fighterDxPxByTech: { pak: -85, tan: 85, bon: -85, punch: 85 }
 };
 
-/* ====== décor (parallax) ====== */
-function tileNative(img, offsetX, y){
+/* ====== helpers drawCover + parallax ====== */
+function drawCover(img, centerX=0.5, centerY=0.5, alpha=1){
   if(!img.complete || !img.naturalWidth) return;
-  const iw = img.naturalWidth;
-  let x = offsetX % iw; if(x>0) x -= iw;
-  for(; x < W; x += iw) ctx.drawImage(img, x, y);
+  const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+  const drawW = img.naturalWidth * scale;
+  const drawH = img.naturalHeight * scale;
+  const offsetX = (W - drawW) * centerX;   // centerX 0..1 (0=left, .5=center, 1=right)
+  const offsetY = (H - drawH) * centerY;   // centerY 0..1 (0=top,  1=bottom)
+  if(alpha !== 1){ ctx.save(); ctx.globalAlpha = alpha; }
+  ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+  if(alpha !== 1){ ctx.restore(); }
 }
+
+/* ====== décor (cover + parallax) ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  if (SKY.complete && SKY.naturalWidth){
-    ctx.drawImage(SKY, 0, 0);
-  } else {
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0a0c12'); g.addColorStop(1, '#1a1f2a');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  }
-  offFar  -= CFG.parallax.far  * dt;
-  offNear -= CFG.parallax.near * dt;
-  tileNative(MT_FAR,  offFar,  185);
+  // ciel: toujours cover centré
+  drawCover(SKY, 0.5, 0.5, 1);
+
+  // parallax: décale la "fenêtre" horizontale en modifiant centerX
+  offFar  = (offFar  - CFG.parallax.far  * dt) % W;
+  offNear = (offNear - CFG.parallax.near * dt) % W;
+
+  const farCenterX  = 0.5 + (offFar  / W);   // petite dérive
+  const nearCenterX = 0.5 + (offNear / W);
+
+  // montagnes lointaines & proches en cover, centrées verticalement
+  drawCover(MT_FAR,  farCenterX,  0.45, 1);
+  // légère ombre pour la profondeur
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
-  tileNative(MT_NEAR, offNear, 450);
-  if (ALLEY.complete && ALLEY.naturalWidth){
-    const y = H - ALLEY.naturalHeight;
-    tileNative(ALLEY, 0, y);
-  }
+  drawCover(MT_NEAR, nearCenterX, 0.55, 1);
+
+  // allée: cover alignée bas (centerY=1.0)
+  drawCover(ALLEY, 0.5, 1.0, 1);
 }
 
 /* ====== mannequin animé (centré derrière) ====== */
@@ -315,7 +292,7 @@ function setSpritesFor(tech){
 
   currentFighter = IMG['f_'+tech] || currentFighter;
 
-  // Synchronisation du cri "Yah" sur le mouvement du perso
+  // cri "Yah" calé sur le pic du mouvement
   setTimeout(()=> playKey('voice_'+tech), 100);
 }
 
@@ -373,7 +350,7 @@ async function playSequence(){
   for(const tech of seq){
     setSpritesFor(tech);
     setLit(tech,true);
-    playTechniqueSounds(tech);   // impact mannequin (voix lancée dans setSpritesFor)
+    playTechniqueSounds(tech);
     showOno(tech);
     await sleep(460);
     setLit(tech,false);
@@ -386,7 +363,7 @@ async function press(tech){
   if(locked) return;
   setSpritesFor(tech);
   setLit(tech,true);
-  playTechniqueSounds(tech);     // impact mannequin (voix lancée dans setSpritesFor)
+  playTechniqueSounds(tech);
   showOno(tech);
   await sleep(200); setLit(tech,false);
 
@@ -413,15 +390,7 @@ pads.forEach(b=>{
   }, {passive:false});
 });
 
-/* ====== Démarrage ====== */
-function startGame(){
-  menu.style.display='none';
-  if(!muted) SFX.music.play().catch(()=>{});
-  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
-}
-startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
-
-/* ====== Skins UI ====== */
+/* ====== Skins ====== */
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
   const skin = SKINS[idx] || SKINS[0];
@@ -431,7 +400,6 @@ function applySkin(idx){
   IMG.f_bon   = load(skin.f.bon);
   IMG.f_punch = load(skin.f.punch);
   localStorage.setItem('wcs_skin_idx', idx);
-  // met à jour le sprite courant si besoin
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 function renderSkins(){
@@ -453,6 +421,14 @@ skinsBtn.onclick=()=>{
   if(show) renderSkins();
 };
 
+/* ====== Démarrage ====== */
+function startGame(){
+  menu.style.display='none';
+  if(!muted) SFX.music.play().catch(()=>{});
+  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
+}
+startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
+
 /* ====== Boucle ====== */
 let last=performance.now();
 function loop(t=performance.now()){
@@ -469,13 +445,13 @@ resize();
 applySkin(activeSkinIdx);
 requestAnimationFrame(loop);
 </script>
-  <script>
+
+<script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js")
     .then(() => console.log("Service Worker enregistré"))
     .catch((err) => console.error("Erreur SW", err));
 }
 </script>
-
 </body>
 </html>
