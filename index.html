@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <footer>Parallax vers la gauche. Plans en fit hauteur, sans crop. Mannequin centré derrière, perso centré avec offsets par technique.</footer>
+  <footer>Parallax gauche. Largeur des plans ≤ 1536 px. Zéro crop, allée collée en bas.</footer>
 </div>
 
 <script>
@@ -131,19 +131,16 @@ const SFX = {
 };
 SFX.music.loop = true;
 SFX.music.volume = 0.5;
-// Volume seulement pour les YAH (-20%)
 SFX.voice_pak.volume   = 0.8;
 SFX.voice_tan.volume   = 0.8;
 SFX.voice_bon.volume   = 0.8;
 SFX.voice_punch.volume = 0.8;
 
-/* --- pool audio (garde les volumes) --- */
+/* --- pool audio --- */
 const POOL = {};
 function poolify(key, audio, n = 4){
   const baseVol = audio.volume;
-  const clones = Array.from({length: n-1}, ()=>{
-    const c = audio.cloneNode(); c.volume = baseVol; return c;
-  });
+  const clones = Array.from({length: n-1}, ()=>{ const c = audio.cloneNode(); c.volume = baseVol; return c; });
   POOL[key] = [audio, ...clones];
 }
 function playKey(key){
@@ -208,7 +205,7 @@ function resize(){
   cx.height = Math.round(H * dpr);
   cx.style.width = '100%';
   cx.style.height = '100%';
-  ctx.setTransform(dpr,0,0,dpr,0,0); // tailles en px CSS
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
@@ -217,61 +214,69 @@ window.addEventListener('orientationchange', resize);
 const CFG = {
   fighter: { w: 0.12, centerX: 0.50, bottom: 0.08 },
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{ far:0.08, near:0.18 }, // vitesses faibles
+  parallax:{ far: 14, near: 32 }, // px par "frame" logique (ajusté via dt)
   fighterDxPxByTech: { pak: -85, tan: 85, bon: -85, punch: 85 }
 };
+const MAX_BG_W = 1536; // largeur max demandée
 
-/* ====== helpers: fitHeight (pas de crop) ====== */
-function drawFitHeight(img, alignX=0.5, alignY=0.5, alpha=1){
+/* ====== helper: dessiner un layer sans crop, largeur ≤ 1536, pan horizontal si utile ====== */
+function drawLayerPan(img, state, alignY = 0.5){
   if(!img || !img.complete || !img.naturalWidth) return;
 
-  // échelle pour fit hauteur
+  // mise à l'échelle: fit hauteur
   let scale = H / img.naturalHeight;
   let drawW = img.naturalWidth * scale;
   let drawH = H;
 
-  // limite largeur max
-  if (drawW > 1536) {
-    const ratio = 1536 / drawW;
+  // limite largeur max 1536 px (réduction proportionnelle)
+  if (drawW > MAX_BG_W) {
+    const ratio = MAX_BG_W / drawW;
     drawW *= ratio;
     drawH *= ratio;
   }
 
-  const x = Math.round((W - drawW) * alignX);
-  const y = Math.round((H - drawH) * alignY);
+  // baseX centré; baseY selon alignY (1 = collé en bas)
+  const baseX = Math.round((W - drawW) * 0.5);
+  const baseY = (alignY === 1)
+    ? Math.round(H - drawH)
+    : Math.round((H - drawH) * alignY);
 
-  if(alpha !== 1){ ctx.save(); ctx.globalAlpha = alpha; }
-  ctx.drawImage(img, x, y, drawW, drawH);
-  if(alpha !== 1){ ctx.restore(); }
+  // si l'image est plus large que l'écran, on peut panner; sinon on ignore le pan
+  const maxOffset = Math.max(0, Math.round(drawW - W));
+
+  if (maxOffset > 0) {
+    // update offset avec ping-pong pour éviter bandes vides
+    state.offset += state.dir * state.speed * state.dt;
+    if (state.offset < 0){ state.offset = 0; state.dir = 1; }
+    if (state.offset > maxOffset){ state.offset = maxOffset; state.dir = -1; }
+    ctx.drawImage(img, baseX - state.offset, baseY, drawW, drawH);
+  } else {
+    // pas de pan possible
+    ctx.drawImage(img, baseX, baseY, drawW, drawH);
+  }
 }
 
-/* ====== décor (parallax vers LA GAUCHE) ====== */
-let offFar=0, offNear=0;
+/* ====== états parallax (gauche) ====== */
+const farState  = { offset:0, dir:1, speed:CFG.parallax.far,  dt:0 };
+const nearState = { offset:0, dir:1, speed:CFG.parallax.near, dt:0 };
+
+/* ====== décor ====== */
 function drawBG(dt){
-  // dérive vers la gauche: on incrémente l'offset et on le SOUSTRAIT à centerX
-  offFar  = (offFar  + CFG.parallax.far  * dt) % W;
-  offNear = (offNear + CFG.parallax.near * dt) % W;
+  // dt ~ frames 60 fps (on mape comme avant: dt = elapsed/ (1000/60) )
+  farState.dt  = dt;
+  nearState.dt = dt;
 
-  const farAlignX  = 0.5 - (offFar  / W);
-  const nearAlignX = 0.5 - (offNear / W);
+  // CIEL (léger recentrage vertical)
+  drawLayerPan(SKY, {offset:0, dir:1, speed:0, dt:0}, 0.45);
 
-  // ciel (léger décalage vertical pour exposer plus de haut)
-  drawFitHeight(SKY, 0.5, 0.45, 1);
+  // MONTAGNES lointaines et proches, parallax vers la gauche (offset augmente → image glisse à gauche)
+  drawLayerPan(MT_FAR,  farState,  0.5);
+  // petite ombre pour profondeur
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
+  drawLayerPan(MT_NEAR, nearState, 0.5);
 
-  // montagnes: aucune coupe, visibles entières
-  drawFitHeight(MT_FAR,  farAlignX,  0.5, 1);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // petite profondeur
-  drawFitHeight(MT_NEAR, nearAlignX, 0.5, 1);
-
-  // allée alignée bas: on décale verticalement pour “coller” au sol
-  // On réutilise fit hauteur, puis on force Y bas en recalculant y manuellement
-  if(ALLEY && ALLEY.complete && ALLEY.naturalHeight){
-    const scale = H / ALLEY.naturalHeight;
-    const drawW = ALLEY.naturalWidth * scale;
-    const x = Math.round((W - drawW) * 0.5);
-    const y = Math.round(H - H); // collé en bas
-    ctx.drawImage(ALLEY, x, y, drawW, H);
-  }
+  // ALLÉE collée au bas
+  drawLayerPan(ALLEY, {offset:0, dir:1, speed:0, dt:0}, 1);
 }
 
 /* ====== mannequin animé (centré derrière) ====== */
@@ -309,7 +314,6 @@ function setSpritesFor(tech){
 
   currentFighter = IMG['f_'+tech] || currentFighter;
 
-  // cri "Yah" calé sur le pic du mouvement
   setTimeout(()=> playKey('voice_'+tech), 100);
 }
 
