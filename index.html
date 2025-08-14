@@ -224,11 +224,22 @@ const CFG = {
 /* ====== helpers: fitHeight (pas de crop) ====== */
 function drawFitHeight(img, alignX=0.5, alignY=0.5, alpha=1){
   if(!img || !img.complete || !img.naturalWidth) return;
-  const scale = H / img.naturalHeight;               // fit hauteur, pas de zoom excessif
-  const drawW = img.naturalWidth * scale;
-  const drawH = H;                                   // pile la hauteur du canvas
+
+  // échelle pour fit hauteur
+  let scale = H / img.naturalHeight;
+  let drawW = img.naturalWidth * scale;
+  let drawH = H;
+
+  // limite largeur max
+  if (drawW > 1536) {
+    const ratio = 1536 / drawW;
+    drawW *= ratio;
+    drawH *= ratio;
+  }
+
   const x = Math.round((W - drawW) * alignX);
   const y = Math.round((H - drawH) * alignY);
+
   if(alpha !== 1){ ctx.save(); ctx.globalAlpha = alpha; }
   ctx.drawImage(img, x, y, drawW, drawH);
   if(alpha !== 1){ ctx.restore(); }
