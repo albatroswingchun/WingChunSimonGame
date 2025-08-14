@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <footer>Scène adaptative. Fonds en cover centrés. Mannequin centré derrière, perso centré avec offsets par technique. Permanent Marker.</footer>
+  <footer>Parallax vers la gauche. Plans en fit hauteur, sans crop. Mannequin centré derrière, perso centré avec offsets par technique.</footer>
 </div>
 
 <script>
@@ -208,53 +208,59 @@ function resize(){
   cx.height = Math.round(H * dpr);
   cx.style.width = '100%';
   cx.style.height = '100%';
-  ctx.setTransform(dpr,0,0,dpr,0,0); // toutes les tailles suivantes sont en CSS px
+  ctx.setTransform(dpr,0,0,dpr,0,0); // tailles en px CSS
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
 /* ====== config ====== */
 const CFG = {
-  fighter: { w: 0.12, centerX: 0.50, bottom: 0.08 }, // taille réduite
+  fighter: { w: 0.12, centerX: 0.50, bottom: 0.08 },
   dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{ sky:0.00, far:0.08, near:0.18 },        // léger parallax
+  parallax:{ far:0.08, near:0.18 }, // vitesses faibles
   fighterDxPxByTech: { pak: -85, tan: 85, bon: -85, punch: 85 }
 };
 
-/* ====== helpers drawCover + parallax ====== */
-function drawCover(img, centerX=0.5, centerY=0.5, alpha=1){
-  if(!img.complete || !img.naturalWidth) return;
-  const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+/* ====== helpers: fitHeight (pas de crop) ====== */
+function drawFitHeight(img, alignX=0.5, alignY=0.5, alpha=1){
+  if(!img || !img.complete || !img.naturalWidth) return;
+  const scale = H / img.naturalHeight;               // fit hauteur, pas de zoom excessif
   const drawW = img.naturalWidth * scale;
-  const drawH = img.naturalHeight * scale;
-  const offsetX = (W - drawW) * centerX;   // centerX 0..1 (0=left, .5=center, 1=right)
-  const offsetY = (H - drawH) * centerY;   // centerY 0..1 (0=top,  1=bottom)
+  const drawH = H;                                   // pile la hauteur du canvas
+  const x = Math.round((W - drawW) * alignX);
+  const y = Math.round((H - drawH) * alignY);
   if(alpha !== 1){ ctx.save(); ctx.globalAlpha = alpha; }
-  ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+  ctx.drawImage(img, x, y, drawW, drawH);
   if(alpha !== 1){ ctx.restore(); }
 }
 
-/* ====== décor (cover + parallax) ====== */
+/* ====== décor (parallax vers LA GAUCHE) ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  // ciel: toujours cover centré
-  drawCover(SKY, 0.5, 0.5, 1);
+  // dérive vers la gauche: on incrémente l'offset et on le SOUSTRAIT à centerX
+  offFar  = (offFar  + CFG.parallax.far  * dt) % W;
+  offNear = (offNear + CFG.parallax.near * dt) % W;
 
-  // parallax: décale la "fenêtre" horizontale en modifiant centerX
-  offFar  = (offFar  - CFG.parallax.far  * dt) % W;
-  offNear = (offNear - CFG.parallax.near * dt) % W;
+  const farAlignX  = 0.5 - (offFar  / W);
+  const nearAlignX = 0.5 - (offNear / W);
 
-  const farCenterX  = 0.5 + (offFar  / W);   // petite dérive
-  const nearCenterX = 0.5 + (offNear / W);
+  // ciel (léger décalage vertical pour exposer plus de haut)
+  drawFitHeight(SKY, 0.5, 0.45, 1);
 
-  // montagnes lointaines & proches en cover, centrées verticalement
-  drawCover(MT_FAR,  farCenterX,  0.45, 1);
-  // légère ombre pour la profondeur
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
-  drawCover(MT_NEAR, nearCenterX, 0.55, 1);
+  // montagnes: aucune coupe, visibles entières
+  drawFitHeight(MT_FAR,  farAlignX,  0.5, 1);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // petite profondeur
+  drawFitHeight(MT_NEAR, nearAlignX, 0.5, 1);
 
-  // allée: cover alignée bas (centerY=1.0)
-  drawCover(ALLEY, 0.5, 1.0, 1);
+  // allée alignée bas: on décale verticalement pour “coller” au sol
+  // On réutilise fit hauteur, puis on force Y bas en recalculant y manuellement
+  if(ALLEY && ALLEY.complete && ALLEY.naturalHeight){
+    const scale = H / ALLEY.naturalHeight;
+    const drawW = ALLEY.naturalWidth * scale;
+    const x = Math.round((W - drawW) * 0.5);
+    const y = Math.round(H - H); // collé en bas
+    ctx.drawImage(ALLEY, x, y, drawW, H);
+  }
 }
 
 /* ====== mannequin animé (centré derrière) ====== */
