@@ -604,27 +604,48 @@ function buildDevPanel(){
   devPanel.style.display='block';
 }
 
-/* Toggle panneau via T (robuste) */
-function togglePanel(){
-  const show = devPanel.style.display !== 'block';
-  if (show){ buildDevPanel(); resize(); if(onoSticky) showOnoSticky(); }
-  devPanel.style.display = show ? 'block' : 'none';
+/* ===== Toggle panneau (T) — version blindée ===== */
+function toggleDevPanel(){
+  const open = devPanel.style.display === 'block';
+  if (open) {
+    devPanel.style.display = 'none';
+  } else {
+    buildDevPanel();
+    devPanel.style.display = 'block';
+    resize();                    // recalcul W/H/ratio
+    if (typeof applyOnoStyle === 'function') applyOnoStyle();
+  }
 }
-function keydownHandler(e){
-  const k=(e.key||e.code||'').toLowerCase();
-  if(k==='t'){ e.preventDefault(); togglePanel(); }
+
+function onKeyT(e){
+  // e.code marche pour AZERTY/QWERTY; fallback e.key; ignore la répétition
+  const isT = (e.code === 'KeyT') || (e.key && e.key.toLowerCase() === 't');
+  if (!isT || e.repeat) return;
+  e.preventDefault();
+  e.stopPropagation();
+  toggleDevPanel();
 }
-window.addEventListener('keydown', keydownHandler, {passive:false});
-document.addEventListener('keydown', keydownHandler, {passive:false});
+
+// Bind UNE SEULE FOIS (anti-doublons/hot-reload)
+if (!window.__T_BIND) {
+  window.addEventListener('keydown', onKeyT, { capture: true });
+  document.addEventListener('keydown', onKeyT, { capture: true });
+  devPanel.addEventListener('keydown', onKeyT, { capture: true });
+  window.__T_BIND = true;
+}
 
 /* ===== Init ===== */
 function init(){
   resize();
   applySkin(activeSkinIdx);
+  if (typeof applyOnoStyle === 'function') applyOnoStyle();
   requestAnimationFrame(loop);
 }
-if(document.readyState==='loading'){ addEventListener('DOMContentLoaded', init); }
-else { init(); }
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 </body>
 </html>
