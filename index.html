@@ -11,16 +11,33 @@
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
   }
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-  header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
+
+  /* Fenêtrage centré */
+  #app{position:fixed;inset:0;display:grid;place-items:center}
+  #stageWrap{
+    position:relative;
+    display:grid;place-items:center;
+    width:1536px;height:1160px;             /* la fenêtre fixe */
+    background:#000;                         /* fond de scène */
+    border:1px solid #2a2322;border-radius:12px;
+    box-shadow:0 20px 80px rgba(0,0,0,.55), inset 0 0 0 1px #000;
+    overflow:hidden;
+  }
+  /* bandeau titre + footer restent dans la fenêtre */
+  #chrome{position:absolute;inset:0;pointer-events:none}
+  header, footer{pointer-events:auto}
+
+  header{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
-  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
-  #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
-  #stage{position:relative;width:100%;height:100%}
-  canvas{position:absolute;left:0;top:0;touch-action:none}
+  footer{position:absolute;left:0;right:0;bottom:0;padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
 
+  /* Zone de dessin pile dans la fenêtre */
+  #stage{position:absolute;inset:0}
+  canvas{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
+
+  /* UI jeu */
   #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
@@ -48,18 +65,21 @@
 </head>
 <body>
 <div id="app">
-  <header>
-    <div class="left">
-      <strong>Wing Chun Simon</strong>
-      <span class="chip">Score: <span id="score">0</span></span>
-      <span class="chip">Meilleur: <span id="best">0</span></span>
-    </div>
-    <div class="right"></div>
-  </header>
-
   <div id="stageWrap">
+    <div id="chrome">
+      <header>
+        <div class="left">
+          <strong>Wing Chun Simon</strong>
+          <span class="chip">Score: <span id="score">0</span></span>
+          <span class="chip">Meilleur: <span id="best">0</span></span>
+        </div>
+        <div class="right"></div>
+      </header>
+      <footer>Fenêtre fixe 1536×1160 centrée. Parallaxe propre. Mannequin/perso calés sur H.</footer>
+    </div>
+
     <div id="stage">
-       <canvas id="cx"></canvas>
+      <canvas id="cx"></canvas>
 
       <div id="board">
         <button class="pad" data-tech="pak">Pak Sao</button>
@@ -89,9 +109,7 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <footer>Scène adaptative corrigée: ciel cover, montagnes loin/proche à l’échelle, allée calée, mannequin et perso dimensionnés sur H, parallaxe propre.</footer>
+  </div> <!-- /stageWrap -->
 </div>
 
 <script>
@@ -173,184 +191,144 @@ const IMG={
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* ====== canvas avec DPR (fixe 1536×1160 visibles, net en HiDPI) ====== */
-const stage = document.getElementById('stage');
-const cx    = document.getElementById('cx');
-const ctx   = cx.getContext('2d', { alpha: true });
-ctx.imageSmoothingEnabled = false;
+/* ====== canvas fenêtré 1536×1160 avec DPR ====== */
+const stageWrap = document.getElementById('stageWrap');
+const stage     = document.getElementById('stage');
+const cx        = document.getElementById('cx');
+const ctx       = cx.getContext('2d',{alpha:true});
+ctx.imageSmoothingEnabled=false;
 
-let W = 0, H = 0, DPR = 1;
+let W=0, H=0, DPR=1;
+function resize(){
+  const CSS_W = 1536, CSS_H = 1160;
+  DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
 
-function resize() {
-  DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-
-  // Dimensions VISIBLES fixes
-  const CSS_W = 1536;
-  const CSS_H = 1160;
-
-  // Buffer interne = visible × DPR (net en Retina)
+  // Buffer interne net
   cx.width  = Math.round(CSS_W * DPR);
   cx.height = Math.round(CSS_H * DPR);
 
-  // Taille CSS affichée (exactement 1536×1160)
-  cx.style.width  = CSS_W + 'px';
-  cx.style.height = CSS_H + 'px';
+  // Taille affichée stricte
+  cx.style.width  = CSS_W+'px';
+  cx.style.height = CSS_H+'px';
+  stage.style.width  = CSS_W+'px';
+  stage.style.height = CSS_H+'px';
 
-  // Le conteneur #stage suit la même taille (évite les débordements)
-  stage.style.width  = CSS_W + 'px';
-  stage.style.height = CSS_H + 'px';
+  // Dessin en coordonnées CSS
+  ctx.setTransform(DPR,0,0,DPR,0,0);
 
-  // On dessine en coordonnées CSS px
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-  // Variables logiques utilisées partout dans le rendu
-  W = CSS_W;
-  H = CSS_H;
+  W = CSS_W; H = CSS_H;
 }
-
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
-
 /* ====== config de scène ====== */
 const CFG = {
-  // tailles basées sur la hauteur pour éviter le gigantisme en écrans larges
   fighter: { hPct: 0.38, centerX: 0.50, bottomPct: 0.08 },
   dummy:   { hPct: 0.44, centerX: 0.50, bottomPct: 0.10 },
   fighterDxPxByTech: { pak: -18, tan: 18, bon: -12, punch: 22 },
-
-  // calques: échelle horizontale en % de la largeur de l’écran, ancrage bas en % de H, vitesse de parallaxe
   layers: {
-    sky:     { type:'cover' },                                       // plein écran, recadré
-    far:     { img:()=>MT_FAR,  wPct:1.8, bottomPct:0.34, speedX:0.04 },
-    near:    { img:()=>MT_NEAR, wPct:2.0, bottomPct:0.08, speedX:0.10 },
-    alley:   { img:()=>ALLEY,   wPct:1.20, bottomPct:0.00, speedX:0.00 }
+    sky:   { type:'cover' },
+    far:   { img:()=>MT_FAR,  wPct:1.8, bottomPct:0.34, speedX:0.04 },
+    near:  { img:()=>MT_NEAR, wPct:2.0, bottomPct:0.08, speedX:0.10 },
+    alley: { img:()=>ALLEY,   wPct:1.20, bottomPct:0.00, speedX:0.00 }
   }
 };
 
-/* ====== helpers de décor ====== */
-// dessine le ciel en cover (sans ratio cassé)
+/* ====== helpers décor ====== */
 function drawSkyCover(){
   const img = SKY;
   if(img.complete && img.naturalWidth){
-    const iw = img.naturalWidth, ih = img.naturalHeight;
-    const rImg = iw/ih; const rCanv = W/H;
-    let dw, dh, dx, dy;
-    if(rCanv > rImg){ // canvas plus large
-      dh = H; dw = dh * rCanv;
-    } else {
-      dw = W; dh = dw / rImg;
-    }
-    dx = (W - dw)/2; dy = (H - dh)/2;
+    const iw=img.naturalWidth, ih=img.naturalHeight;
+    const rImg=iw/ih, rCanv=W/H;
+    let dw,dh,dx,dy;
+    if(rCanv>rImg){ dh=H; dw=dh*rCanv; } else { dw=W; dh=dw/rImg; }
+    dx=(W-dw)/2; dy=(H-dh)/2;
     ctx.drawImage(img, dx, dy, dw, dh);
   } else {
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0a0c12'); g.addColorStop(1, '#1a1f2a');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0a0c12'); g.addColorStop(1,'#1a1f2a');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
 }
-
-// tuilage horizontal avec mise à l’échelle
 function tileScaledBottom(img, offsetX, wPct, bottomPct){
-  if(!img.complete || !img.naturalWidth) return;
-  const targetW = Math.max(W * wPct, 1);
-  const scale = targetW / img.naturalWidth;
-  const targetH = img.naturalHeight * scale;
-  const y = Math.round(H - targetH - (H * bottomPct));
-  // pour couvrir, on tile en x
-  let startX = (offsetX % targetW); if(startX > 0) startX -= targetW;
-  for(let x = startX; x < W; x += targetW){
-    ctx.drawImage(img, x, y, targetW, targetH);
-  }
+  if(!img.complete||!img.naturalWidth) return;
+  const targetW=Math.max(W*wPct,1);
+  const scale=targetW/img.naturalWidth;
+  const targetH=img.naturalHeight*scale;
+  const y=Math.round(H-targetH-(H*bottomPct));
+  let startX=(offsetX%targetW); if(startX>0) startX-=targetW;
+  for(let x=startX; x<W; x+=targetW) ctx.drawImage(img,x,y,targetW,targetH);
 }
 
 /* ====== parallaxe ====== */
 let offFar=0, offNear=0;
 function drawBG(dt){
-  // ciel
   drawSkyCover();
-
-  // parallax offsets
   offFar  = (offFar  - CFG.layers.far.speedX  * dt * 60) % 999999;
   offNear = (offNear - CFG.layers.near.speedX * dt * 60) % 999999;
-
-  // calques ancrés en bas, à l’échelle
   tileScaledBottom(CFG.layers.far.img(),  offFar,  CFG.layers.far.wPct,  CFG.layers.far.bottomPct);
-  ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fillRect(0,0,W,H); // très léger voile
+  ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fillRect(0,0,W,H);
   tileScaledBottom(CFG.layers.near.img(), offNear, CFG.layers.near.wPct, CFG.layers.near.bottomPct);
   tileScaledBottom(CFG.layers.alley.img(),0,      CFG.layers.alley.wPct,CFG.layers.alley.bottomPct);
 }
 
-/* ====== mannequin (derrière) dimensionné sur H ====== */
+/* ====== mannequin ====== */
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
-  const img = IMG.d_unique; if(!img || !img.complete || !img.naturalWidth) return;
+  const img=IMG.d_unique; if(!img||!img.complete||!img.naturalWidth) return;
   let scale=1;
   if(performance.now()<dummyAnim.until){
     const t=1-((dummyAnim.until-performance.now())/200);
     scale=1+0.05*Math.sin(t*Math.PI);
   }
-  const targetH = Math.max(80, H*CFG.dummy.hPct) * scale;
-  const s = targetH / img.naturalHeight;
-  const targetW = img.naturalWidth * s;
-  const xLeft = Math.round(W*CFG.dummy.centerX - targetW/2);
-  const yTop = Math.round(H - targetH - H*CFG.dummy.bottomPct);
-  ctx.drawImage(img, xLeft, yTop, targetW, targetH);
+  const targetH=Math.max(80,H*CFG.dummy.hPct)*scale;
+  const s=targetH/img.naturalHeight;
+  const targetW=img.naturalWidth*s;
+  const xLeft=Math.round(W*CFG.dummy.centerX-targetW/2);
+  const yTop=Math.round(H-targetH-H*CFG.dummy.bottomPct);
+  ctx.drawImage(img,xLeft,yTop,targetW,targetH);
 }
 
-/* ====== perso (devant) dimensionné sur H ====== */
+/* ====== perso ====== */
 let currentTech='pak';
-let currentFighter=null; // défini par applySkin()
+let currentFighter=null;
 let actionAnim={until:0,lunge:0,scale:1};
-
 function setSpritesFor(tech){
-  currentTech = tech;
-  triggerDummyAnim();
-
-  const now = performance.now();
-  const LUNGE = { pak:8, tan:10, bon:7, punch:12 };
-  const SCALE = { pak:1.02, tan:1.025, bon:1.02, punch:1.03 };
-  actionAnim = { until: now + 260, lunge: (LUNGE[tech]||8), scale: (SCALE[tech]||1.02) };
-
-  currentFighter = IMG['f_'+tech] || currentFighter;
-
+  currentTech=tech; triggerDummyAnim();
+  const now=performance.now();
+  const LUNGE={pak:8,tan:10,bon:7,punch:12};
+  const SCALE={pak:1.02,tan:1.025,bon:1.02,punch:1.03};
+  actionAnim={until:now+260,lunge:(LUNGE[tech]||8),scale:(SCALE[tech]||1.02)};
+  currentFighter=IMG['f_'+tech]||currentFighter;
   setTimeout(()=> playKey('voice_'+tech), 100);
 }
-
 function drawFighter(){
-  const img = currentFighter; if(!img || !img.complete || !img.naturalWidth) return;
-  const baseH = Math.max(80, H*CFG.fighter.hPct);
-  const s = baseH / img.naturalHeight;
-  const baseW = img.naturalWidth * s;
-
-  const dxTech = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
-
-  const now = performance.now();
-  const idleBob = (now > actionAnim.until) ? Math.sin(now/420)*2 : 0;
-
-  let extraX=0, extraY=0, scaleMul=1;
-  if(now < actionAnim.until){
-    const t = 1 - Math.max(0,(actionAnim.until - now)/260);
-    const ease = 1 - Math.pow(1 - t, 3);
-    extraX = actionAnim.lunge * ease;
-    scaleMul = 1 + (actionAnim.scale - 1) * ease;
-    extraY = -1.5 * ease;
+  const img=currentFighter; if(!img||!img.complete||!img.naturalWidth) return;
+  const baseH=Math.max(80,H*CFG.fighter.hPct);
+  const s=baseH/img.naturalHeight, baseW=img.naturalWidth*s;
+  const dxTech=(CFG.fighterDxPxByTech&&CFG.fighterDxPxByTech[currentTech])||0;
+  const now=performance.now();
+  const idleBob=(now>actionAnim.until)?Math.sin(now/420)*2:0;
+  let extraX=0,extraY=0,scaleMul=1;
+  if(now<actionAnim.until){
+    const t=1-Math.max(0,(actionAnim.until-now)/260);
+    const ease=1-Math.pow(1-t,3);
+    extraX=actionAnim.lunge*ease;
+    scaleMul=1+(actionAnim.scale-1)*ease;
+    extraY=-1.5*ease;
   }
-
-  const centerX = W * (CFG.fighter.centerX || 0.5);
-  const finalW = baseW * scaleMul, finalH = baseH * scaleMul;
-  const xBase = Math.round(centerX - finalW/2 + dxTech + extraX);
-  const yBase = Math.round(H - finalH - H*CFG.fighter.bottomPct + idleBob + extraY);
-
-  ctx.drawImage(img, xBase, yBase, finalW, finalH);
+  const centerX=W*(CFG.fighter.centerX||0.5);
+  const finalW=baseW*scaleMul, finalH=baseH*scaleMul;
+  const xBase=Math.round(centerX-finalW/2+dxTech+extraX);
+  const yBase=Math.round(H-finalH-H*CFG.fighter.bottomPct+idleBob+extraY);
+  ctx.drawImage(img,xBase,yBase,finalW,finalH);
 }
 
 /* ====== onomatopées ====== */
 function showOno(tech){
-  const img = IMG['o_'+tech];
-  if(!img) return;
-  onoImg.src = img.src;
+  const img=IMG['o_'+tech]; if(!img) return;
+  onoImg.src=img.src;
   onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
@@ -358,7 +336,6 @@ function showOno(tech){
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
-
 function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); if(!b) return; b.classList.toggle('lit',on); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
