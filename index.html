@@ -76,7 +76,7 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
-    <div class="right"></div><!-- (visuel) on n’indique plus T: Réglages -->
+    <div class="right"><span class="chip">T: Réglages</span></div>
   </header>
 
   <div id="stageWrap">
@@ -108,24 +108,17 @@
             <div style="margin-bottom:8px;opacity:.85">Choisis un skin de personnage</div>
             <div id="skinsGrid"></div>
           </div>
-
-          <!-- Version app (visuel) -->
-          <div id="appVersion" class="hint" style="margin-top:10px;"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Footer vidé (visuel) -->
-  <footer></footer>
+  <footer>PC 4:3 / Mobile 9:16 • Parallax proportionnel • T = réglages</footer>
 </div>
 
 <div id="devPanel"></div>
 
 <script>
-/* ===== App version (visuel) ===== */
-const APP_VERSION = 'v2.136';
-
 /* ===== Ratios cibles ===== */
 const PC_RATIO = 4/3;      // paysage
 const MB_RATIO = 9/16;     // portrait
@@ -204,7 +197,11 @@ function applySkin(idx){
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 
-/* ===== Profils & stockage (v8) ===== */
+/* ===== Profils & stockage (v8) =====
+   - Ciel: cover + zoom + offsets
+   - Far/Near/Alley: wPct (largeur relative à la scène) + bottomPct + offsetXPct + vitesse
+   - Onos par technique
+*/
 const STORAGE_KEY='wcs_tune_v8';
 const TUNE_VERSION=8;
 
@@ -237,6 +234,7 @@ let CFG;
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
     if(stored && stored.version===TUNE_VERSION){ CFG=stored; return; }
   }catch{}
+  // tentative de migration de v7 -> v8
   let v7=null;
   try{ v7 = JSON.parse(localStorage.getItem('wcs_tune_v7')||'null'); }catch{}
   if(v7 && v7.profiles){
@@ -281,10 +279,18 @@ function migrate7to8(p){
 }
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
 
-/* Profil affiché vs runtime */
-const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
-const viewingProfileName = ()=> (CFG.previewLock ? CFG.editingProfile : runtimeProfileName());
-const P = ()=> CFG.profiles[viewingProfileName()];
+/* ======= Profil affiché vs runtime (CORRIGÉ) ======= */
+const isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && Math.max(screen.width, screen.height) <= 1366;
+// Sur téléphone: toujours 'mobile'. Sinon: mobile si portrait, pc si paysage.
+const runtimeProfileName = () => (isPhone ? 'mobile' : (innerHeight > innerWidth ? 'mobile' : 'pc'));
+// Quand le panneau est OUVERT et "Aperçu = Profil édité" -> on montre le profil en édition,
+// sinon -> toujours le profil runtime.
+const viewingProfileName = () => {
+  const panelOpen = (devPanel && devPanel.style.display === 'block');
+  return (panelOpen && CFG.previewLock) ? CFG.editingProfile : runtimeProfileName();
+};
+// Profil utilisé par le rendu
+const P = () => CFG.profiles[viewingProfileName()];
 
 /* ===== Canvas / Resize ===== */
 let DPR=1, W=0, H=0;
@@ -311,6 +317,7 @@ addEventListener('resize', resize);
 addEventListener('orientationchange', resize);
 
 /* ===== Décor ===== */
+// Ciel en cover + zoom
 function drawSkyCover(){
   const img=SKY, L=P().layers.sky;
   if(img.complete && img.naturalWidth){
@@ -325,6 +332,7 @@ function drawSkyCover(){
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
 }
+// Tuilage largeur-proportionnelle (ratio préservé)
 function tileScaledBottom(img, startOffsetXPct, wPct, bottomPct){
   if(!img.complete || !img.naturalWidth) return;
   const targetW = Math.max(1, W * (wPct||1));
@@ -382,7 +390,7 @@ function drawFighter(){
   const now=performance.now(), idleBob=(now>actionAnim.until)?Math.sin(now/420)*3:0;
   let extraX=0, extraY=0, scaleMul=1;
   if(now<actionAnim.until){ const t=1-Math.max(0,(actionAnim.until-now)/260); const ease=1-Math.pow(1-t,3); extraX=actionAnim.lunge*ease; scaleMul=1+(actionAnim.scale-1)*ease; extraY=-2*ease; }
-  const centerX=W*(F.centerX||0.5), finalW=baseW*scaleMul, finalH=img.naturalHeight*(finalW/img.naturalWidth);
+  const centerX=W*(F.centerX||0.5), finalW=baseW*scaleMul, finalH=baseH*scaleMul;
   const xBase=Math.round(centerX - finalW/2 + dxTech + extraX);
   const yBase=Math.round(H - finalH - H*(F.bottomPct||0) + idleBob + extraY);
   ctx.drawImage(img, xBase, yBase, finalW, finalH);
@@ -578,7 +586,7 @@ function buildDevPanel(){
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
-  /* Onomatopées par technique */
+  /* Onomatopées (par technique) */
   section('Onomatopées (par technique)');
   E.onoByTech = E.onoByTech || deepClone(DEFAULT_PROFILE_PC.onoByTech);
 
@@ -610,26 +618,12 @@ function buildDevPanel(){
   devPanel.style.display='block';
 }
 
-/* ===== Mot de passe pour panneau (visuel) ===== */
-let devUnlocked = (localStorage.getItem('wcs_dev_ok') === '1');
-function askDevPassword(){
-  if (devUnlocked) return true;
-  const pwd = prompt('Mot de passe développeur ?');
-  if (pwd === 'Tocard'){
-    devUnlocked = true;
-    localStorage.setItem('wcs_dev_ok','1');
-    return true;
-  }
-  return false;
-}
-
 /* ===== Toggle panneau (T) — version blindée ===== */
 function toggleDevPanel(){
   const open = devPanel.style.display === 'block';
   if (open) {
     devPanel.style.display = 'none';
   } else {
-    if (!askDevPassword()) return; // stop si mauvais mdp
     buildDevPanel();
     devPanel.style.display = 'block';
     resize();
@@ -653,8 +647,6 @@ if (!window.__T_BIND) {
 function init(){
   resize();
   applySkin(activeSkinIdx);
-  const tag = document.getElementById('appVersion');
-  if (tag) tag.textContent = APP_VERSION;
   requestAnimationFrame(loop);
 }
 if (document.readyState === 'loading') {
