@@ -15,7 +15,7 @@
   .btn:hover{filter:brightness(1.08)}
   footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f);z-index:5}
 
-  #stageWrap{position:relative;display:grid;place-items:center;overflow:hidden;background:#000}
+  #stageWrap{position:relative;display:grid;place-items:center;overflow:hidden;background:#000;min-height:0}
   #stage{position:relative}
   canvas{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
 
@@ -23,12 +23,8 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées: position/rotation/hauteur gérées en JS, aperçu collant */
-  #onoImg{
-    position:absolute; left:50%; top:50%;
-    width:auto; height:360px; opacity:0; pointer-events:none; z-index:11;
-    transform:translate(-50%,-50%);
-  }
+  /* Onomatopées */
+  #onoImg{position:absolute;left:50%;top:50%;width:auto;height:360px;opacity:0;pointer-events:none;z-index:11;transform:translate(-50%,-50%)}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:12}
@@ -60,7 +56,7 @@
   #devPanel .row input[type="range"]{width:100%}
   #devPanel .row input[type="number"]{width:64px; background:#1b1716; color:#e8d6b8; border:1px solid #3a302d; border-radius:6px; padding:6px}
   #devPanel .bar{display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap}
-  #devPanel .bar button, #devPanel .bar .seg, #devPanel .bar .toggle{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
+  #devPanel .bar button, #devPanel .bar .seg{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
   #devPanel .seg{display:flex; gap:6px; flex:1; align-items:center; justify-content:space-between}
   #devPanel .seg button{flex:1; border-radius:6px}
   #devPanel .seg .active{outline:2px solid var(--gold)}
@@ -70,7 +66,7 @@
 </head>
 <body>
 <div id="app">
-  <header>
+  <header id="topbar">
     <div class="left">
       <strong>Wing Chun Simon</strong>
       <span class="chip">Score: <span id="score">0</span></span>
@@ -113,15 +109,15 @@
     </div>
   </div>
 
-  <footer>Ratios: PC 4:3, Mobile 9:16. Tout est en % d’écran, vitesses en “écran/s”. T pour ouvrir/fermer.</footer>
+  <footer id="bottombar">Ratios: PC 4:3, Mobile 9:16. Tout en % d’écran, vitesses en “écran/s”. T pour ouvrir/fermer.</footer>
 </div>
 
 <div id="devPanel"></div>
 
 <script>
 /* ===== Ratios cibles ===== */
-const PC_RATIO = 4/3;      // paysage
-const MB_RATIO = 9/16;     // portrait
+const PC_RATIO = 4/3;
+const MB_RATIO = 9/16;
 
 /* ===== Refs ===== */
 const pads=[...document.querySelectorAll('.pad')];
@@ -138,6 +134,8 @@ const flash=document.getElementById('flash');
 const devPanel=document.getElementById('devPanel');
 const stageWrap=document.getElementById('stageWrap');
 const stage=document.getElementById('stage');
+const topbar=document.getElementById('topbar');
+const bottombar=document.getElementById('bottombar');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 
@@ -168,10 +166,10 @@ function playTechniqueSounds(tech){ playKey(tech); }
 
 /* ===== BG assets ===== */
 function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=url; return i; }
-const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');   // ciel
-const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');   // montagnes lointaines
-const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');   // montagnes proches
-const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');   // allée
+const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');
+const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
+const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');
+const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 
 /* ===== Sprites & skins ===== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
@@ -197,17 +195,13 @@ function applySkin(idx){
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 
-/* ===== Profils & stockage =====
-   v7: onomatopées par technique (onoByTech)
-   Toutes les tailles/positions sont en % d’écran → rendu proportionnel.
-*/
+/* ===== Profils & stockage ===== */
 const STORAGE_KEY='wcs_tune_v7';
 const TUNE_VERSION=7;
 
 const DEFAULT_PROFILE_PC = {
   ratio: PC_RATIO,
   layers:{
-    // wPct/hPct = fraction de la largeur/hauteur de l’écran pour UNE tuile
     sky:  { wPct:1.00, hPct:0.40, offsetXPct:0.00, yOffsetPct:-0.30, speedX:0.00 },
     far:  { wPct:0.94, hPct:0.94, offsetXPct:0.00, bottomPct:0.108,  speedX:0.05 },
     near: { wPct:1.00, hPct:1.00, offsetXPct:(49/1536), bottomPct:0.176, speedX:0.20 },
@@ -215,60 +209,27 @@ const DEFAULT_PROFILE_PC = {
   },
   fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
   dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 },
-  onoByTech: {
-    pak:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 },
-    tan:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 },
-    bon:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 },
-    punch:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 }
+  onoByTech:{
+    pak:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    tan:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    bon:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    punch:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0}
   }
 };
 const DEFAULT_PROFILE_MOBILE = JSON.parse(JSON.stringify(DEFAULT_PROFILE_PC));
 DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
 
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
-
-/* Charger + migration v6 -> v7 */
 let CFG;
 (function loadConfig(){
   try{
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
     if(stored && stored.version===TUNE_VERSION){ CFG=stored; return; }
   }catch{}
-  // migrer depuis v6 (ono unique -> par tech identique)
-  let old=null;
-  try{ old = JSON.parse(localStorage.getItem('wcs_tune_v6')||'null'); }catch{}
-  if(old && old.profiles){
-    const clone = prof=>{
-      const p=deepClone(prof);
-      // scaleX/scaleY de l’ancienne version => interprétés comme wPct/hPct
-      for(const k of ['sky','far','near','alley']){
-        const L=p.layers[k];
-        if(L && (L.scaleX!==undefined || L.scaleY!==undefined)){
-          L.wPct = (L.wPct!==undefined)?L.wPct:(L.scaleX??1);
-          L.hPct = (L.hPct!==undefined)?L.hPct:(L.scaleY??1);
-          delete L.scaleX; delete L.scaleY;
-        }
-      }
-      if(p.ono && !p.onoByTech){
-        p.onoByTech = { pak:deepClone(p.ono), tan:deepClone(p.ono), bon:deepClone(p.ono), punch:deepClone(p.ono) };
-        delete p.ono;
-      }
-      return p;
-    };
-    CFG = {
-      version:TUNE_VERSION,
-      editingProfile: old.editingProfile||'pc',
-      previewLock:true,
-      profiles:{ pc:clone(old.profiles.pc||DEFAULT_PROFILE_PC),
-                 mobile:clone(old.profiles.mobile||old.profiles.pc||DEFAULT_PROFILE_MOBILE) },
-      fighterDxPxByTech: old.fighterDxPxByTech||{pak:-110,tan:110,bon:-110,punch:110}
-    };
-  } else {
-    CFG = { version:TUNE_VERSION, editingProfile:'pc', previewLock:true,
-      profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
-      fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
-    };
-  }
+  CFG = { version:TUNE_VERSION, editingProfile:'pc', previewLock:true,
+    profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
+    fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
+  };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
 })();
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
@@ -278,15 +239,25 @@ const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
 const viewingProfileName = ()=> (CFG.previewLock ? CFG.editingProfile : runtimeProfileName());
 const P = ()=> CFG.profiles[viewingProfileName()];
 
-/* ===== Canvas / Resize ===== */
+/* ===== Canvas / Resize (robuste) ===== */
 let DPR=1, W=0, H=0;
 let last = performance.now();
 
+function computeAvailableSize(){
+  const hHdr = topbar?.offsetHeight || 0;
+  const hFtr = bottombar?.offsetHeight || 0;
+  const availH = Math.max(100, window.innerHeight - hHdr - hFtr);
+  const availW = Math.max(100, window.innerWidth);
+  // Applique la hauteur au wrap pour garantir un clientHeight non nul:
+  stageWrap.style.height = availH+'px';
+  return {availW, availH};
+}
+
 function resize(){
+  const {availW, availH} = computeAvailableSize();
   const r = P().ratio || PC_RATIO;
-  const wrapW=stageWrap.clientWidth, wrapH=stageWrap.clientHeight;
-  let boxW=wrapW, boxH=Math.round(wrapW / r);
-  if(boxH>wrapH){ boxH=wrapH; boxW=Math.round(wrapH * r); }
+  let boxW=availW, boxH=Math.round(availW / r);
+  if(boxH>availH){ boxH=availH; boxW=Math.round(availH * r); }
 
   DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
   cx.width = Math.round(boxW * DPR);
@@ -296,7 +267,7 @@ function resize(){
 
   ctx.setTransform(DPR,0,0,DPR,0,0);
   W=boxW; H=boxH;
-  applyOnoStyle(); // garder l’aperçu propre au resize
+  applyOnoStyle();
 }
 addEventListener('resize', resize);
 addEventListener('orientationchange', resize);
@@ -315,7 +286,7 @@ function drawSky(){
   }
 }
 function tileScaledBottom(img, startOffsetXPct, wPct, hPct, bottomPct){
-  if(!img.complete || !img.naturalWidth) return;
+  if(!img.complete || !img.naturalWidth){ return; }
   const tileW = Math.max(1, W * wPct);
   const tileH = Math.max(1, H * hPct);
   const y = Math.round(H - tileH - (H*(bottomPct||0)));
@@ -323,7 +294,7 @@ function tileScaledBottom(img, startOffsetXPct, wPct, hPct, bottomPct){
   for(; x<W; x+=tileW) ctx.drawImage(img, x, y, tileW, tileH);
 }
 
-/* Parallaxe (vitesses en écran/s) */
+/* Parallaxe */
 let offSky=0, offFar=0, offNear=0, offAlley=0;
 function drawBG(dt){
   const L=P().layers;
@@ -340,7 +311,7 @@ function drawBG(dt){
   tileScaledBottom(ALLEY,   L.alley.offsetXPct+ (offAlley/W),L.alley.wPct,L.alley.hPct,L.alley.bottomPct);
 }
 
-/* ===== Mannequin & Perso (proportionnels) ===== */
+/* ===== Mannequin & Perso ===== */
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
@@ -378,12 +349,12 @@ function drawFighter(){
 
 /* ===== Onomatopées par technique ===== */
 let onoSticky=false;
-let onoStickyTech='pak'; // sélection actuelle (exclusive)
+let onoStickyTech='pak';
 
 function onoConf(tech){ return P().onoByTech[tech] || P().onoByTech.pak; }
 
 function applyOnoStyle(){
-  const O = onoConf(onoStickyTech); // pour l’aperçu collant on prend la tech active
+  const O = onoConf(onoStickyTech);
   const left = (O.xPct*100).toFixed(3)+'%';
   const top  = (O.yPct*100).toFixed(3)+'%';
   const hpx  = Math.max(10, O.hPct * H);
@@ -394,31 +365,18 @@ function applyOnoStyle(){
 }
 function showOno(tech){
   const img=IMG['o_'+tech]; if(!img) return;
-  const O = P().onoByTech[tech] || P().onoByTech.pak;
-  onoStickyTech = tech; // pour que l’aperçu colle à la dernière tech jouée
+  const O = onoConf(tech);
+  onoStickyTech = tech;
   onoImg.src=img.src;
-  // appliquer le style de la tech affichée
-  const left=(O.xPct*100)+'%'; const top=(O.yPct*100)+'%'; const hpx=Math.max(10, O.hPct*H);
-  onoImg.style.left=left; onoImg.style.top=top; onoImg.style.height=hpx+'px';
+  onoImg.style.left=(O.xPct*100)+'%';
+  onoImg.style.top=(O.yPct*100)+'%';
+  onoImg.style.height=Math.max(10, O.hPct*H)+'px';
   onoImg.style.transform=`translate(-50%,-50%) rotate(${O.rotDeg||0}deg)`;
-  if(!onoSticky){ // animation temporisée uniquement si pas en mode collant
-    onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
-  } else {
-    onoImg.classList.remove('onoShow');
-    onoImg.style.opacity='1';
-  }
+  if(!onoSticky){ onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow'); }
+  else { onoImg.classList.remove('onoShow'); onoImg.style.opacity='1'; }
 }
-function showOnoSticky(){
-  const img=IMG['o_'+onoStickyTech]; if(!img) return;
-  onoImg.src=img.src;
-  applyOnoStyle();
-  onoImg.classList.remove('onoShow');
-  onoImg.style.opacity='1';
-}
-function hideOnoSticky(){
-  onoImg.style.opacity='0';
-  onoImg.classList.remove('onoShow');
-}
+function showOnoSticky(){ const img=IMG['o_'+onoStickyTech]; if(!img) return; onoImg.src=img.src; applyOnoStyle(); onoImg.classList.remove('onoShow'); onoImg.style.opacity='1'; }
+function hideOnoSticky(){ onoImg.style.opacity='0'; onoImg.classList.remove('onoShow'); }
 
 /* ===== Simon ===== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
@@ -453,9 +411,7 @@ async function press(tech){
 }
 
 /* ===== Entrées ===== */
-pads.forEach(b=>{
-  b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
-});
+pads.forEach(b=> b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false}));
 function startGame(){
   menu.style.display='none';
   if(!muted) SFX.music.play().catch(()=>{});
@@ -478,8 +434,10 @@ function renderSkins(){
 function loop(t = performance.now()){
   const dt = Math.min(33, t - last) / (1000/60);
   last = t;
-  ctx.clearRect(0,0,W,H);
-  drawBG(dt); drawDummy(); drawFighter();
+  if(W>0 && H>0){
+    ctx.clearRect(0,0,W,H);
+    drawBG(dt); drawDummy(); drawFighter();
+  }
   requestAnimationFrame(loop);
 }
 
@@ -496,7 +454,7 @@ function addRange(parent,label,obj,key,{min,max,step=0.01,after}){
 }
 function section(t){ const h=document.createElement('h3'); h.textContent=t; devPanel.appendChild(h); }
 function sep(){ const d=document.createElement('div'); d.className='sep'; devPanel.appendChild(d); }
-function header(){ const h=document.createElement('h2'); h.textContent='Réglages Parallax (T pour fermer)'; devPanel.appendChild(h); }
+function header(){ const h=document.createElement('h2'); h.textContent='Réglages (T pour fermer)'; devPanel.appendChild(h); }
 function bar(){
   const wrap=document.createElement('div'); wrap.className='bar';
   const reset=document.createElement('button'); reset.textContent='Réinitialiser';
@@ -533,7 +491,6 @@ function buildDevPanel(){
 
   function R(sectionTitle, key){
     section(sectionTitle);
-    // Interprétation en % d’écran (proportionnel)
     addRange(devPanel,'Largeur tuile % écran', editLayers[key],'wPct',{min:0.2,max:3,step:0.01});
     addRange(devPanel,'Hauteur tuile % écran', editLayers[key],'hPct',{min:0.2,max:3,step:0.01});
     addRange(devPanel,'Position X %', editLayers[key],'offsetXPct',{min:-3,max:3,step:0.001});
@@ -559,35 +516,24 @@ function buildDevPanel(){
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
-  /* Onomatopées par technique, sélection EXCLUSIVE + aperçu collant */
   section('Onomatopées (par technique)');
-
-  const onoBar=document.createElement('div');
-  onoBar.className='bar';
-
-  // Aperçu ON/OFF
+  const onoBar=document.createElement('div'); onoBar.className='bar';
   onoPreviewBtn=document.createElement('button');
   function refreshPreviewBtn(){ onoPreviewBtn.textContent='Aperçu ON: '+(onoSticky?'ON':'OFF'); }
   onoPreviewBtn.onclick=()=>{ onoSticky=!onoSticky; if(onoSticky) showOnoSticky(); else hideOnoSticky(); refreshPreviewBtn(); };
   refreshPreviewBtn();
   onoBar.appendChild(onoPreviewBtn);
 
-  // Sélecteur exclusif
   const seg=document.createElement('div'); seg.className='seg';
   const btns=[];
   ['pak','tan','bon','punch'].forEach(k=>{
-    const b=document.createElement('button');
-    b.textContent=k; b.dataset.tech=k;
-    function mark(){ b.classList.toggle('active', onoStickyTech===k); }
+    const b=document.createElement('button'); b.textContent=k; b.dataset.tech=k;
     b.onclick=()=>{ onoStickyTech=k; btns.forEach(x=>x.classList.toggle('active', x.dataset.tech===k)); if(onoSticky) showOnoSticky(); buildOnoSliders(); };
-    btns.push(b); seg.appendChild(b); mark();
+    btns.push(b); seg.appendChild(b);
   });
-  // Activer visuel d’état
   btns.forEach(b=> b.classList.toggle('active', b.dataset.tech===onoStickyTech));
-  onoBar.appendChild(seg);
-  devPanel.appendChild(onoBar);
+  onoBar.appendChild(seg); devPanel.appendChild(onoBar);
 
-  // Sliders spécifiques à la technique sélectionnée
   const onoSlidersWrap=document.createElement('div'); devPanel.appendChild(onoSlidersWrap);
   function buildOnoSliders(){
     onoSlidersWrap.innerHTML='';
@@ -602,21 +548,24 @@ function buildDevPanel(){
 
   devPanel.style.display='block';
 }
-addEventListener('keydown',e=>{
-  const k = (e.key||'').toLowerCase();
-  if(k==='t'){
-    const show = devPanel.style.display!=='block';
-    if(show){ buildDevPanel(); resize(); applyOnoStyle(); } 
-    devPanel.style.display = show?'block':'none';
-  }
-});
+function togglePanel(){
+  const show = devPanel.style.display!=='block';
+  if(show){ buildDevPanel(); resize(); applyOnoStyle(); }
+  devPanel.style.display = show?'block':'none';
+}
+window.addEventListener('keydown',e=>{ if((e.key||'').toLowerCase()==='t') togglePanel(); });
+document.addEventListener('keydown',e=>{ if((e.key||'').toLowerCase()==='t') togglePanel(); });
 
-/* ===== Init ===== */
-resize();
-applySkin(activeSkinIdx);
-applyOnoStyle();
-let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best;
-requestAnimationFrame(loop);
+/* ===== Init (après layout) ===== */
+function init(){
+  computeAvailableSize();
+  resize();
+  applySkin(activeSkinIdx);
+  applyOnoStyle();
+  let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best;
+  requestAnimationFrame(loop);
+}
+window.addEventListener('load', init);
 </script>
 </body>
 </html>
