@@ -55,7 +55,7 @@
   #devPanel .row{display:grid; grid-template-columns:120px 1fr 56px; align-items:center; gap:6px; margin:6px 0}
   #devPanel .row input[type="range"]{width:100%}
   #devPanel .row input[type="number"]{width:56px; background:#1b1716; color:#e8d6b8; border:1px solid #3a302d; border-radius:6px; padding:6px}
-  #devPanel .bar{display:flex; gap:8px; margin:8px 0 4px}
+  #devPanel .bar{display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap}
   #devPanel .bar button, #devPanel .bar .seg{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
   #devPanel .seg{display:flex; gap:6px; flex:1; align-items:center; justify-content:space-between}
   #devPanel .seg button{flex:1; border-radius:6px}
@@ -109,7 +109,7 @@
     </div>
   </div>
 
-  <footer>Ratio 1536×1160 verrouillé. Réglages par calque + perso + mannequin. Profils PC/Mobile indépendants (auto: portrait=passe en Mobile).</footer>
+  <footer>Ratio 1536×1160 verrouillé. Profils PC/Mobile indépendants. T pour ouvrir/fermer les réglages.</footer>
 </div>
 
 <div id="devPanel"></div>
@@ -215,7 +215,7 @@ const DEFAULT_PROFILE_PC = {
   fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
   dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 }
 };
-const DEFAULT_PROFILE_MOBILE = deepClone(DEFAULT_PROFILE_PC); // point de départ identique, libre à toi d’ajuster
+const DEFAULT_PROFILE_MOBILE = deepClone(DEFAULT_PROFILE_PC); // point de départ
 
 let CFG;
 try{
@@ -232,7 +232,7 @@ function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
 
 const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
 const P = ()=> CFG.profiles[runtimeProfileName()];     // profil utilisé pour le rendu (auto)
-const E = ()=> CFG.profiles[CFG.editingProfile];       // profil en édition (choisi dans le panneau)
+const E = ()=> CFG.profiles[CFG.editingProfile];       // profil en édition (panneau)
 
 /* ===== Décor helpers ===== */
 function drawSky(){
@@ -264,7 +264,6 @@ function drawBG(dt){
   offNear -= L.near.speedX * dt;
   offAlley-= L.alley.speedX* dt;
 
-  // ciel (offsetX + défilement)
   const ox=L.sky.offsetX; L.sky.offsetX = ox + offSky;
   drawSky();
   L.sky.offsetX = ox;
@@ -361,7 +360,7 @@ function startGame(){
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 
 /* ===== Skins ===== */
-let activeSkinIdx=+localStorage.getItem('wcs_skin_idx')||0;
+let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;  /* ← UNIQUEMENT ICI (fix) */
 function applySkin(idx){
   const s=SKINS[idx]||SKINS[0]; activeSkinIdx=idx;
   IMG.f_pak=load(s.f.pak); IMG.f_tan=load(s.f.tan); IMG.f_bon=load(s.f.bon); IMG.f_punch=load(s.f.punch);
@@ -474,7 +473,7 @@ addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ devPanel.style.di
 
 /* ===== Init ===== */
 resize();
-let activeSkinIdx=+localStorage.getItem('wcs_skin_idx')||0; applySkin(activeSkinIdx);
+applySkin(activeSkinIdx);        // ← on l’utilise, pas de redéclaration ensuite
 requestAnimationFrame(loop);
 </script>
 </body>
