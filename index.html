@@ -23,7 +23,7 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées: transform géré en JS (pos/rot/scale) */
+  /* Onomatopées */
   #onoImg{
     position:absolute; left:50%; top:50%;
     width:auto; height:360px; opacity:0; pointer-events:none; z-index:11;
@@ -60,7 +60,7 @@
   #devPanel .row input[type="range"]{width:100%}
   #devPanel .row input[type="number"]{width:64px; background:#1b1716; color:#e8d6b8; border:1px solid #3a302d; border-radius:6px; padding:6px}
   #devPanel .bar{display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap}
-  #devPanel .bar button, #devPanel .bar .seg, #devPanel .bar .toggle{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
+  #devPanel .bar button, #devPanel .bar .seg{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
   #devPanel .seg{display:flex; gap:6px; flex:1; align-items:center; justify-content:space-between}
   #devPanel .seg button{flex:1; border-radius:6px}
   #devPanel .seg .active{outline:2px solid var(--gold)}
@@ -113,7 +113,7 @@
     </div>
   </div>
 
-  <footer>Ratios forcés: PC 4:3, Mobile 9:16. Offsets en %, vitesses en “écran/s”. T pour ouvrir/fermer.</footer>
+  <footer>PC 4:3 / Mobile 9:16 • Parallax proportionnel • T = réglages</footer>
 </div>
 
 <div id="devPanel"></div>
@@ -197,21 +197,21 @@ function applySkin(idx){
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 
-/* ===== Profils & stockage (v7) =====
-   - réglages par calque + mannequin + perso
-   - onomatopées PAR TECHNIQUE: onoByTech.{pak|tan|bon|punch} = {xPct,yPct,hPct,rotDeg}
-   - vitesses en “écran/s”, offsets en %
+/* ===== Profils & stockage (v8) =====
+   - Ciel: cover + zoom + offsets
+   - Far/Near/Alley: wPct (largeur relative à la scène) + bottomPct + offsetXPct + vitesse
+   - Onos par technique
 */
-const STORAGE_KEY='wcs_tune_v7';
-const TUNE_VERSION=7;
+const STORAGE_KEY='wcs_tune_v8';
+const TUNE_VERSION=8;
 
 const DEFAULT_PROFILE_PC = {
   ratio: PC_RATIO,
   layers:{
-    sky:  { scaleX:1.00, scaleY:0.40, offsetXPct:0.00, yOffsetPct:-0.30, speedX:0.00 },
-    far:  { scaleX:0.94, scaleY:0.94, offsetXPct:0.00, bottomPct:0.108,  speedX:0.05 },
-    near: { scaleX:1.00, scaleY:1.00, offsetXPct:(49/1536), bottomPct:0.176, speedX:0.20 },
-    alley:{ scaleX:1.07, scaleY:1.14, offsetXPct:0.00, bottomPct:0.017,  speedX:0.00 }
+    sky:  { zoom:1.00, offsetXPct:0.00, yOffsetPct:0.00, speedX:0.00 },
+    far:  { wPct:1.80, offsetXPct:0.00, bottomPct:0.34,  speedX:0.04 },
+    near: { wPct:2.00, offsetXPct:0.00, bottomPct:0.08,  speedX:0.10 },
+    alley:{ wPct:1.20, offsetXPct:0.00, bottomPct:0.00,  speedX:0.00 }
   },
   fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
   dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 },
@@ -227,20 +227,25 @@ DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
 
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
 
-/* Charger + migrations (v5/v6 -> v7) */
+/* Charger + migration simple depuis v7 si présent */
 let CFG;
 (function loadConfig(){
   try{
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(stored && stored.version===TUNE_VERSION){ CFG=stored; ensureOnoByTech(); return; }
+    if(stored && stored.version===TUNE_VERSION){ CFG=stored; return; }
   }catch{}
-  // v6
-  let v6=null;
-  try{ v6 = JSON.parse(localStorage.getItem('wcs_tune_v6')||'null'); }catch{}
-  if(v6 && v6.profiles){
-    CFG = { version:TUNE_VERSION, editingProfile: v6.editingProfile||'pc', previewLock:true,
-            profiles: { pc:toV7(v6.profiles.pc), mobile:toV7(v6.profiles.mobile||v6.profiles.pc) },
-            fighterDxPxByTech: v6.fighterDxPxByTech||{pak:-110,tan:110,bon:-110,punch:110} };
+  // tentative de migration de v7 -> v8
+  let v7=null;
+  try{ v7 = JSON.parse(localStorage.getItem('wcs_tune_v7')||'null'); }catch{}
+  if(v7 && v7.profiles){
+    CFG = {
+      version:TUNE_VERSION, editingProfile:v7.editingProfile||'pc', previewLock:true,
+      fighterDxPxByTech:v7.fighterDxPxByTech||{pak:-110,tan:110,bon:-110,punch:110},
+      profiles:{
+        pc: migrate7to8(v7.profiles.pc) || deepClone(DEFAULT_PROFILE_PC),
+        mobile: migrate7to8(v7.profiles.mobile||v7.profiles.pc) || deepClone(DEFAULT_PROFILE_MOBILE),
+      }
+    };
   } else {
     CFG = { version:TUNE_VERSION, editingProfile:'pc', previewLock:true,
             profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
@@ -248,23 +253,31 @@ let CFG;
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
 })();
-function toV7(p){
-  const r = deepClone(p||{});
-  // si ancienne clé 'ono', propage vers onoByTech
-  if(!r.onoByTech){
-    const base = r.ono || {xPct:0.5,yPct:0.3,hPct:0.31,rotDeg:0};
-    r.onoByTech = { pak:deepClone(base), tan:deepClone(base), bon:deepClone(base), punch:deepClone(base) };
-  }
-  return r;
-}
-function ensureOnoByTech(){
-  ['pc','mobile'].forEach(name=>{
-    const prof = CFG.profiles[name];
-    if(!prof.onoByTech){
-      const base = prof.ono || {xPct:0.5,yPct:0.3,hPct:0.31,rotDeg:0};
-      prof.onoByTech = { pak:deepClone(base), tan:deepClone(base), bon:deepClone(base), punch:deepClone(base) };
-    }
+function migrate7to8(p){
+  if(!p) return null;
+  const out = deepClone(DEFAULT_PROFILE_PC);
+  out.ratio = p.ratio||PC_RATIO;
+  // sky: utilisez scaleX comme zoom si présent
+  const skyIn = (p.layers&&p.layers.sky)||{};
+  out.layers.sky.zoom = (typeof skyIn.zoom==='number')?skyIn.zoom : (typeof skyIn.scaleX==='number'?Math.max(0.2,skyIn.scaleX):1);
+  out.layers.sky.offsetXPct = skyIn.offsetXPct||0;
+  out.layers.sky.yOffsetPct = skyIn.yOffsetPct||0;
+  out.layers.sky.speedX = skyIn.speedX||0;
+
+  // autres calques: scaleX -> wPct (si <0.5 on force 1), scaleY ignoré (ratio préservé)
+  ['far','near','alley'].forEach(k=>{
+    const s=(p.layers&&p.layers[k])||{};
+    out.layers[k].wPct = (typeof s.scaleX==='number') ? Math.max(0.5, s.scaleX) : out.layers[k].wPct;
+    out.layers[k].offsetXPct = s.offsetXPct||0;
+    out.layers[k].bottomPct  = s.bottomPct ?? out.layers[k].bottomPct;
+    out.layers[k].speedX     = s.speedX||0;
   });
+
+  out.fighter = p.fighter || out.fighter;
+  out.dummy   = p.dummy   || out.dummy;
+  out.onoByTech = (p.onoByTech) ? p.onoByTech
+                 : (p.ono ? {pak:p.ono,tan:p.ono,bon:p.ono,punch:p.ono} : deepClone(DEFAULT_PROFILE_PC.onoByTech));
+  return out;
 }
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
 
@@ -292,29 +305,34 @@ function resize(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   W=boxW; H=boxH;
 
-  // si aperçu collant des onos, réapplique la géométrie
   if(onoSticky) showOnoSticky();
 }
 addEventListener('resize', resize);
 addEventListener('orientationchange', resize);
 
 /* ===== Décor ===== */
-function drawSky(){
+// Ciel en cover + zoom
+function drawSkyCover(){
   const img=SKY, L=P().layers.sky;
   if(img.complete && img.naturalWidth){
-    const w=W*L.scaleX, h=H*L.scaleY;
-    const dx=(W-w)/2 + (L.offsetXPct*W);
-    const dy=(H-h)/2 + (L.yOffsetPct*H);
-    ctx.drawImage(img, dx, dy, w, h);
+    const iw=img.naturalWidth, ih=img.naturalHeight;
+    const s = Math.max(W/iw, H/ih) * (L.zoom||1);
+    const dw = iw*s, dh = ih*s;
+    const dx = (W-dw)/2 + (L.offsetXPct||0)*W;
+    const dy = (H-dh)/2 + (L.yOffsetPct||0)*H;
+    ctx.drawImage(img, dx, dy, dw, dh);
   } else {
     const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0a0c12'); g.addColorStop(1,'#1a1f2a');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
 }
-function tileScaledBottom(img, startOffsetXPct, scaleX, scaleY, bottomPct){
+// Tuilage largeur-proportionnelle (ratio préservé)
+function tileScaledBottom(img, startOffsetXPct, wPct, bottomPct){
   if(!img.complete || !img.naturalWidth) return;
-  const targetW=img.naturalWidth*scaleX, targetH=img.naturalHeight*scaleY;
-  const y=Math.round(H - targetH - (H*(bottomPct||0)));
+  const targetW = Math.max(1, W * (wPct||1));
+  const scale = targetW / img.naturalWidth;
+  const targetH = img.naturalHeight * scale;
+  const y = Math.round(H - targetH - (H*(bottomPct||0)));
   let x=((startOffsetXPct*W) % targetW); if(x>0) x-=targetW;
   for(; x<W; x+=targetW) ctx.drawImage(img, x, y, targetW, targetH);
 }
@@ -324,16 +342,16 @@ let offSky=0, offFar=0, offNear=0, offAlley=0;
 function drawBG(dt){
   const L=P().layers;
   const f = (dt/60)*W;
-  offSky  -= L.sky.speedX  * f;
-  offFar  -= L.far.speedX  * f;
-  offNear -= L.near.speedX * f;
-  offAlley-= L.alley.speedX* f;
+  offSky  -= (L.sky.speedX  ||0) * f;
+  offFar  -= (L.far.speedX  ||0) * f;
+  offNear -= (L.near.speedX ||0) * f;
+  offAlley-= (L.alley.speedX||0) * f;
 
-  drawSky();
-  tileScaledBottom(MT_FAR,  L.far.offsetXPct  + (offFar/W),  L.far.scaleX,  L.far.scaleY,  L.far.bottomPct);
+  drawSkyCover();
+  tileScaledBottom(MT_FAR,  (L.far.offsetXPct||0)  + (offFar/W),  L.far.wPct,  L.far.bottomPct);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
-  tileScaledBottom(MT_NEAR, L.near.offsetXPct + (offNear/W), L.near.scaleX, L.near.scaleY, L.near.bottomPct);
-  tileScaledBottom(ALLEY,   L.alley.offsetXPct+ (offAlley/W),L.alley.scaleX,L.alley.scaleY,L.alley.bottomPct);
+  tileScaledBottom(MT_NEAR, (L.near.offsetXPct||0) + (offNear/W), L.near.wPct, L.near.bottomPct);
+  tileScaledBottom(ALLEY,   (L.alley.offsetXPct||0)+ (offAlley/W),L.alley.wPct,L.alley.bottomPct);
 }
 
 /* ===== Mannequin & Perso ===== */
@@ -372,7 +390,7 @@ function drawFighter(){
   ctx.drawImage(img, xBase, yBase, finalW, finalH);
 }
 
-/* ===== Onomatopées: per-tech ===== */
+/* ===== Onomatopées par technique ===== */
 function getOnoFor(tech){
   const prof = P();
   const map = prof.onoByTech || {};
@@ -380,12 +398,9 @@ function getOnoFor(tech){
 }
 function applyOnoStyleFor(tech){
   const O=getOnoFor(tech);
-  const left = (O.xPct*100).toFixed(3)+'%';
-  const top  = (O.yPct*100).toFixed(3)+'%';
-  const hpx  = Math.max(10, O.hPct * H);
-  onoImg.style.left = left;
-  onoImg.style.top  = top;
-  onoImg.style.height = hpx+'px';
+  onoImg.style.left = (O.xPct*100).toFixed(3)+'%';
+  onoImg.style.top  = (O.yPct*100).toFixed(3)+'%';
+  onoImg.style.height = Math.max(10, O.hPct*H)+'px';
   onoImg.style.transform = `translate(-50%,-50%) rotate(${O.rotDeg||0}deg)`;
 }
 function showOno(tech){
@@ -487,7 +502,7 @@ function addRange(parent,label,obj,key,{min,max,step=0.01,after}){
 }
 function section(t){ const h=document.createElement('h3'); h.textContent=t; devPanel.appendChild(h); }
 function sep(){ const d=document.createElement('div'); d.className='sep'; devPanel.appendChild(d); }
-function header(){ const h=document.createElement('h2'); h.textContent='Réglages Parallax (T pour fermer)'; devPanel.appendChild(h); }
+function header(){ const h=document.createElement('h2'); h.textContent='Réglages (T pour fermer)'; devPanel.appendChild(h); }
 function bar(){
   const wrap=document.createElement('div'); wrap.className='bar';
   const reset=document.createElement('button'); reset.textContent='Réinitialiser';
@@ -521,67 +536,64 @@ function bar(){
 function buildDevPanel(){
   devPanel.innerHTML=''; header(); bar(); sep();
   const E = CFG.profiles[CFG.editingProfile];
-  const editLayers = E.layers;
 
-  function R(sectionTitle, key){
-    section(sectionTitle);
-    addRange(devPanel,'Stretch X', editLayers[key],'scaleX',{min:0.2,max:3,step:0.01});
-    addRange(devPanel,'Stretch Y', editLayers[key],'scaleY',{min:0.2,max:3,step:0.01});
-    addRange(devPanel,'Position X %', editLayers[key],'offsetXPct',{min:-3,max:3,step:0.001});
-    if(key==='sky'){
-      addRange(devPanel,'Décalage Y %', editLayers[key],'yOffsetPct',{min:-0.8,max:0.8,step:0.001});
-    } else {
-      addRange(devPanel,'Bas %', editLayers[key],'bottomPct',{min:-0.2,max:0.8,step:0.001});
-    }
-    addRange(devPanel,'Vitesse X (écran/s)', editLayers[key],'speedX',{min:-3,max:3,step:0.01});
+  /* Ciel */
+  section('Ciel');
+  addRange(devPanel,'Zoom',E.layers.sky,'zoom',{min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Décalage X %',E.layers.sky,'offsetXPct',{min:-3,max:3,step:0.001});
+  addRange(devPanel,'Décalage Y %',E.layers.sky,'yOffsetPct',{min:-1,max:1,step:0.001});
+  addRange(devPanel,'Vitesse X (écran/s)',E.layers.sky,'speedX',{min:-3,max:3,step:0.01});
+  sep();
+
+  /* Montagnes & allée (wPct + bottomPct) */
+  function R(label,key){
+    section(label);
+    addRange(devPanel,'Largeur × écran (wPct)',E.layers[key],'wPct',{min:0.5,max:3,step:0.01});
+    addRange(devPanel,'Décalage X %',E.layers[key],'offsetXPct',{min:-3,max:3,step:0.001});
+    addRange(devPanel,'Bas %',E.layers[key],'bottomPct',{min:-0.2,max:0.8,step:0.001});
+    addRange(devPanel,'Vitesse X (écran/s)',E.layers[key],'speedX',{min:-3,max:3,step:0.01});
     sep();
   }
-  R('Ciel','sky'); R('Montagnes lointaines','far'); R('Montagnes proches','near'); R('Allée','alley');
+  R('Montagnes lointaines','far');
+  R('Montagnes proches','near');
+  R('Allée','alley');
 
+  /* Mannequin */
   section('Mannequin');
   addRange(devPanel,'Largeur % écran',E.dummy,'wPct',{min:0.05,max:0.6,step:0.001});
   addRange(devPanel,'Centre X %',E.dummy,'centerX',{min:0,max:1,step:0.001});
   addRange(devPanel,'Bas %',E.dummy,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
+  /* Personnage */
   section('Personnage');
   addRange(devPanel,'Largeur % écran',E.fighter,'wPct',{min:0.05,max:0.6,step:0.001});
   addRange(devPanel,'Centre X %',E.fighter,'centerX',{min:0,max:1,step:0.001});
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
-  /* ==== Onomatopées par technique (sélection exclusive + aperçu collant) ==== */
-  // s'assurer que la structure existe
+  /* Onomatopées par technique */
+  section('Onomatopées (par technique)');
   E.onoByTech = E.onoByTech || deepClone(DEFAULT_PROFILE_PC.onoByTech);
 
-  section('Onomatopées');
-
-  // barre: Aperçu ON/OFF + sélecteur exclusif de technique
   const barWrap=document.createElement('div'); barWrap.className='bar';
-
-  // bouton Aperçu
   const previewBtn=document.createElement('button');
   function refreshPreviewBtn(){ previewBtn.textContent='Aperçu: '+(onoSticky?'ON':'OFF'); }
   previewBtn.onclick=()=>{ onoSticky=!onoSticky; if(onoSticky) showOnoSticky(); else hideOnoSticky(); refreshPreviewBtn(); };
   refreshPreviewBtn();
   barWrap.appendChild(previewBtn);
 
-  // sélecteur exclusif
   const seg=document.createElement('div'); seg.className='seg';
-  const techs=['pak','tan','bon','punch'];
-  const buttons=[];
+  const techs=['pak','tan','bon','punch']; const buttons=[];
   techs.forEach(k=>{
-    const b=document.createElement('button');
-    b.textContent=k; b.dataset.tech=k;
+    const b=document.createElement('button'); b.textContent=k; b.dataset.tech=k;
     b.onclick=()=>{ onoEditTech=k; buttons.forEach(x=>x.classList.toggle('active', x.dataset.tech===k)); if(onoSticky) showOnoSticky(); buildDevPanel(); };
     buttons.push(b); seg.appendChild(b);
   });
-  // état initial
   buttons.forEach(b=> b.classList.toggle('active', b.dataset.tech===onoEditTech));
   barWrap.appendChild(seg);
   devPanel.appendChild(barWrap);
 
-  // curseurs liés à la technique sélectionnée
   const O = E.onoByTech[onoEditTech];
   const refreshOno = ()=>{ if(onoSticky) showOnoSticky(); };
   addRange(devPanel,'Pos X % écran',O,'xPct',{min:0,max:1,step:0.001,after:refreshOno});
@@ -602,13 +614,17 @@ function keydownHandler(e){
   const k=(e.key||e.code||'').toLowerCase();
   if(k==='t'){ e.preventDefault(); togglePanel(); }
 }
-window.addEventListener('keydown', keydownHandler);
-document.addEventListener('keydown', keydownHandler);
+window.addEventListener('keydown', keydownHandler, {passive:false});
+document.addEventListener('keydown', keydownHandler, {passive:false});
 
 /* ===== Init ===== */
-resize();
-applySkin(activeSkinIdx);
-requestAnimationFrame(loop);
+function init(){
+  resize();
+  applySkin(activeSkinIdx);
+  requestAnimationFrame(loop);
+}
+if(document.readyState==='loading'){ addEventListener('DOMContentLoaded', init); }
+else { init(); }
 </script>
 </body>
 </html>
