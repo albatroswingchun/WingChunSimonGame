@@ -201,6 +201,9 @@ function applySkin(idx){
 const STORAGE_KEY='wcs_tune_v6';
 const TUNE_VERSION=6;
 
+/* état sticky onomatopées (manquait avant) */
+let onoSticky=false, onoStickyTech='punch', onoPreviewBtn=null;
+
 const DEFAULT_PROFILE_PC = {
   ratio: PC_RATIO,
   layers:{
@@ -347,15 +350,33 @@ function drawFighter(){
 /* ===== Onomatopées ===== */
 function applyOnoStyle(){
   const O=P().ono;
-  const left = (O.xPct*100).toFixed(3)+'%';
-  const top  = (O.yPct*100).toFixed(3)+'%';
-  const hpx  = Math.max(10, O.hPct * H);
-  onoImg.style.left = left;
-  onoImg.style.top  = top;
-  onoImg.style.height = hpx+'px';
+  onoImg.style.left = (O.xPct*100).toFixed(3)+'%';
+  onoImg.style.top  = (O.yPct*100).toFixed(3)+'%';
+  onoImg.style.height = Math.max(10, O.hPct * H)+'px';
   onoImg.style.transform = `translate(-50%,-50%) rotate(${O.rotDeg||0}deg)`;
 }
+
+function showOnoSticky(){
+  const img=IMG['o_'+onoStickyTech]; if(!img) return;
+  onoImg.src=img.src;
+  applyOnoStyle();
+  // pas d'animation, reste visible
+  onoImg.style.animation='none';
+  onoImg.style.opacity='1';
+}
+
+function hideOnoSticky(){
+  onoImg.style.animation='';
+  onoImg.style.opacity='0';
+}
+
 function showOno(tech){
+  // en mode sticky, on force l’aperçu persistant
+  if(onoSticky){
+    onoStickyTech = tech;
+    showOnoSticky();
+    return;
+  }
   const img=IMG['o_'+tech]; if(!img) return;
   onoImg.src=img.src;
   applyOnoStyle();
@@ -403,7 +424,6 @@ function startGame(){
   if(!muted) SFX.music.play().catch(()=>{});
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-/* “Commencer” blindé */
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault();startGame();});
 
@@ -411,9 +431,13 @@ startBtn.addEventListener('click',e=>{e.preventDefault();startGame();});
 applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
 function renderSkins(){
-  skinsGrid.innerHTML=''; SKINS.forEach((s,i)=>{ const card=document.createElement('button');
-    card.className='skinCard'+(i===activeSkinIdx?' skinActive':''); card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${s.thumb}"/><div style="font-weight:700">${s.name}</div>`;
-    card.onclick=()=>{applySkin(i); renderSkins();}; skinsGrid.appendChild(card);
+  skinsGrid.innerHTML='';
+  SKINS.forEach((s,i)=>{
+    const card=document.createElement('button');
+    card.className='skinCard'+(i===activeSkinIdx?' skinActive':'');
+    card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${s.thumb}"/><div style="font-weight:700">${s.name}</div>`;
+    card.onclick=()=>{applySkin(i); renderSkins();};
+    skinsGrid.appendChild(card);
   });
 }
 
@@ -500,66 +524,43 @@ function buildDevPanel(){
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
-  // --- remplace ce bloc dans buildDevPanel() ---
-section('Onomatopées');
+  /* Onomatopées */
+  section('Onomatopées');
+  const refreshOno = ()=>{ applyOnoStyle(); if(onoSticky) showOnoSticky(); };
+  addRange(devPanel,'Pos X % écran',E.ono,'xPct',{min:0,max:1,step:0.001,after:refreshOno});
+  addRange(devPanel,'Pos Y % écran',E.ono,'yPct',{min:0,max:1,step:0.001,after:refreshOno});
+  addRange(devPanel,'Hauteur % écran',E.ono,'hPct',{min:0.05,max:0.8,step:0.001,after:refreshOno});
+  addRange(devPanel,'Rotation (deg)',E.ono,'rotDeg',{min:-180,max:180,step:1,after:refreshOno});
 
-// rafraîchit l’aperçu quand on bouge un curseur
-const refreshOno = ()=>{
-  applyOnoStyle();
-  if(onoSticky) showOnoSticky();
-};
+  const onoBar=document.createElement('div'); onoBar.className='bar';
+  onoPreviewBtn=document.createElement('button');
+  function refreshPreviewBtn(){ onoPreviewBtn.textContent='Aperçu ON: '+(onoSticky?'ON':'OFF'); }
+  onoPreviewBtn.onclick=()=>{ onoSticky=!onoSticky; if(onoSticky) showOnoSticky(); else hideOnoSticky(); refreshPreviewBtn(); };
+  refreshPreviewBtn(); onoBar.appendChild(onoPreviewBtn);
 
-addRange(devPanel,'Pos X % écran',E.ono,'xPct',
-  {min:0,max:1,step:0.001,after:refreshOno});
-addRange(devPanel,'Pos Y % écran',E.ono,'yPct',
-  {min:0,max:1,step:0.001,after:refreshOno});
-addRange(devPanel,'Hauteur % écran',E.ono,'hPct',
-  {min:0.05,max:0.8,step:0.001,after:refreshOno});
-addRange(devPanel,'Rotation (deg)',E.ono,'rotDeg',
-  {min:-180,max:180,step:1,after:refreshOno});
-
-// Barre d’aperçu + sélection exclusive
-const onoBar=document.createElement('div');
-onoBar.className='bar';
-
-// bouton Aperçu ON/OFF
-onoPreviewBtn=document.createElement('button');
-function refreshPreviewBtn(){ onoPreviewBtn.textContent='Aperçu ON: '+(onoSticky?'ON':'OFF'); }
-onoPreviewBtn.onclick=()=>{
-  onoSticky=!onoSticky;
-  if(onoSticky) showOnoSticky(); else hideOnoSticky();
-  refreshPreviewBtn();
-};
-refreshPreviewBtn();
-onoBar.appendChild(onoPreviewBtn);
-
-// sélecteur EXCLUSIF de l’onomatopée
-const seg=document.createElement('div');
-seg.className='seg';
-const btns=[];
-['pak','tan','bon','punch'].forEach(k=>{
-  const b=document.createElement('button');
-  b.textContent=k;
-  b.dataset.tech=k;
-  b.onclick=()=>{
-    onoStickyTech=k;                       // un seul actif
-    btns.forEach(x=>x.classList.toggle('active', x.dataset.tech===k));
-    if(onoSticky) showOnoSticky();         // met à jour l’aperçu si allumé
-  };
-  btns.push(b);
-  seg.appendChild(b);
-});
-// état initial: une seule active
-btns.forEach(b=> b.classList.toggle('active', b.dataset.tech===onoStickyTech));
-
-onoBar.appendChild(seg);
-devPanel.appendChild(onoBar);
-// --- fin du bloc à remplacer ---
-
+  const seg=document.createElement('div'); seg.className='seg'; const btns=[];
+  ['pak','tan','bon','punch'].forEach(k=>{
+    const b=document.createElement('button'); b.textContent=k; b.dataset.tech=k;
+    b.onclick=()=>{ onoStickyTech=k; btns.forEach(x=>x.classList.toggle('active', x.dataset.tech===k)); if(onoSticky) showOnoSticky(); };
+    btns.push(b); seg.appendChild(b);
+  });
+  btns.forEach(b=> b.classList.toggle('active', b.dataset.tech===onoStickyTech));
+  onoBar.appendChild(seg); devPanel.appendChild(onoBar);
 
   devPanel.style.display='block';
 }
-addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ devPanel.style.display=devPanel.style.display==='block'?'none':(buildDevPanel(),'block'); resize(); applyOnoStyle(); }});
+
+/* Raccourci T robuste (window + toutes cibles) */
+addEventListener('keydown',e=>{
+  const k = e.key || '';
+  if(k==='t' || k==='T'){
+    const open = devPanel.style.display==='block';
+    if(open){ devPanel.style.display='none'; }
+    else { buildDevPanel(); devPanel.style.display='block'; }
+    resize();
+    applyOnoStyle();
+  }
+});
 
 /* ===== Init ===== */
 resize();
