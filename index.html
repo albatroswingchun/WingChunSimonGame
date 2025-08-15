@@ -17,9 +17,12 @@
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
   footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f);z-index:5}
-  #stageWrap{position:relative;overflow:hidden;display:grid;place-items:center;background:#000}
-  #stage{position:relative;width:100%;height:100%}
-  canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+
+  /* Container plein écran qui centre la scène "boîte" */
+  #stageWrap{position:relative;display:grid;place-items:center;overflow:hidden;background:#000}
+  /* La scène garde un ratio fixe; taille contrôlée en JS pour éviter l'écrasement */
+  #stage{position:relative}
+  canvas{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
 
   #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:10}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
@@ -45,7 +48,7 @@
   .skinActive{outline:2px solid #d1a341}
   .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
 
-  /* Panneau réglages (toggle avec T) */
+  /* Panneau réglages (T) */
   #devPanel{
     position:fixed; top:68px; right:12px; width:360px; max-height:85vh; overflow:auto;
     background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30;
@@ -106,13 +109,16 @@
     </div>
   </div>
 
-  <footer>Parallax réglable par calque. Appuie sur T pour ouvrir/fermer le panneau. Réglages sauvegardés.</footer>
+  <footer>Ratio 1536×1160, net HiDPI. Réglages par calque + perso + mannequin. T pour ouvrir/fermer.</footer>
 </div>
 
 <!-- Panneau de réglages -->
 <div id="devPanel"></div>
 
 <script>
+/* ====== constants ratio fixe ====== */
+const BASE_W = 1536, BASE_H = 1160;
+
 /* ====== refs ====== */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
@@ -163,17 +169,16 @@ function playKey(key){
 }
 ;['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music'].forEach(k=>SFX[k]&&poolify(k,SFX[k]));
 Object.values(SFX).forEach(a=>a.preload='auto');
-
 let muted=false;
 muteBtn.onclick=()=>{ muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{}); };
 function playTechniqueSounds(tech){ playKey(tech); }
 
 /* ====== BG loader (URLs demandées) ====== */
 function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror = ()=>{}; i.src=url; return i; }
-const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');      // remplacé
-const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
-const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');      // remplacé
-const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
+const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');      // ciel
+const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');      // montagnes lointaines
+const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');      // montagnes proches (remplacé)
+const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');      // allée
 
 /* ====== sprites & skins ====== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
@@ -192,31 +197,64 @@ const IMG={
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* ====== canvas ====== */
+/* ====== canvas & ratio safe resize (zéro écrasement) ====== */
+const stageWrap=document.getElementById('stageWrap');
 const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
-let W=0, H=0;
-function resize(){ W = cx.width = stage.clientWidth; H = cx.height = stage.clientHeight; }
+
+let DPR=1, W=BASE_W, H=BASE_H; // coordonnées logiques = taille CSS du canvas
+function resize(){
+  // calcule un scale qui "contient" BASE dans la place dispo sans changer le ratio
+  const wrapW = stageWrap.clientWidth;
+  const wrapH = stageWrap.clientHeight;
+  const scale = Math.min(wrapW/BASE_W, wrapH/BASE_H);
+
+  const cssW = Math.round(BASE_W * scale);
+  const cssH = Math.round(BASE_H * scale);
+
+  // buffer interne net en HiDPI
+  DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+  cx.width  = Math.round(cssW * DPR);
+  cx.height = Math.round(cssH * DPR);
+  cx.style.width  = cssW+'px';
+  cx.style.height = cssH+'px';
+
+  // dimensionne #stage pour tout l'UI (pads, menu)
+  stage.style.width  = cssW+'px';
+  stage.style.height = cssH+'px';
+
+  // on dessine en coordonnées CSS
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  W = cssW; H = cssH;
+}
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
-/* ====== CONFIG ====== */
-/* Réglages persistés et sliders par calque */
+/* ====== CONFIG (défauts = ta capture) + mémoire ====== */
+const TUNE_VERSION = 3;  // bump pour forcer nos nouveaux defaults
 const DEFAULT_CFG = {
+  version: TUNE_VERSION,
   layers: {
-    sky:  { scaleX:1.00, scaleY:1.00, offsetX:0,  yOffsetPct:0.00, speedX:0.00 },
-    far:  { scaleX:1.20, scaleY:1.20, offsetX:0,  bottomPct:0.34, speedX:0.20 },
-    near: { scaleX:1.40, scaleY:1.40, offsetX:0,  bottomPct:0.05, speedX:0.42 },
-    alley:{ scaleX:1.00, scaleY:1.00, offsetX:0,  bottomPct:0.00, speedX:0.00 }
+    sky:  { scaleX:1.00, scaleY:0.54, offsetX:0,     yOffsetPct:-0.23, speedX:0.00 },
+    far:  { scaleX:0.94, scaleY:0.94, offsetX:1641,  bottomPct:0.056,  speedX:0.00 },
+    near: { scaleX:0.85, scaleY:0.85, offsetX:-1103, bottomPct:0.159,  speedX:0.00 },
+    alley:{ scaleX:1.00, scaleY:1.00, offsetX:0,     bottomPct:0.00,   speedX:0.00 }
   },
   fighter: { wPct:0.16, centerX:0.50, bottomPct:0.08 },
   dummy:   { wPct:0.18, centerX:0.50, bottomPct:0.08 },
   fighterDxPxByTech: { pak:-110, tan:110, bon:-110, punch:110 }
 };
 function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
-const CFG = (()=>{ try{ return Object.assign(deepClone(DEFAULT_CFG), JSON.parse(localStorage.getItem('wcs_tune_v2')||'{}')); }catch{ return deepClone(DEFAULT_CFG);} })();
-function saveCFG(){ localStorage.setItem('wcs_tune_v2', JSON.stringify(CFG)); }
+
+let CFG;
+try{
+  const stored = JSON.parse(localStorage.getItem('wcs_tune_v3')||'null');
+  if(!stored || stored.version !== TUNE_VERSION){ CFG = deepClone(DEFAULT_CFG); localStorage.setItem('wcs_tune_v3', JSON.stringify(CFG)); }
+  else { CFG = stored; }
+}catch{ CFG = deepClone(DEFAULT_CFG); localStorage.setItem('wcs_tune_v3', JSON.stringify(CFG)); }
+
+function saveCFG(){ localStorage.setItem('wcs_tune_v3', JSON.stringify(CFG)); }
 
 /* ====== décor helpers (stretch + position) ====== */
 function drawSky(){
@@ -245,21 +283,18 @@ function tileScaledBottom(img, startOffsetX, scaleX, scaleY, bottomPct){
 /* ====== parallaxe ====== */
 let offSky=0, offFar=0, offNear=0, offAlley=0;
 function drawBG(dt){
-  // mise à jour offsets
   offSky  -= CFG.layers.sky.speedX  * dt;
   offFar  -= CFG.layers.far.speedX  * dt;
   offNear -= CFG.layers.near.speedX * dt;
   offAlley-= CFG.layers.alley.speedX* dt;
 
-  // ciel (applique offsetX via CFG + auto-scroll via offSky)
   const oldX = CFG.layers.sky.offsetX;
   CFG.layers.sky.offsetX = oldX + offSky;
   drawSky();
   CFG.layers.sky.offsetX = oldX;
 
-  // calques en tuilage
   tileScaledBottom(MT_FAR,  offFar  + CFG.layers.far.offsetX,  CFG.layers.far.scaleX,  CFG.layers.far.scaleY,  CFG.layers.far.bottomPct);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
   tileScaledBottom(MT_NEAR, offNear + CFG.layers.near.offsetX, CFG.layers.near.scaleX, CFG.layers.near.scaleY, CFG.layers.near.bottomPct);
   tileScaledBottom(ALLEY,   offAlley+ CFG.layers.alley.offsetX,CFG.layers.alley.scaleX,CFG.layers.alley.scaleY,CFG.layers.alley.bottomPct);
 }
@@ -297,7 +332,6 @@ function setSpritesFor(tech){
   actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
 
   currentFighter = IMG['f_'+tech] || currentFighter;
-
   setTimeout(()=> playKey('voice_'+tech), 100);
 }
 
@@ -341,7 +375,6 @@ function showOno(tech){
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
-
 function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); if(!b) return; b.classList.toggle('lit',on); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
@@ -429,7 +462,7 @@ function loop(t=performance.now()){
   requestAnimationFrame(loop);
 }
 
-/* ====== Panneau réglages (toggle T) ====== */
+/* ====== Panneau réglages (T) ====== */
 function addRange(parent, label, obj, key, {min,max,step=0.01}){
   const row=document.createElement('div'); row.className='row';
   const lab=document.createElement('div'); lab.textContent=label; row.appendChild(lab);
@@ -439,9 +472,7 @@ function addRange(parent, label, obj, key, {min,max,step=0.01}){
   r.oninput=e=>sync(e.target.value); n.oninput=e=>sync(e.target.value);
   row.append(r,n); parent.appendChild(row);
 }
-function section(title){
-  const h=document.createElement('h3'); h.textContent=title; devPanel.appendChild(h);
-}
+function section(title){ const h=document.createElement('h3'); h.textContent=title; devPanel.appendChild(h); }
 function sep(){ const d=document.createElement('div'); d.className='sep'; devPanel.appendChild(d); }
 function bar(){
   const wrap=document.createElement('div'); wrap.className='bar';
@@ -456,9 +487,8 @@ function bar(){
   };
   wrap.append(reset,copy,paste); devPanel.appendChild(wrap);
 }
-function header(){
-  const h=document.createElement('h2'); h.textContent='Réglages Parallax (T pour fermer)'; devPanel.appendChild(h);
-}
+function header(){ const h=document.createElement('h2'); h.textContent='Réglages Parallax (T pour fermer)'; devPanel.appendChild(h); }
+
 function buildDevPanel(){
   devPanel.innerHTML=''; header(); bar(); sep();
 
@@ -469,7 +499,6 @@ function buildDevPanel(){
   addRange(devPanel,'Position X',  CFG.layers.sky,'offsetX',{min:-3000,max:3000,step:1});
   addRange(devPanel,'Décalage Y %',CFG.layers.sky,'yOffsetPct',{min:-0.8,max:0.8,step:0.001});
   addRange(devPanel,'Vitesse X',   CFG.layers.sky,'speedX',{min:-3,max:3,step:0.01});
-
   sep();
 
   // Montagnes lointaines
@@ -479,7 +508,6 @@ function buildDevPanel(){
   addRange(devPanel,'Position X',  CFG.layers.far,'offsetX',{min:-3000,max:3000,step:1});
   addRange(devPanel,'Bas %',       CFG.layers.far,'bottomPct',{min:-0.2,max:0.8,step:0.001});
   addRange(devPanel,'Vitesse X',   CFG.layers.far,'speedX',{min:-3,max:3,step:0.01});
-
   sep();
 
   // Montagnes proches
@@ -489,7 +517,6 @@ function buildDevPanel(){
   addRange(devPanel,'Position X',  CFG.layers.near,'offsetX',{min:-3000,max:3000,step:1});
   addRange(devPanel,'Bas %',       CFG.layers.near,'bottomPct',{min:-0.2,max:0.8,step:0.001});
   addRange(devPanel,'Vitesse X',   CFG.layers.near,'speedX',{min:-3,max:3,step:0.01});
-
   sep();
 
   // Allée
@@ -499,9 +526,24 @@ function buildDevPanel(){
   addRange(devPanel,'Position X',  CFG.layers.alley,'offsetX',{min:-3000,max:3000,step:1});
   addRange(devPanel,'Bas %',       CFG.layers.alley,'bottomPct',{min:-0.2,max:0.4,step:0.001});
   addRange(devPanel,'Vitesse X',   CFG.layers.alley,'speedX',{min:-3,max:3,step:0.01});
+  sep();
+
+  // Mannequin
+  section('Mannequin');
+  addRange(devPanel,'Largeur % écran', CFG.dummy,'wPct',     {min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',      CFG.dummy,'centerX',  {min:0.0,max:1.0,step:0.001});
+  addRange(devPanel,'Bas %',           CFG.dummy,'bottomPct',{min:-0.1,max:0.4,step:0.001});
+  sep();
+
+  // Personnage
+  section('Personnage');
+  addRange(devPanel,'Largeur % écran', CFG.fighter,'wPct',     {min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',      CFG.fighter,'centerX',  {min:0.0,max:1.0,step:0.001});
+  addRange(devPanel,'Bas %',           CFG.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
 
   devPanel.style.display='block';
 }
+
 window.addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='t'){
     devPanel.style.display = devPanel.style.display==='block' ? 'none' : (buildDevPanel(), 'block');
