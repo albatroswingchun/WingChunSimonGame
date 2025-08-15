@@ -182,10 +182,10 @@ let W=0, H=0, DPR=1;
 function resize(){
   DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
   const cssW = stage.clientWidth, cssH = stage.clientHeight;
-  W = cx.width = Math.round(cssW * DPR);
-  H = cx.height = Math.round(cssH * DPR);
-  cx.style.width = cssW+'px';
-  cx.style.height = cssH+'px';
+  W = cx.width = 1536;
+  H = cx.height = 1160;
+  cx.style.width = W +'px';
+  cx.style.height = H +'px';
   ctx.setTransform(DPR,0,0,DPR,0,0); // coordonnées en CSS pixels
 }
 window.addEventListener('resize', resize);
