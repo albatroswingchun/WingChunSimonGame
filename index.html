@@ -257,14 +257,12 @@ function migrate7to8(p){
   if(!p) return null;
   const out = deepClone(DEFAULT_PROFILE_PC);
   out.ratio = p.ratio||PC_RATIO;
-  // sky: utilisez scaleX comme zoom si présent
   const skyIn = (p.layers&&p.layers.sky)||{};
   out.layers.sky.zoom = (typeof skyIn.zoom==='number')?skyIn.zoom : (typeof skyIn.scaleX==='number'?Math.max(0.2,skyIn.scaleX):1);
   out.layers.sky.offsetXPct = skyIn.offsetXPct||0;
   out.layers.sky.yOffsetPct = skyIn.yOffsetPct||0;
   out.layers.sky.speedX = skyIn.speedX||0;
 
-  // autres calques: scaleX -> wPct (si <0.5 on force 1), scaleY ignoré (ratio préservé)
   ['far','near','alley'].forEach(k=>{
     const s=(p.layers&&p.layers[k])||{};
     out.layers[k].wPct = (typeof s.scaleX==='number') ? Math.max(0.5, s.scaleX) : out.layers[k].wPct;
@@ -467,7 +465,6 @@ function startGame(){
   if(!muted) SFX.music.play().catch(()=>{});
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-/* “Commencer” blindé */
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault();startGame();});
 
@@ -537,9 +534,18 @@ function buildDevPanel(){
   devPanel.innerHTML=''; header(); bar(); sep();
   const E = CFG.profiles[CFG.editingProfile];
 
+  /* ==== ZOOMS ÉTENDUS SUR MOBILE ==== */
+  const isMobileProfile = (CFG.editingProfile === 'mobile');
+  const SCALE_RANGE = {
+    sky:  { min: isMobileProfile ? 0.02 : 0.50, max: isMobileProfile ? 10.0 : 3.0 },
+    far:  { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
+    near: { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
+    alley:{ min: isMobileProfile ? 0.20 : 0.50, max: isMobileProfile ?  4.0 : 3.0 }
+  };
+
   /* Ciel */
   section('Ciel');
-  addRange(devPanel,'Zoom',E.layers.sky,'zoom',{min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Zoom',E.layers.sky,'zoom',{min:SCALE_RANGE.sky.min,max:SCALE_RANGE.sky.max,step:0.01});
   addRange(devPanel,'Décalage X %',E.layers.sky,'offsetXPct',{min:-3,max:3,step:0.001});
   addRange(devPanel,'Décalage Y %',E.layers.sky,'yOffsetPct',{min:-1,max:1,step:0.001});
   addRange(devPanel,'Vitesse X (écran/s)',E.layers.sky,'speedX',{min:-3,max:3,step:0.01});
@@ -548,7 +554,7 @@ function buildDevPanel(){
   /* Montagnes & allée (wPct + bottomPct) */
   function R(label,key){
     section(label);
-    addRange(devPanel,'Largeur × écran (wPct)',E.layers[key],'wPct',{min:0.5,max:3,step:0.01});
+    addRange(devPanel,'Largeur × écran (wPct)',E.layers[key],'wPct',{min:SCALE_RANGE[key].min,max:SCALE_RANGE[key].max,step:0.01});
     addRange(devPanel,'Décalage X %',E.layers[key],'offsetXPct',{min:-3,max:3,step:0.001});
     addRange(devPanel,'Bas %',E.layers[key],'bottomPct',{min:-0.2,max:0.8,step:0.001});
     addRange(devPanel,'Vitesse X (écran/s)',E.layers[key],'speedX',{min:-3,max:3,step:0.01});
@@ -612,21 +618,16 @@ function toggleDevPanel(){
   } else {
     buildDevPanel();
     devPanel.style.display = 'block';
-    resize();                    // recalcul W/H/ratio
-    if (typeof applyOnoStyle === 'function') applyOnoStyle();
+    resize();
   }
 }
-
 function onKeyT(e){
-  // e.code marche pour AZERTY/QWERTY; fallback e.key; ignore la répétition
   const isT = (e.code === 'KeyT') || (e.key && e.key.toLowerCase() === 't');
   if (!isT || e.repeat) return;
   e.preventDefault();
   e.stopPropagation();
   toggleDevPanel();
 }
-
-// Bind UNE SEULE FOIS (anti-doublons/hot-reload)
 if (!window.__T_BIND) {
   window.addEventListener('keydown', onKeyT, { capture: true });
   document.addEventListener('keydown', onKeyT, { capture: true });
@@ -638,7 +639,6 @@ if (!window.__T_BIND) {
 function init(){
   resize();
   applySkin(activeSkinIdx);
-  if (typeof applyOnoStyle === 'function') applyOnoStyle();
   requestAnimationFrame(loop);
 }
 if (document.readyState === 'loading') {
