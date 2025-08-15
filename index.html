@@ -10,51 +10,66 @@
     --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8;
     --red:#d34b43;--blue:#3d74d6;--green:#4cb36c;--gold:#d1a341;
   }
-  html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
 
-  /* Fenêtrage centré */
+  html,body{
+    margin:0;height:100%;
+    background:#0b0a0a;color:#eee;
+    font-family:system-ui,Segoe UI,Roboto,Arial;
+    overflow:hidden;
+  }
+
+  /* Fenêtre centrale fixe 1536×1160 */
   #app{position:fixed;inset:0;display:grid;place-items:center}
   #stageWrap{
     position:relative;
-    display:grid;place-items:center;
-    width:1536px;height:1160px;             /* la fenêtre fixe */
-    background:#000;                         /* fond de scène */
-    border:1px solid #2a2322;border-radius:12px;
+    width:1536px;height:1160px;
+    background:#000; border:1px solid #2a2322; border-radius:12px;
     box-shadow:0 20px 80px rgba(0,0,0,.55), inset 0 0 0 1px #000;
-    overflow:hidden;
+    overflow:hidden; display:grid; place-items:center;
   }
-  /* bandeau titre + footer restent dans la fenêtre */
-  #chrome{position:absolute;inset:0;pointer-events:none}
-  header, footer{pointer-events:auto}
 
-  header{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
+  /* Bandeau et footer intégrés à la fenêtre */
+  header{
+    position:absolute; left:0; right:0; top:0;
+    display:flex; align-items:center; gap:8px; justify-content:space-between;
+    padding:8px 12px;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border-bottom:1px solid #2a2322; z-index:10
+  }
+  footer{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:6px 12px; font-size:12px; opacity:.6; text-align:center;
+    background:linear-gradient(180deg,var(--panel2),#120f0f)
+  }
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
-  footer{position:absolute;left:0;right:0;bottom:0;padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
 
-  /* Zone de dessin pile dans la fenêtre */
-  #stage{position:absolute;inset:0}
-  canvas{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
+  /* Zone de rendu pile dans la fenêtre */
+  #stage{position:absolute; inset:0}
+  canvas{position:absolute; left:0; top:0; touch-action:none; image-rendering:pixelated; image-rendering:crisp-edges}
 
-  /* UI jeu */
-  #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+  /* Pads */
+  #board{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:14px; z-index:5}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
+  /* Onomatopées + flash */
   #onoImg{position:absolute;left:50%;top:30%;transform:translate(-50%,0);width:auto;height:360px;opacity:0;pointer-events:none;z-index:6}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
+  /* Menu */
+  #menu{position:absolute; inset:0; display:grid; place-items:center; background:transparent; z-index:10}
   .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
   .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
   .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
   .subtitle{opacity:.95;margin:0 0 16px}
   .actions{display:flex;gap:12px;justify-content:center}
 
+  /* Skins */
   #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
   #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
   .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
@@ -66,17 +81,16 @@
 <body>
 <div id="app">
   <div id="stageWrap">
-    <div id="chrome">
-      <header>
-        <div class="left">
-          <strong>Wing Chun Simon</strong>
-          <span class="chip">Score: <span id="score">0</span></span>
-          <span class="chip">Meilleur: <span id="best">0</span></span>
-        </div>
-        <div class="right"></div>
-      </header>
-      <footer>Fenêtre fixe 1536×1160 centrée. Parallaxe propre. Mannequin/perso calés sur H.</footer>
-    </div>
+    <header>
+      <div class="left">
+        <strong>Wing Chun Simon</strong>
+        <span class="chip">Score: <span id="score">0</span></span>
+        <span class="chip">Meilleur: <span id="best">0</span></span>
+      </div>
+      <div class="right"></div>
+    </header>
+
+    <footer>Fenêtre fixe 1536×1160 centrée. Parallaxe active. Mannequin/perso calés sur H.</footer>
 
     <div id="stage">
       <canvas id="cx"></canvas>
@@ -109,7 +123,7 @@
         </div>
       </div>
     </div>
-  </div> <!-- /stageWrap -->
+  </div>
 </div>
 
 <script>
@@ -167,7 +181,7 @@ let muted=false;
 muteBtn.onclick=()=>{ muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{}); };
 function playTechniqueSounds(tech){ playKey(tech); }
 
-/* ====== BG loader ====== */
+/* ====== BG loader (on garde TES liens) ====== */
 function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=url; return i; }
 const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');
 const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
@@ -191,11 +205,10 @@ const IMG={
   d_unique: load('https://i.imgur.com/LwBpPL3.png')
 };
 
-/* ====== canvas fenêtré 1536×1160 avec DPR ====== */
-const stageWrap = document.getElementById('stageWrap');
-const stage     = document.getElementById('stage');
-const cx        = document.getElementById('cx');
-const ctx       = cx.getContext('2d',{alpha:true});
+/* ====== canvas 1536×1160 net HiDPI ====== */
+const stage    = document.getElementById('stage');
+const cx       = document.getElementById('cx');
+const ctx      = cx.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 
 let W=0, H=0, DPR=1;
@@ -203,17 +216,17 @@ function resize(){
   const CSS_W = 1536, CSS_H = 1160;
   DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
 
-  // Buffer interne net
+  // buffer interne net
   cx.width  = Math.round(CSS_W * DPR);
   cx.height = Math.round(CSS_H * DPR);
 
-  // Taille affichée stricte
+  // taille affichée fixe
   cx.style.width  = CSS_W+'px';
   cx.style.height = CSS_H+'px';
   stage.style.width  = CSS_W+'px';
   stage.style.height = CSS_H+'px';
 
-  // Dessin en coordonnées CSS
+  // dessin en coordonnées CSS
   ctx.setTransform(DPR,0,0,DPR,0,0);
 
   W = CSS_W; H = CSS_H;
@@ -234,7 +247,7 @@ const CFG = {
   }
 };
 
-/* ====== helpers décor ====== */
+/* ====== décor ====== */
 function drawSkyCover(){
   const img = SKY;
   if(img.complete && img.naturalWidth){
