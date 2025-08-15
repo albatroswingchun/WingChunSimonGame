@@ -23,14 +23,17 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées: transform géré en JS (pos/rot/scale) */
+  /* Onomatopées */
   #onoImg{
     position:absolute; left:50%; top:50%;
     width:auto; height:360px; opacity:0; pointer-events:none; z-index:11;
     transform:translate(-50%,-50%);
   }
   .onoShow{animation:onoFade .9s ease forwards}
+  /* Aperçu collant: visible en continu, sans animation */
+  #onoImg.onoSticky{opacity:1 !important; animation:none !important}
   @keyframes onoFade{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+
   #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:12}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
@@ -50,7 +53,7 @@
 
   /* Panneau réglages (T) */
   #devPanel{
-    position:fixed; top:68px; right:12px; width:380px; max-height:85vh; overflow:auto;
+    position:fixed; top:68px; right:12px; width:420px; max-height:85vh; overflow:auto;
     background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30;
     padding:12px; display:none;
   }
@@ -60,9 +63,9 @@
   #devPanel .row input[type="range"]{width:100%}
   #devPanel .row input[type="number"]{width:64px; background:#1b1716; color:#e8d6b8; border:1px solid #3a302d; border-radius:6px; padding:6px}
   #devPanel .bar{display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap}
-  #devPanel .bar button, #devPanel .bar .seg, #devPanel .bar .toggle{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
-  #devPanel .seg{display:flex; gap:6px; flex:1; align-items:center; justify-content:space-between}
-  #devPanel .seg button{flex:1; border-radius:6px}
+  #devPanel .bar button, #devPanel .seg, #devPanel .toggle{padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
+  #devPanel .seg{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+  #devPanel .seg button{border-radius:6px}
   #devPanel .seg .active{outline:2px solid var(--gold)}
   .sep{margin:10px 0; height:1px; background:#2a2322}
   .hint{font-size:11px;opacity:.7;margin-top:6px}
@@ -355,10 +358,29 @@ function applyOnoStyle(){
   onoImg.style.height = hpx+'px';
   onoImg.style.transform = `translate(-50%,-50%) rotate(${O.rotDeg||0}deg)`;
 }
+let onoSticky=false;
+let onoStickyTech='punch';
+let onoPreviewBtn=null;
+function showOnoSticky(){
+  const img=IMG['o_'+onoStickyTech];
+  if(!img) return;
+  onoImg.src=img.src;
+  applyOnoStyle();
+  onoImg.classList.add('onoSticky');
+}
+function hideOnoSticky(){
+  onoImg.classList.remove('onoSticky');
+  onoImg.style.opacity=0;
+}
 function showOno(tech){
   const img=IMG['o_'+tech]; if(!img) return;
   onoImg.src=img.src;
   applyOnoStyle();
+  if(onoSticky){
+    onoImg.classList.add('onoSticky');   // rester visible
+    return;
+  }
+  onoImg.classList.remove('onoSticky');
   onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
@@ -403,7 +425,6 @@ function startGame(){
   if(!muted) SFX.music.play().catch(()=>{});
   seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
 }
-/* “Commencer” blindé */
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault();startGame();});
 
@@ -439,6 +460,7 @@ function addRange(parent,label,obj,key,{min,max,step=0.01,after}){
 function section(t){ const h=document.createElement('h3'); h.textContent=t; devPanel.appendChild(h); }
 function sep(){ const d=document.createElement('div'); d.className='sep'; devPanel.appendChild(d); }
 function header(){ const h=document.createElement('h2'); h.textContent='Réglages Parallax (T pour fermer)'; devPanel.appendChild(h); }
+
 function bar(){
   const wrap=document.createElement('div'); wrap.className='bar';
   const reset=document.createElement('button'); reset.textContent='Réinitialiser';
@@ -468,6 +490,38 @@ function bar(){
   hint.textContent='Profil en jeu (auto): '+activeRuntime+' • Profil affiché: '+activeView;
   devPanel.appendChild(hint);
 }
+
+/* Onomatopées: section avec aperçu continu */
+function buildOnoControls(E){
+  section('Onomatopées');
+
+  // Curseurs avec mise à jour du style
+  addRange(devPanel,'Pos X % écran',E.ono,'xPct',{min:0,max:1,step:0.001,after:()=>{applyOnoStyle(); if(onoSticky) showOnoSticky();}});
+  addRange(devPanel,'Pos Y % écran',E.ono,'yPct',{min:0,max:1,step:0.001,after:()=>{applyOnoStyle(); if(onoSticky) showOnoSticky();}});
+  addRange(devPanel,'Hauteur % écran',E.ono,'hPct',{min:0.05,max:0.8,step:0.001,after:()=>{applyOnoStyle(); if(onoSticky) showOnoSticky();}});
+  addRange(devPanel,'Rotation (deg)',E.ono,'rotDeg',{min:-180,max:180,step:1,after:()=>{applyOnoStyle(); if(onoSticky) showOnoSticky();}});
+
+  // Barre d’aperçu
+  const bar=document.createElement('div'); bar.className='bar';
+  // Bouton ON/OFF
+  onoPreviewBtn=document.createElement('button');
+  function refreshPreviewBtn(){ onoPreviewBtn.textContent='Aperçu ON: '+(onoSticky?'ON':'OFF'); }
+  onoPreviewBtn.onclick=()=>{ onoSticky=!onoSticky; if(onoSticky) showOnoSticky(); else hideOnoSticky(); refreshPreviewBtn(); };
+  refreshPreviewBtn();
+  bar.appendChild(onoPreviewBtn);
+
+  // Choix de l’onomatopée à afficher
+  const seg=document.createElement('div'); seg.className='seg';
+  ['pak','tan','bon','punch'].forEach(k=>{
+    const b=document.createElement('button'); b.textContent=k;
+    function mark(){ b.classList.toggle('active', onoStickyTech===k); }
+    b.onclick=()=>{ onoStickyTech=k; mark(); if(onoSticky) showOnoSticky(); };
+    mark(); seg.appendChild(b);
+  });
+  bar.appendChild(seg);
+  devPanel.appendChild(bar);
+}
+
 function buildDevPanel(){
   devPanel.innerHTML=''; header(); bar(); sep();
   const E = CFG.profiles[CFG.editingProfile];
@@ -500,15 +554,26 @@ function buildDevPanel(){
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
 
-  section('Onomatopées');
-  addRange(devPanel,'Pos X % écran',E.ono,'xPct',{min:0,max:1,step:0.001,after:applyOnoStyle});
-  addRange(devPanel,'Pos Y % écran',E.ono,'yPct',{min:0,max:1,step:0.001,after:applyOnoStyle});
-  addRange(devPanel,'Hauteur % écran',E.ono,'hPct',{min:0.05,max:0.8,step:0.001,after:applyOnoStyle});
-  addRange(devPanel,'Rotation (deg)',E.ono,'rotDeg',{min:-180,max:180,step:1,after:applyOnoStyle});
+  buildOnoControls(E);
 
   devPanel.style.display='block';
 }
-addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ devPanel.style.display=devPanel.style.display==='block'?'none':(buildDevPanel(),'block'); resize(); applyOnoStyle(); }});
+
+/* Toggle panneau avec T — coupe l’aperçu collant en sortant */
+function togglePanel(){
+  const open = devPanel.style.display==='block';
+  if(open){
+    devPanel.style.display='none';
+    if(onoSticky){ hideOnoSticky(); }   // on masque l’aperçu collant en fermant
+  }else{
+    buildDevPanel();
+    devPanel.style.display='block';
+    resize();
+    applyOnoStyle();
+    if(onoSticky){ showOnoSticky(); }
+  }
+}
+addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ togglePanel(); }});
 
 /* ===== Init ===== */
 resize();
