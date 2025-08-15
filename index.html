@@ -23,7 +23,7 @@
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées: transform géré entièrement en JS (pos/rot/scale) */
+  /* Onomatopées: transform géré en JS (pos/rot/scale) */
   #onoImg{
     position:absolute; left:50%; top:50%;
     width:auto; height:360px; opacity:0; pointer-events:none; z-index:11;
@@ -197,11 +197,7 @@ function applySkin(idx){
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 
-/* ===== Profils & stockage =====
-   v6: + réglages onomatopées (par profil)
-   - offsets en % (offsetXPct, centerX, etc.)
-   - vitesses en “écran/s”
-*/
+/* ===== Profils & stockage ===== */
 const STORAGE_KEY='wcs_tune_v6';
 const TUNE_VERSION=6;
 
@@ -215,7 +211,7 @@ const DEFAULT_PROFILE_PC = {
   },
   fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
   dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 },
-  ono:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 } // défauts confortables
+  ono:{ xPct:0.50, yPct:0.30, hPct:0.31, rotDeg:0 }
 };
 const DEFAULT_PROFILE_MOBILE = JSON.parse(JSON.stringify(DEFAULT_PROFILE_PC));
 DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
@@ -229,7 +225,6 @@ let CFG;
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
     if(stored && stored.version===TUNE_VERSION){ CFG=stored; return; }
   }catch{}
-  // migrer depuis v5 si dispo
   let old=null;
   try{ old = JSON.parse(localStorage.getItem('wcs_tune_v5')||'null'); }catch{}
   if(old && old.profiles){
@@ -248,12 +243,12 @@ function withOnoDefaults(p){
 }
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
 
-/* Quel profil pour AFFICHER (aperçu) et pour JOUER (auto) */
+/* Profil affiché vs runtime */
 const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
 const viewingProfileName = ()=> (CFG.previewLock ? CFG.editingProfile : runtimeProfileName());
 const P = ()=> CFG.profiles[viewingProfileName()];
 
-/* ===== Canvas / Resize: ratio selon profil “vu” (4:3 ou 9:16) ===== */
+/* ===== Canvas / Resize ===== */
 let DPR=1, W=0, H=0;
 let last = performance.now();
 
@@ -275,7 +270,7 @@ function resize(){
 addEventListener('resize', resize);
 addEventListener('orientationchange', resize);
 
-/* ===== Décor helpers ===== */
+/* ===== Décor ===== */
 function drawSky(){
   const img=SKY, L=P().layers.sky;
   if(img.complete && img.naturalWidth){
@@ -296,7 +291,7 @@ function tileScaledBottom(img, startOffsetXPct, scaleX, scaleY, bottomPct){
   for(; x<W; x+=targetW) ctx.drawImage(img, x, y, targetW, targetH);
 }
 
-/* Parallaxe: “écran/s” → px/frame */
+/* Parallaxe */
 let offSky=0, offFar=0, offNear=0, offAlley=0;
 function drawBG(dt){
   const L=P().layers;
@@ -354,7 +349,7 @@ function applyOnoStyle(){
   const O=P().ono;
   const left = (O.xPct*100).toFixed(3)+'%';
   const top  = (O.yPct*100).toFixed(3)+'%';
-  const hpx  = Math.max(10, O.hPct * H); // hauteur en px (auto width)
+  const hpx  = Math.max(10, O.hPct * H);
   onoImg.style.left = left;
   onoImg.style.top  = top;
   onoImg.style.height = hpx+'px';
@@ -431,7 +426,7 @@ function loop(t = performance.now()){
   requestAnimationFrame(loop);
 }
 
-/* ===== Panneau (T) avec profils + aperçu + ONO ===== */
+/* ===== Panneau (T) ===== */
 function addRange(parent,label,obj,key,{min,max,step=0.01,after}){
   const row=document.createElement('div'); row.className='row';
   const lab=document.createElement('div'); lab.textContent=label; row.appendChild(lab);
@@ -519,7 +514,6 @@ addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ devPanel.style.di
 resize();
 applySkin(activeSkinIdx);
 applyOnoStyle();
-let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best;
 requestAnimationFrame(loop);
 </script>
 </body>
