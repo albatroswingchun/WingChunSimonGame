@@ -263,12 +263,15 @@ const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
 const viewingProfileName = ()=> (CFG.previewLock ? CFG.editingProfile : runtimeProfileName());
 const P = ()=> CFG.profiles[viewingProfileName()];   // utilisé pour dessiner
 
-/* ===== Resize: ratio selon profil “vu” (4:3 ou 9:16) ===== */
+/* ===== Canvas / Resize: ratio selon profil “vu” (4:3 ou 9:16) ===== */
 let DPR=1, W=0, H=0;
+/* <<< Déclaration UNIQUE et à temps de 'last' >>> */
+let last = performance.now();
+
 function resize(){
   const r = P().ratio || PC_RATIO; // 4:3 ou 9:16
   const wrapW=stageWrap.clientWidth, wrapH=stageWrap.clientHeight;
-  // on fabrique une boîte de ratio r, contenue dans le viewport
+  // fabrique une boîte de ratio r, contenue dans le viewport
   let boxW=wrapW, boxH=Math.round(wrapW / r);
   if(boxH>wrapH){ boxH=wrapH; boxW=Math.round(wrapH * r); }
 
@@ -322,7 +325,7 @@ function drawBG(dt){
   tileScaledBottom(ALLEY,   L.alley.offsetXPct+ (offAlley/W),L.alley.scaleX,L.alley.scaleY,L.alley.bottomPct);
 }
 
-/* ===== Mannequin & Perso (inchangés, proportionnels via W/H) ===== */
+/* ===== Mannequin & Perso (proportionnels via W/H) ===== */
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
@@ -364,7 +367,7 @@ function showOno(tech){
   onoImg.src=img.src; onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
-/* ===== Simon (identique) ===== */
+/* ===== Simon ===== */
 let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_best')||0;
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
@@ -399,14 +402,6 @@ async function press(tech){
 /* ===== Entrées ===== */
 pads.forEach(b=> b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false}));
 
-/* ===== Démarrage ===== */
-function startGame(){
-  menu.style.display='none';
-  if(!muted) SFX.music.play().catch(()=>{});
-  seq=[randTech()]; score=0; scoreEl.textContent=0; playSequence();
-}
-startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
-
 /* ===== Skins ===== */
 applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
@@ -418,9 +413,9 @@ function renderSkins(){
 }
 
 /* ===== Boucle ===== */
-last=performance.now();
-function loop(t=performance.now()){
-  const dt=Math.min(33,t-last)/(1000/60); last=t;
+function loop(t = performance.now()){
+  const dt = Math.min(33, t - last) / (1000/60);
+  last = t;
   ctx.clearRect(0,0,W,H);
   drawBG(dt); drawDummy(); drawFighter();
   requestAnimationFrame(loop);
@@ -467,8 +462,7 @@ function bar(){
 }
 function buildDevPanel(){
   devPanel.innerHTML=''; header(); bar(); sep();
-  const L=P().layers;          // on édite ce qu’on voit si previewLock, sinon le profil auto
-  const E = CFG.profiles[CFG.editingProfile]; // mais on veut éditer le profil choisi
+  const E = CFG.profiles[CFG.editingProfile];
   const editLayers = E.layers;
 
   function R(sectionTitle, key){
@@ -503,8 +497,9 @@ addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='t'){ devPanel.style.di
 
 /* ===== Init ===== */
 resize();
-let last=performance.now();
-requestAnimationFrame(function loopStart(t){last=t; requestAnimationFrame(loop);});
+applySkin(activeSkinIdx);
+last = performance.now();          // pas de "let" ici
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
