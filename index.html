@@ -12,40 +12,54 @@
   }
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
-  header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:10}
+  header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:20}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
-  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f)}
-  #stageWrap{position:relative;overflow:auto;display:grid;place-items:center;background:#000}
+  footer{padding:6px 12px;font-size:12px;opacity:.6;text-align:center;background:linear-gradient(180deg,var(--panel2),#120f0f);z-index:5}
+  #stageWrap{position:relative;overflow:hidden;display:grid;place-items:center;background:#000}
   #stage{position:relative;width:100%;height:100%}
   canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 
-  #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:5}
+  #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:10}
   .pad{width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);cursor:pointer;user-select:none}
   .lit{filter:brightness(1.7);box-shadow:inset 0 0 0 2px #fff3,0 0 42px currentColor}
 
-  /* Onomatopées */
-  #onoImg{position:absolute;left:50%;top:30%;transform:translate(-50%,0);width:auto;height:360px;opacity:0;pointer-events:none;z-index:6}
+  #onoImg{position:absolute;left:50%;top:30%;transform:translate(-50%,0);width:auto;height:360px;opacity:0;pointer-events:none;z-index:11}
   .onoShow{animation:onoFade .9s ease forwards}
   @keyframes onoFade{0%{opacity:0;transform:translate(-50%,0) scale(.9)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0}}
-  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:7}
+  #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:12}
   .boom{animation:boom .4s ease}@keyframes boom{0%{opacity:.65}100%{opacity:0}}
 
-  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:10}
+  #menu{position:absolute;inset:0;display:grid;place-items:center;background:transparent;z-index:15}
   .panel{background:rgba(0,0,0,.55);border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #2f2724;min-width:560px}
   .title-main{font-family:'Permanent Marker',cursive;font-size:96px;line-height:0.9;margin:0;color:#e8d6b8;text-shadow:0 2px 0 #000,0 0 24px rgba(209,163,65,.35)}
   .title-sub{font-size:32px;margin:6px 0 12px;color:#d1a341}
   .subtitle{opacity:.95;margin:0 0 16px}
   .actions{display:flex;gap:12px;justify-content:center}
 
-  /* Panneau Skins */
   #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
   #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
   .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
   .skinCard:hover{filter:brightness(1.05)}
   .skinActive{outline:2px solid #d1a341}
   .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
+
+  /* Panneau dev */
+  #devToggle{position:absolute;right:10px;top:8px;z-index:25}
+  #devPanel{
+    position:fixed; top:12px; right:12px; width:360px; max-height:90vh; overflow:auto;
+    background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30;
+    padding:12px; display:none;
+  }
+  #devPanel h3{margin:8px 0 6px; font-size:16px; color:#ffd48a}
+  #devPanel .row{display:grid; grid-template-columns:110px 1fr 52px; align-items:center; gap:6px; margin:6px 0}
+  #devPanel .row input[type="range"]{width:100%}
+  #devPanel .row input[type="number"]{width:52px; background:#1b1716; color:#e8d6b8; border:1px solid #3a302d; border-radius:6px; padding:6px}
+  #devPanel .bar{display:flex; gap:8px; margin:6px 0 10px}
+  #devPanel .bar button{flex:1; padding:8px 10px; border-radius:8px; border:1px solid #3a302d; background:#1e1b1a; color:#e8d6b8; cursor:pointer}
+  #devPanel .tiny{font-size:11px; opacity:.75}
+  .sep{margin:12px 0; height:1px; background:#2a2322}
 </style>
 </head>
 <body>
@@ -56,7 +70,9 @@
       <span class="chip">Score: <span id="score">0</span></span>
       <span class="chip">Meilleur: <span id="best">0</span></span>
     </div>
-    <div class="right"></div>
+    <div class="right">
+      <button id="devToggle" class="btn">Réglages</button>
+    </div>
   </header>
 
   <div id="stageWrap">
@@ -84,7 +100,6 @@
             <button id="skinsBtn" class="btn">🎨 Skins</button>
           </div>
 
-          <!-- Panneau de sélection des skins -->
           <div id="skinsPanel">
             <div style="margin-bottom:8px;opacity:.85">Choisis un skin de personnage</div>
             <div id="skinsGrid"></div>
@@ -94,8 +109,11 @@
     </div>
   </div>
 
-  <footer>Scène adaptative. Parallax. Mannequin centré derrière, perso centré avec offsets par technique. Permanent Marker.</footer>
+  <footer>Scène adaptative. Parallax. Réglages en temps réel (Ctrl+D).</footer>
 </div>
+
+<!-- PANNEAU DEV -->
+<div id="devPanel"></div>
 
 <script>
 /* ====== refs ====== */
@@ -110,6 +128,8 @@ const skinsPanel=document.getElementById('skinsPanel');
 const skinsGrid=document.getElementById('skinsGrid');
 const onoImg=document.getElementById('onoImg');
 const flash=document.getElementById('flash');
+const devPanel=document.getElementById('devPanel');
+const devToggle=document.getElementById('devToggle');
 
 /* ====== sons ====== */
 const SFX = {
@@ -126,61 +146,34 @@ const SFX = {
 };
 SFX.music.loop = true;
 SFX.music.volume = 0.5;
-// Baisser le volume des cris Yah uniquement (-20%)
 SFX.voice_pak.volume   = 0.8;
 SFX.voice_tan.volume   = 0.8;
 SFX.voice_bon.volume   = 0.8;
 SFX.voice_punch.volume = 0.8;
 
-/* --- pool audio qui respecte le volume d'origine --- */
+/* --- pool audio --- */
 const POOL = {};
 function poolify(key, audio, n = 4){
   const baseVol = audio.volume;
-  const clones = Array.from({length: n-1}, ()=>{
-    const c = audio.cloneNode();
-    c.volume = baseVol;
-    return c;
-  });
+  const clones = Array.from({length: n-1}, ()=>{ const c = audio.cloneNode(); c.volume = baseVol; return c; });
   POOL[key] = [audio, ...clones];
 }
 function playKey(key){
   if (muted) return;
-  const arr = POOL[key];
-  if (!arr) return;
+  const arr = POOL[key]; if (!arr) return;
   let a = arr.find(x => x.paused);
-  if (!a) {
-    const template = arr[0];
-    a = template.cloneNode();
-    a.volume = template.volume;
-    if (arr.length < 6) arr.push(a);
-  }
-  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(_) {}
+  if (!a) { const t = arr[0]; a = t.cloneNode(); a.volume=t.volume; if (arr.length < 6) arr.push(a); }
+  try { a.currentTime=0; a.play().catch(()=>{}); } catch(_) {}
 }
-['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music']
-  .forEach(k => { if(SFX[k]) poolify(k, SFX[k]); });
-
+;['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music'].forEach(k=>SFX[k]&&poolify(k,SFX[k]));
 Object.values(SFX).forEach(a=>a.preload='auto');
 
 let muted=false;
-muteBtn.onclick=()=>{
-  muted=!muted;
-  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
-  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
-};
+muteBtn.onclick=()=>{ muted=!muted; muteBtn.textContent=muted?'🔇 Muet':'🔊 Son'; if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{}); };
+function playTechniqueSounds(tech){ playKey(tech); }
 
-/* utilitaire: son d'impact (la voix est synchronisée dans setSpritesFor) */
-function playTechniqueSounds(tech){
-  playKey(tech); // impact mannequin uniquement
-}
-
-/* ====== BG loader ====== */
-function loadBG(url){
-  const i = new Image();
-  i.crossOrigin = 'anonymous';
-  i.onerror = ()=>{};
-  i.src = url;
-  return i;
-}
+/* ====== BG loader (tes liens conservés) ====== */
+function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=url; return i; }
 const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');
 const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');
 const MT_NEAR= loadBG('https://i.imgur.com/Ki5vPZy.png');
@@ -188,30 +181,12 @@ const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');
 
 /* ====== sprites & skins ====== */
 function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
-
-/* Skins perso */
 const SKINS = [
-  {
-    id:'classic',
-    name:'Classique',
-    thumb:'https://i.imgur.com/AweXMem.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png',
-        tan:'https://i.imgur.com/ZrLk97U.png',
-        bon:'https://i.imgur.com/CG30Yh6.png',
-        punch:'https://i.imgur.com/JYL2S46.png' }
-  },
-  {
-    id:'classic_alt',
-    name:'Classique (alt)',
-    thumb:'https://i.imgur.com/ZrLk97U.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png',
-        tan:'https://i.imgur.com/ZrLk97U.png',
-        bon:'https://i.imgur.com/CG30Yh6.png',
-        punch:'https://i.imgur.com/JYL2S46.png' }
-  }
+  { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
+  { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } }
 ];
-
-/* Réceptacle IMG runtime */
 const IMG={
   f_pak:null, f_tan:null, f_bon:null, f_punch:null,
   o_pak:   load('https://i.imgur.com/pVF4bt1.png'),
@@ -233,61 +208,74 @@ function resize(){
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
-/* ====== config ====== */
-const CFG = {
-  fighter: { w: 0.16, centerX: 0.50, bottom: 0.08 },
-  dummy:   { w: 0.18, centerX: 0.50, bottom: null },
-  parallax:{
-    // vitesses horizontales
-    far:  0.20,
-    near: 0.42,
-    // ancrages verticaux proportionnels à H (depuis le bas)
-    // ajuste ces trois valeurs pour caler visuellement ton décor
-    farBottomPct:   0.34,   // la crête lointaine repose à 34% de H au-dessus du bas
-    nearBottomPct:  0.05,   // la chaîne proche à 5%
-    alleyBottomPct: 0       // la ruelle touche le bas
+/* ====== CONFIG ====== */
+/* Nouvelle config avec couches réglables en direct */
+const DEFAULT_CFG = {
+  layers: {
+    sky:  { scale:1.00, yOffsetPct:0.00, speedX:0.00, offsetX:0 },
+    far:  { scale:1.20, bottomPct:0.34, speedX:0.20, offsetX:0 },
+    near: { scale:1.40, bottomPct:0.05, speedX:0.42, offsetX:0 },
+    alley:{ scale:1.00, bottomPct:0.00, speedX:0.00, offsetX:0 }
   },
-  fighterDxPxByTech: { pak: -110, tan: 110, bon: -110, punch: 110 }
+  fighter: { wPct:0.16, centerX:0.50, bottomPct:0.08 },
+  dummy:   { wPct:0.18, centerX:0.50, bottomPct:0.08 },
+  fighterDxPxByTech: { pak:-110, tan:110, bon:-110, punch:110 }
 };
 
-/* ====== décor (helpers & parallax) ====== */
-function tileNative(img, offsetX, y){
-  if(!img.complete || !img.naturalWidth) return;
-  const iw = img.naturalWidth;
-  let x = offsetX % iw; if(x>0) x -= iw;
-  for(; x < W; x += iw) ctx.drawImage(img, x, y);
-}
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+const CFG = (()=>{ try{ return Object.assign(deepClone(DEFAULT_CFG), JSON.parse(localStorage.getItem('wcs_tune')||'{}')); }catch{ return deepClone(DEFAULT_CFG);} })();
+function saveCFG(){ localStorage.setItem('wcs_tune', JSON.stringify(CFG)); }
 
-// ancrage en pourcentage de H, depuis le bas
-function tileBottomAnchoredPct(img, offsetX, bottomPct){
-  if(!img.complete || !img.naturalWidth) return;
-  const y = Math.round(H - img.naturalHeight - (H * bottomPct));
-  tileNative(img, offsetX, y);
-}
-
-let offFar=0, offNear=0;
-function drawBG(dt){
-  // ciel (fallback gradient si pas encore chargé)
-  if (SKY.complete && SKY.naturalWidth){
-    ctx.drawImage(SKY, 0, 0);
+/* ====== décor helpers (avec zoom) ====== */
+function drawSky(){
+  const img = SKY;
+  if(img.complete && img.naturalWidth){
+    // On dessine le ciel en "cover" zoomable
+    const s = CFG.layers.sky.scale;
+    const targetW = W * s;
+    const targetH = H * s;
+    const dx = (W - targetW)/2 + CFG.layers.sky.offsetX;
+    const dy = (H - targetH)/2 + (CFG.layers.sky.yOffsetPct * H);
+    ctx.drawImage(img, dx, dy, targetW, targetH);
   } else {
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#0a0c12'); g.addColorStop(1, '#1a1f2a');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
-
-  // parallax horizontal
-  offFar  -= CFG.parallax.far  * dt;
-  offNear -= CFG.parallax.near * dt;
-
-  // calques ancrés au bas, en proportion de H
-  tileBottomAnchoredPct(MT_FAR,  offFar,  CFG.parallax.farBottomPct);
-  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H); // léger voile
-  tileBottomAnchoredPct(MT_NEAR, offNear, CFG.parallax.nearBottomPct);
-  tileBottomAnchoredPct(ALLEY,   0,       CFG.parallax.alleyBottomPct);
 }
 
-/* ====== mannequin animé (centré derrière) ====== */
+function tileScaledBottom(img, offsetX, scale, bottomPct){
+  if(!img.complete || !img.naturalWidth) return;
+  const targetW = img.naturalWidth * scale;
+  const targetH = img.naturalHeight * scale;
+  const y = Math.round(H - targetH - (H * (bottomPct||0)));
+  let x = (offsetX % targetW); if(x>0) x -= targetW;
+  for(; x < W; x += targetW) ctx.drawImage(img, x, y, targetW, targetH);
+}
+
+/* ====== BG draw (parallaxe réglable) ====== */
+let offFar=0, offNear=0, offAlley=0, offSky=0;
+function drawBG(dt){
+  // offsets
+  offSky  -= CFG.layers.sky.speedX  * dt;
+  offFar  -= CFG.layers.far.speedX  * dt;
+  offNear -= CFG.layers.near.speedX * dt;
+  offAlley-= CFG.layers.alley.speedX* dt;
+
+  // ciel
+  const oldOffsetSky = CFG.layers.sky.offsetX;
+  CFG.layers.sky.offsetX = oldOffsetSky + (CFG.layers.sky.speedX * dt);
+  drawSky();
+  CFG.layers.sky.offsetX = oldOffsetSky; // ne pas accumuler deux fois
+
+  // calques
+  tileScaledBottom(MT_FAR,  offFar  + CFG.layers.far.offsetX,  CFG.layers.far.scale,  CFG.layers.far.bottomPct);
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
+  tileScaledBottom(MT_NEAR, offNear + CFG.layers.near.offsetX, CFG.layers.near.scale, CFG.layers.near.bottomPct);
+  tileScaledBottom(ALLEY,   offAlley+ CFG.layers.alley.offsetX,CFG.layers.alley.scale,CFG.layers.alley.bottomPct);
+}
+
+/* ====== mannequin animé ====== */
 let dummyAnim={until:0};
 function triggerDummyAnim(){ dummyAnim.until=performance.now()+200; }
 function drawDummy(){
@@ -297,23 +285,22 @@ function drawDummy(){
     const t=1-((dummyAnim.until-performance.now())/200);
     scale=1+0.05*Math.sin(t*Math.PI);
   }
-  const targetW = Math.max(90, CFG.dummy.w*W)*scale;
+  const targetW = Math.max(60, CFG.dummy.wPct*W) * scale;
   const s = targetW / img.naturalWidth;
   const targetH = img.naturalHeight * s;
   const xLeft = Math.round(W*CFG.dummy.centerX - targetW/2);
-  const bottom = (CFG.dummy.bottom != null) ? CFG.dummy.bottom : CFG.fighter.bottom;
-  const yTop = Math.round(H - targetH - H*bottom);
+  const yTop  = Math.round(H - targetH - H*(CFG.dummy.bottomPct||0));
   ctx.drawImage(img, xLeft, yTop, targetW, targetH);
 }
 
-/* ====== perso (animation + synchro voix) ====== */
+/* ====== perso ====== */
 let currentTech='pak';
-let currentFighter=null; // défini par applySkin()
+let currentFighter=null;
 let actionAnim={until:0,lunge:0,scale:1};
 
 function setSpritesFor(tech){
   currentTech = tech;
-  triggerDummyAnim(); // secousse du mannequin
+  triggerDummyAnim();
 
   const now = performance.now();
   const LUNGE = { pak:10, tan:12, bon:8, punch:14 };
@@ -321,14 +308,12 @@ function setSpritesFor(tech){
   actionAnim = { until: now + 260, lunge: (LUNGE[tech]||10), scale: (SCALE[tech]||1.03) };
 
   currentFighter = IMG['f_'+tech] || currentFighter;
-
-  // Synchronisation du cri "Yah" sur le mouvement du perso
   setTimeout(()=> playKey('voice_'+tech), 100);
 }
 
 function drawFighter(){
   const img = currentFighter; if(!img || !img.complete || !img.naturalWidth) return;
-  const baseW = Math.max(90, CFG.fighter.w*W);
+  const baseW = Math.max(60, CFG.fighter.wPct*W);
   const baseScale = baseW / img.naturalWidth;
   const baseH = img.naturalHeight * baseScale;
 
@@ -347,11 +332,11 @@ function drawFighter(){
   }
 
   const centerX = W * (CFG.fighter.centerX || 0.5);
-  const finalW = baseW * scaleMul;
+  const finalW = baseW * scaleMul, finalH = baseH * scaleMul;
   const xBase = Math.round(centerX - finalW/2 + dxTech + extraX);
-  const yBase = Math.round(H - (baseH*scaleMul) - H*CFG.fighter.bottom + idleBob + extraY);
+  const yBase = Math.round(H - finalH - H*(CFG.fighter.bottomPct||0) + idleBob + extraY);
 
-  ctx.drawImage(img, xBase, yBase, finalW, baseH*scaleMul);
+  ctx.drawImage(img, xBase, yBase, finalW, finalH);
 }
 
 /* ====== onomatopées ====== */
@@ -367,11 +352,7 @@ let seq=[], userIndex=0, locked=true, score=0, best=+localStorage.getItem('wcs_b
 bestEl.textContent=best;
 const TECHS=['pak','tan','bon','punch'];
 
-function setLit(tech,on){
-  const b=pads.find(x=>x.dataset.tech===tech);
-  if(!b) return;
-  b.classList.toggle('lit',on);
-}
+function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); if(!b) return; b.classList.toggle('lit',on); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const randTech=()=>TECHS[Math.random()*TECHS.length|0];
 
@@ -380,7 +361,7 @@ async function playSequence(){
   for(const tech of seq){
     setSpritesFor(tech);
     setLit(tech,true);
-    playTechniqueSounds(tech);   // impact mannequin (voix lancée dans setSpritesFor)
+    playTechniqueSounds(tech);
     showOno(tech);
     await sleep(460);
     setLit(tech,false);
@@ -393,7 +374,7 @@ async function press(tech){
   if(locked) return;
   setSpritesFor(tech);
   setLit(tech,true);
-  playTechniqueSounds(tech);     // impact mannequin (voix lancée dans setSpritesFor)
+  playTechniqueSounds(tech);
   showOno(tech);
   await sleep(200); setLit(tech,false);
 
@@ -405,19 +386,14 @@ async function press(tech){
   userIndex++;
   if(userIndex===seq.length){
     score++; scoreEl.textContent=score;
-    if(score>best){
-      best=score; bestEl.textContent=best; localStorage.setItem('wcs_best',best);
-    }
+    if(score>best){ best=score; bestEl.textContent=best; localStorage.setItem('wcs_best',best); }
     seq.push(randTech()); await sleep(420); playSequence();
   }
 }
 
 /* ====== Entrées ====== */
 pads.forEach(b=>{
-  b.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    press(b.dataset.tech);
-  }, {passive:false});
+  b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
 });
 
 /* ====== Démarrage ====== */
@@ -438,7 +414,6 @@ function applySkin(idx){
   IMG.f_bon   = load(skin.f.bon);
   IMG.f_punch = load(skin.f.punch);
   localStorage.setItem('wcs_skin_idx', idx);
-  // met à jour le sprite courant si besoin
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
 function renderSkins(){
@@ -446,19 +421,12 @@ function renderSkins(){
   SKINS.forEach((s, i)=>{
     const card = document.createElement('button');
     card.className = 'skinCard' + (i===activeSkinIdx?' skinActive':'');
-    card.innerHTML = `
-      <img class="skinThumb" alt="${s.name}" src="${s.thumb}"/>
-      <div style="font-weight:700">${s.name}</div>
-    `;
+    card.innerHTML = `<img class="skinThumb" alt="${s.name}" src="${s.thumb}"/><div style="font-weight:700">${s.name}</div>`;
     card.onclick = ()=>{ applySkin(i); renderSkins(); };
     skinsGrid.appendChild(card);
   });
 }
-skinsBtn.onclick=()=>{
-  const show = skinsPanel.style.display!=='block';
-  skinsPanel.style.display = show?'block':'none';
-  if(show) renderSkins();
-};
+skinsBtn.onclick=()=>{ const show = skinsPanel.style.display!=='block'; skinsPanel.style.display = show?'block':'none'; if(show) renderSkins(); };
 
 /* ====== Boucle ====== */
 let last=performance.now();
@@ -466,10 +434,99 @@ function loop(t=performance.now()){
   const dt = Math.min(33, t-last) / (1000/60); last=t;
   ctx.clearRect(0,0,W,H);
   drawBG(dt);
-  drawDummy();    // derrière
-  drawFighter();  // devant
+  drawDummy();
+  drawFighter();
   requestAnimationFrame(loop);
 }
+
+/* ====== Dev panel (curseurs temps réel) ====== */
+function addRange(parent, label, obj, key, {min,max,step=0.01,fmt=x=>x}){
+  const row=document.createElement('div'); row.className='row';
+  const lab=document.createElement('div'); lab.textContent=label; row.appendChild(lab);
+  const input=document.createElement('input'); input.type='range'; input.min=min; input.max=max; input.step=step; input.value=obj[key];
+  const val=document.createElement('input'); val.type='number'; val.step=step; val.value=obj[key]; val.min=min; val.max=max;
+  function sync(v){ v=+v; obj[key]=v; input.value=v; val.value=v; saveCFG(); }
+  input.oninput=e=>sync(e.target.value);
+  val.oninput=e=>sync(e.target.value);
+  row.appendChild(input); row.appendChild(val);
+  parent.appendChild(row);
+}
+function addSection(title){
+  const h=document.createElement('h3'); h.textContent=title; devPanel.appendChild(h);
+}
+function addButtons(){
+  const bar=document.createElement('div'); bar.className='bar';
+  const reset=document.createElement('button'); reset.textContent='Réinitialiser';
+  const exportBtn=document.createElement('button'); exportBtn.textContent='Exporter';
+  const importBtn=document.createElement('button'); importBtn.textContent='Importer';
+  reset.onclick=()=>{ Object.assign(CFG, deepClone(DEFAULT_CFG)); saveCFG(); buildDevPanel(); };
+  exportBtn.onclick=()=>{ navigator.clipboard.writeText(JSON.stringify(CFG,null,2)).catch(()=>{}); };
+  importBtn.onclick=()=>{
+    const raw=prompt('Colle ici la config JSON:'); if(!raw) return;
+    try{ const o=JSON.parse(raw); Object.assign(CFG,o); saveCFG(); buildDevPanel(); }catch{ alert('JSON invalide'); }
+  };
+  bar.append(reset,exportBtn,importBtn); devPanel.appendChild(bar);
+}
+
+function clearDev(){ devPanel.innerHTML=''; }
+function buildDevPanel(){
+  clearDev();
+  addButtons();
+
+  addSection('Ciel');
+  addRange(devPanel,'Zoom',   CFG.layers.sky, 'scale',     {min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Décalage X',CFG.layers.sky,'offsetX', {min:-2000,max:2000,step:1});
+  addRange(devPanel,'Décalage Y %',CFG.layers.sky,'yOffsetPct',{min:-0.5,max:0.5,step:0.001});
+  addRange(devPanel,'Vitesse X',CFG.layers.sky,'speedX',   {min:-2,max:2,step:0.01});
+
+  const sep1=document.createElement('div'); sep1.className='sep'; devPanel.appendChild(sep1);
+
+  addSection('Montagnes lointaines');
+  addRange(devPanel,'Zoom',   CFG.layers.far,  'scale',     {min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Bas %',  CFG.layers.far,  'bottomPct', {min:-0.2,max:0.6,step:0.001});
+  addRange(devPanel,'Décalage X',CFG.layers.far,'offsetX',  {min:-2000,max:2000,step:1});
+  addRange(devPanel,'Vitesse X',CFG.layers.far,'speedX',    {min:-2,max:2,step:0.01});
+
+  const sep2=document.createElement('div'); sep2.className='sep'; devPanel.appendChild(sep2);
+
+  addSection('Montagnes proches');
+  addRange(devPanel,'Zoom',   CFG.layers.near, 'scale',     {min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Bas %',  CFG.layers.near, 'bottomPct', {min:-0.2,max:0.6,step:0.001});
+  addRange(devPanel,'Décalage X',CFG.layers.near,'offsetX', {min:-2000,max:2000,step:1});
+  addRange(devPanel,'Vitesse X',CFG.layers.near,'speedX',   {min:-2,max:2,step:0.01});
+
+  const sep3=document.createElement('div'); sep3.className='sep'; devPanel.appendChild(sep3);
+
+  addSection('Allée');
+  addRange(devPanel,'Zoom',   CFG.layers.alley,'scale',     {min:0.5,max:3,step:0.01});
+  addRange(devPanel,'Bas %',  CFG.layers.alley,'bottomPct', {min:-0.2,max:0.2,step:0.001});
+  addRange(devPanel,'Décalage X',CFG.layers.alley,'offsetX',{min:-2000,max:2000,step:1});
+  addRange(devPanel,'Vitesse X',CFG.layers.alley,'speedX',  {min:-2,max:2,step:0.01});
+
+  const sep4=document.createElement('div'); sep4.className='sep'; devPanel.appendChild(sep4);
+
+  addSection('Mannequin');
+  addRange(devPanel,'Largeur % écran', CFG.dummy,  'wPct',      {min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',      CFG.dummy,  'centerX',   {min:0.0,max:1.0,step:0.001});
+  addRange(devPanel,'Bas %',           CFG.dummy,  'bottomPct', {min:-0.1,max:0.4,step:0.001});
+
+  const sep5=document.createElement('div'); sep5.className='sep'; devPanel.appendChild(sep5);
+
+  addSection('Personnage');
+  addRange(devPanel,'Largeur % écran', CFG.fighter,'wPct',      {min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',      CFG.fighter,'centerX',   {min:0.0,max:1.0,step:0.001});
+  addRange(devPanel,'Bas %',           CFG.fighter,'bottomPct', {min:-0.1,max:0.4,step:0.001});
+
+  // petite note
+  const note=document.createElement('div'); note.className='tiny';
+  note.textContent='Astuce: maintiens la touche Maj pendant que tu glisses pour une précision plus fine, puis ajuste au clavier dans la case numérique.';
+  devPanel.appendChild(note);
+
+  // Afficher
+  devPanel.style.display='block';
+}
+devToggle.onclick=()=>{ if(devPanel.style.display==='block'){ devPanel.style.display='none'; } else { buildDevPanel(); } };
+window.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='d'){ e.preventDefault(); devToggle.click(); }});
 
 /* ====== init ====== */
 resize();
