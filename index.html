@@ -164,15 +164,18 @@
   :root{
     --bestBadgeShift: 30px; /* augmente pour descendre davantage */
   }
-  #bestBadge{
-    position:absolute; left:50%; transform:translateX(-50%);
-    top: calc(clamp(8px, calc(var(--stageH)*0.06), 64px) + clamp(60px, calc(var(--stageW)*0.16), 200px));
-    font-size: clamp(12px, calc(var(--stageW)*0.028), 16px);
-    opacity:.85;
-    color:#ffd48a;
-    text-shadow: 0 1px 0 #000;
-  }
-
+ #bestBadge{
+  position:absolute; left:50%; transform:translateX(-50%);
+  top: calc(
+    clamp(8px, calc(var(--stageH)*0.06), 64px)
+    + clamp(60px, calc(var(--stageW)*0.16), 200px)
+    + var(--bestBadgeShift)
+  );
+  font-size: clamp(12px, calc(var(--stageW)*0.028), 16px);
+  opacity:.85;
+  color:#ffd48a;
+  text-shadow: 0 1px 0 #000;
+}
   /* On vire les chips score/best du header visuellement */
   header .chip{ display:none; }
 </style>
