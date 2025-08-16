@@ -221,26 +221,68 @@ function applySkin(idx){
 }
 
 /* ===== Profils & stockage (v8) ===== */
-const STORAGE_KEY='wcs_tune_v8';
-const TUNE_VERSION=8;
+const STORAGE_KEY = 'wcs_tune_v8';
+const TUNE_VERSION = 8;
 
-const DEFAULT_PROFILE_PC = {
-  ratio: PC_RATIO,
-  layers:{
-    sky:  { zoom:1.00, offsetXPct:0.00, yOffsetPct:0.00, speedX:0.00 },
-    far:  { wPct:1.80, offsetXPct:0.00, bottomPct:0.34,  speedX:0.04 },
-    near: { wPct:2.00, offsetXPct:0.00, bottomPct:0.08,  speedX:0.10 },
-    alley:{ wPct:1.20, offsetXPct:0.00, bottomPct:0.00,  speedX:0.00 }
+/* SEED: profils calibrés par défaut pour un nouvel utilisateur (navigation privée incluse) */
+const SEEDED_PROFILES = {
+  pc: {
+    ratio: 1.3333333333333333, // 4:3
+    layers: {
+      sky:  { zoom: 0.5,  offsetXPct: -0.031, yOffsetPct: -0.277, speedX: 0 },
+      far:  { wPct: 1,    offsetXPct: -1.372, bottomPct: -0.019,  speedX: 0.004 },
+      near: { wPct: 2.99, offsetXPct: 0.528,  bottomPct: 0.225,   speedX: 0.025 },
+      alley:{ wPct: 1.2,  offsetXPct: 0,      bottomPct: 0,       speedX: 0 }
+    },
+    fighter: { wPct: 0.165, centerX: 0.51, bottomPct: 0.09 },
+    dummy:   { wPct: 0.186, centerX: 0.5,  bottomPct: 0.083 },
+    onoByTech: {
+      pak:   { xPct: 0.598, yPct: 0.467, hPct: 0.404, rotDeg:  39 },
+      tan:   { xPct: 0.417, yPct: 0.503, hPct: 0.310, rotDeg: -15 },
+      bon:   { xPct: 0.593, yPct: 0.497, hPct: 0.382, rotDeg:  19 },
+      punch: { xPct: 0.427, yPct: 0.513, hPct: 0.370, rotDeg: -37 }
+    }
   },
-  fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
-  dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 },
-  onoByTech:{
-    pak:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
-    tan:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
-    bon:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
-    punch:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0}
+  mobile: {
+    ratio: 0.5625, // 9:16
+    layers: {
+      sky:  { zoom: 0.34, offsetXPct: 0.225,  yOffsetPct: -0.35, speedX: 0 },
+      far:  { wPct: 1.38, offsetXPct: 0.025,  bottomPct: 0.319,  speedX: 0.011 },
+      near: { wPct: 8,    offsetXPct: -1.462, bottomPct: 0.319,  speedX: 0.035 },
+      alley:{ wPct: 4,    offsetXPct: 0,      bottomPct: 0,      speedX: 0 }
+    },
+    fighter: { wPct: 0.437, centerX: 0.51, bottomPct: 0.124 },
+    dummy:   { wPct: 0.489, centerX: 0.5,  bottomPct: 0.119 },
+    onoByTech: {
+      pak:   { xPct: 0.719, yPct: 0.442, hPct: 0.310, rotDeg:  37 },
+      tan:   { xPct: 0.332, yPct: 0.422, hPct: 0.310, rotDeg: -26 },
+      bon:   { xPct: 0.724, yPct: 0.417, hPct: 0.310, rotDeg:  23 },
+      punch: { xPct: 0.332, yPct: 0.397, hPct: 0.310, rotDeg: -44 }
+    }
   }
 };
+
+/* Si tu utilises encore les DEFAULT_* ailleurs, on les pointe vers les seeds */
+const DEFAULT_PROFILE_PC = SEEDED_PROFILES.pc;
+const DEFAULT_PROFILE_MOBILE = SEEDED_PROFILES.mobile;
+
+/* … puis garde ta logique loadConfig() existante.
+   Dans son bloc `else { ... }` de premier lancement, assure-toi d'utiliser bien les seeds:
+   (exemple)
+   const firstIsPortrait = window.innerHeight >= window.innerWidth;
+   CFG = {
+     version: TUNE_VERSION,
+     previewLock: false,
+     editingProfile: firstIsPortrait ? 'mobile' : 'pc',
+     profiles: {
+       pc: deepClone(SEEDED_PROFILES.pc),
+       mobile: deepClone(SEEDED_PROFILES.mobile)
+     },
+     fighterDxPxByTech: { pak:-110, tan:110, bon:-110, punch:110 }
+   };
+   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+*/
+
 const DEFAULT_PROFILE_MOBILE = JSON.parse(JSON.stringify(DEFAULT_PROFILE_PC));
 DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
 
