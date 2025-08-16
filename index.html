@@ -160,6 +160,10 @@
     letter-spacing: 1px;
     line-height: .9;
   }
+
+  :root{
+    --bestBadgeShift: 16px; /* augmente pour descendre davantage */
+  }
   #bestBadge{
     position:absolute; left:50%; transform:translateX(-50%);
     top: calc(clamp(8px, calc(var(--stageH)*0.06), 64px) + clamp(60px, calc(var(--stageW)*0.16), 200px));
