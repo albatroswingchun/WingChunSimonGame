@@ -16,7 +16,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
-  :root{ --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8; --gold:#d1a341; }
+  :root{
+    --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8; --gold:#d1a341;
+    --scoreYellow:#FFD700;
+  }
 
   /* Hauteur viewport stable mobiles */
   :root{ --vh: 100svh; }
@@ -129,24 +132,41 @@
     font-size: clamp(12px, calc(var(--stageH)*0.028), 16px);
   }
 
-  /* ============ GROS COMPTEUR DE SCORE (HUD) ============ */
+  /* ============ HUD SCORE GÉANT ============ */
   #hud{ position:absolute; inset:0; z-index:13; pointer-events:none; }
-  #bigScore{
+
+  /* Boîte centrale: "Score" + valeur */
+  #scoreBox{
     position:absolute; left:50%; transform:translateX(-50%);
     top: clamp(8px, calc(var(--stageH)*0.06), 64px);
+    text-align:center;
+  }
+  #scoreTitle{
+    font-family:'Permanent Marker',cursive;
+    color: var(--scoreYellow);
+    font-weight: 900;
+    font-size: clamp(22px, calc(var(--stageW)*0.06), 56px);
+    line-height: 1;
+    margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
+    text-shadow: 0 1px 0 #000, 0 0 18px rgba(209,163,65,.35);
+    letter-spacing: .5px;
+  }
+  #bigScore{
     font-family:'Permanent Marker',cursive;
     font-weight:900;
     font-size: clamp(42px, calc(var(--stageW)*0.12), 160px);
-    color:#e8d6b8;
+    color: var(--scoreYellow);
     text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
     letter-spacing: 1px;
+    line-height: .9;
   }
   #bestBadge{
     position:absolute; left:50%; transform:translateX(-50%);
-    top: calc(clamp(8px, calc(var(--stageH)*0.06), 64px) + clamp(40px, calc(var(--stageW)*0.08), 120px));
+    top: calc(clamp(8px, calc(var(--stageH)*0.06), 64px) + clamp(60px, calc(var(--stageW)*0.16), 200px));
     font-size: clamp(12px, calc(var(--stageW)*0.028), 16px);
-    opacity:.75;
+    opacity:.85;
     color:#ffd48a;
+    text-shadow: 0 1px 0 #000;
   }
 
   /* On vire les chips score/best du header visuellement */
@@ -174,7 +194,10 @@
 
       <!-- HUD score géant -->
       <div id="hud">
-        <div id="bigScore">0</div>
+        <div id="scoreBox">
+          <div id="scoreTitle">Score</div>
+          <div id="bigScore">0</div>
+        </div>
         <div id="bestBadge">Meilleur: <span id="best">0</span></div>
       </div>
 
@@ -217,12 +240,9 @@
 
 <script>
 /* ===== Version app ===== */
-const APP_VERSION = 'v2.140-performance-hud';
+const APP_VERSION = 'v2.141-hud-label';
 
-/* ===== Cache-buster raisonnable (stable par version) =====
-   Avant tu avais Date.now() => re-téléchargement à chaque visite.
-   Ici on ne met QUE la version. Ça garde le bénéfice “forcer” lors d’un déploiement,
-   sans flinguer le cache entre deux visites. */
+/* ===== Cache-buster raisonnable (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
 function bust(url){
   try{
@@ -274,15 +294,14 @@ const SFX = {
   voice_punch: new Audio('assets/sounds/Yah4.wav'),
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
-/* On NE précharge PAS lourdement au boot mobile */
 Object.values(SFX).forEach(a=>{
-  a.preload = 'none'; // was 'auto'
+  a.preload = 'none';
   try { a.src = bust(a.src); } catch {}
 });
 SFX.music.loop = true; SFX.music.volume = 0.5;
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
 
-/* Pool audio créé à la demande lors de la 1ère interaction */
+/* Pool audio créé à la demande */
 const POOL={}; let audioReady=false;
 function ensureAudioPool(){
   if(audioReady) return;
@@ -312,16 +331,11 @@ function playTechniqueSounds(tech){ playKey(tech); }
 
 /* ===== BG assets (lazy + priorité) ===== */
 function mkImg(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
-/* On charge 2 BG essentiels tout de suite, le reste idle */
-const SKY    = mkImg('https://i.imgur.com/QW70yEx.png','high');   // ciel
-const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high');   // lointaines
+const SKY    = mkImg('https://i.imgur.com/QW70yEx.png','high');
+const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high');
 let MT_NEAR=null, ALLEY=null;
-function lazyBG(){
-  MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low');
-  ALLEY   = mkImg('https://i.imgur.com/hVGwPdp.png','low');
-}
 const rICB = window.requestIdleCallback || (cb=>setTimeout(cb,1));
-rICB(lazyBG);
+rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY   = mkImg('https://i.imgur.com/hVGwPdp.png','low'); });
 
 /* ===== Sprites & skins (lazy) ===== */
 function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
@@ -331,22 +345,16 @@ const SKINS = [
   { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } }
 ];
-const IMG={
-  f_pak:null, f_tan:null, f_bon:null, f_punch:null,
-  o_pak:null, o_tan:null, o_bon:null, o_punch:null,
-  d_unique:null
-};
+const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:null, o_bon:null, o_punch:null, d_unique:null };
 
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
   const s=SKINS[idx]||SKINS[0]; activeSkinIdx=idx;
-  /* On charge le sprite courant tout de suite, les autres idle */
   IMG.f_pak=load(s.f.pak,'high');
   rICB(()=>{ IMG.f_tan=load(s.f.tan,'low'); IMG.f_bon=load(s.f.bon,'low'); IMG.f_punch=load(s.f.punch,'low'); });
   localStorage.setItem('wcs_skin_idx', idx);
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
 }
-/* Dummy et onomatopées en lazy pour réduire TTI mobile */
 rICB(()=>{
   IMG.d_unique = load('https://i.imgur.com/LwBpPL3.png','low');
   IMG.o_pak    = load('https://i.imgur.com/pVF4bt1.png','low');
@@ -560,7 +568,7 @@ function setSpritesFor(tech){
 }
 function drawFighter(){
   const img=currentFighter, F=P().fighter; if(!img || !img.complete || !img.naturalWidth) return;
-  const baseW=Math.max(60, F.wPct*W), baseScale=baseW/img.naturalWidth;
+  const baseW=Math.max(60, F.wPct*W);
   const finalW=baseW*((performance.now()<actionAnim.until)?actionAnim.scale:1);
   const finalH=img.naturalHeight*(finalW/img.naturalWidth);
   const dxTech=(CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech])||0;
@@ -635,10 +643,7 @@ async function press(tech){
     seq.push(randTech()); await sleep(360); playSequence();
   }
 }
-function updateScoreUI(){
-  bigScoreEl.textContent = String(score);
-  // on garde header non visible, pas besoin de le mettre à jour
-}
+function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 
 /* ===== Entrées ===== */
 pads.forEach(b=>{
@@ -646,7 +651,6 @@ pads.forEach(b=>{
 });
 function startGame(){
   menu.style.display='none';
-  // on arme l'audio au premier geste utilisateur
   ensureAudioPool();
   if(!muted) SFX.music.play().catch(()=>{});
   seq=[randTech()]; score=0; updateScoreUI(); playSequence();
