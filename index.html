@@ -578,14 +578,14 @@ function drawFighter(){
   const baseW=Math.max(60, F.wPct*W);
   const finalW=baseW*((performance.now()<actionAnim.until)?actionAnim.scale:1);
   const finalH=img.naturalHeight*(finalW/img.naturalWidth);
-  const rawDx = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
-  // NE MODIFIE RIEN D'AUTRE
+
+  // ⚠️ Une seule déclaration
   const rawDx = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
 
-  // On n'applique l'échelle QUE pour le profil mobile,
-  // donc pas d'impact sur le profil PC (4:3).
+  // Échelle d’offset uniquement pour le profil mobile
   const isMobileView = (viewingProfileName && viewingProfileName() === 'mobile');
-  const dxTech = isMobileView ? rawDx * (W / 800) : rawDx; // 800 = largeur de ref pour mobile
+  const dxTech = isMobileView ? rawDx * (W / 800) : rawDx; // 800 = largeur de ref mobile
+
   const now=performance.now(), idleBob=(now>actionAnim.until)?Math.sin(now/420)*3:0;
   const t=1-Math.max(0,(actionAnim.until-now)/260); const ease=(now<actionAnim.until)?(1-Math.pow(1-t,3)):0;
   const extraX=(actionAnim.lunge||0)*ease, extraY=-2*ease;
