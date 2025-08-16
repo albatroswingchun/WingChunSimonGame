@@ -306,18 +306,26 @@ let CFG;
         mobile: migrate7to8(v7.profiles.mobile||v7.profiles.pc) || deepClone(DEFAULT_PROFILE_MOBILE),
       }
     };
-  } else {
-    /* PATCH: premier lancement sain selon orientation, sans verrouillage */
-    const firstIsPortrait = window.innerHeight >= window.innerWidth; // PATCH
-    CFG = { // PATCH
-      version:TUNE_VERSION,
-      previewLock:false,                                  // PATCH
-      editingProfile: firstIsPortrait ? 'mobile' : 'pc',  // PATCH
-      profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
-      fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
-    }; // PATCH
-  }
+ } else {
+  const firstIsPortrait = window.innerHeight >= window.innerWidth;
+
+  // On part des seeds si fournis, sinon des DEFAULT_*
+  const seedPC = SEEDED_PROFILES.pc ? SEEDED_PROFILES.pc : DEFAULT_PROFILE_PC;
+  const seedMB = SEEDED_PROFILES.mobile ? SEEDED_PROFILES.mobile : (SEEDED_PROFILES.pc || DEFAULT_PROFILE_MOBILE);
+
+  CFG = {
+    version: TUNE_VERSION,
+    previewLock: false,
+    editingProfile: firstIsPortrait ? 'mobile' : 'pc',
+    profiles: {
+      pc: deepClone(seedPC),
+      mobile: deepClone(seedMB)
+    },
+    fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
+  };
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+}
 
   /* PATCH: sécurité si un vieux storage remet un lock aberrant */
   if (CFG && typeof CFG.previewLock !== 'boolean') CFG.previewLock = false; // PATCH
