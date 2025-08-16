@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
+<!-- PATCH: anti-cache HTML -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Wing Chun - Simon Game</title>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -14,8 +19,11 @@
     :root{ --vh: 100dvh; }
   }
 
+  /* PATCH: exposer la taille du stage au CSS */
+  :root { --stageW: 100vw; --stageH: var(--vh); }
+
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  /* PATCH: #app prend la hauteur stable plutôt que le vh bancal */
+  /* PATCH: #app prend la hauteur stable */
   #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto; min-height: var(--vh);} /* PATCH */
 
   header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:20}
@@ -75,6 +83,50 @@
   #devPanel .seg .active{outline:2px solid var(--gold)}
   .sep{margin:10px 0; height:1px; background:#2a2322}
   .hint{font-size:11px;opacity:.7;margin-top:6px}
+
+  /* ===================== UI FLUIDE (MENU + PADS) ===================== */
+
+  /* PATCH: menu/panel proportionnels au stage */
+  #menu .panel{
+    min-width: unset; /* override ancien min-width:560px */
+    width: min(92vw, calc(var(--stageW) * .90));
+  }
+  .title-main{ font-size: clamp(42px, calc(var(--stageW)*0.09), 96px); }
+  .title-sub { font-size: clamp(18px, calc(var(--stageW)*0.035), 32px); }
+  .subtitle  { font-size: clamp(14px, calc(var(--stageW)*0.022), 18px); }
+  .btn{
+    padding: clamp(8px, calc(var(--stageW)*0.012), 12px)
+             clamp(12px, calc(var(--stageW)*0.02), 18px);
+  }
+
+  /* PATCH: pads 2×2 en portrait */
+  body.isPortrait #board{
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: min(18px, calc(var(--stageH)*0.03));
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(8px, calc(var(--stageW)*0.02), 18px);
+    width: min(92vw, calc(var(--stageW) * .90));
+  }
+  body.isPortrait .pad{
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    font-size: clamp(14px, calc(var(--stageW)*0.04), 24px);
+  }
+
+  /* PATCH: pads proportionnels en paysage */
+  body:not(.isPortrait) #board{
+    display: flex;
+    gap: clamp(8px, calc(var(--stageW)*0.015), 14px);
+  }
+  body:not(.isPortrait) .pad{
+    width:  clamp(96px,  calc(var(--stageW)*0.12), 132px);
+    height: clamp(72px,  calc(var(--stageH)*0.11), 100px);
+    font-size: clamp(12px, calc(var(--stageH)*0.028), 16px);
+  }
 </style>
 </head>
 <body>
@@ -89,7 +141,7 @@
   </header>
   
   <!-- Bouton d'accès tactile au panneau de réglages -->
-<button style="position:fixed;top:10px;right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
+  <button style="position:fixed;top:10px;right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
 
   <div id="stageWrap">
     <div id="stage">
@@ -138,6 +190,21 @@
 /* ===== App version (visuel) ===== */
 const APP_VERSION = 'v2.136';
 
+/* PATCH: cache-buster */
+const CB = (new URL(location.href)).searchParams.get('v') || (APP_VERSION + '.' + Date.now());
+function bust(url){
+  try{
+    const u = new URL(url, location.href);
+    u.searchParams.set('v', CB);
+    return u.toString();
+  }catch{ return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(CB); }
+}
+
+/* PATCH: nettoyage éventuel des service workers pour éviter un cache tenace */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+
 /* ===== Ratios cibles ===== */
 const PC_RATIO = 4/3;      // paysage
 const MB_RATIO = 9/16;     // portrait
@@ -180,6 +247,9 @@ const SFX = {
 SFX.music.loop = true; SFX.music.volume = 0.5;
 SFX.voice_pak.volume=0.8; SFX.voice_tan.volume=0.8; SFX.voice_bon.volume=0.8; SFX.voice_punch.volume=0.8;
 
+/* PATCH: bust audio src a posteriori */
+Object.keys(SFX).forEach(k => { try { SFX[k].src = bust(SFX[k].src); } catch {} });
+
 /* --- pool --- */
 const POOL={};
 function poolify(key,a,n=4){const v=a.volume;const clones=Array.from({length:n-1},()=>{const c=a.cloneNode();c.volume=v;return c});POOL[key]=[a,...clones]}
@@ -190,14 +260,14 @@ let muted=false; muteBtn.onclick=()=>{ muted=!muted; muteBtn.textContent=muted?'
 function playTechniqueSounds(tech){ playKey(tech); }
 
 /* ===== BG assets ===== */
-function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=url; return i; }
+function loadBG(url){ const i=new Image(); i.crossOrigin='anonymous'; i.onerror=()=>{}; i.src=bust(url); return i; }  // PATCH
+function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=bust(url); return img; }             // PATCH
 const SKY    = loadBG('https://i.imgur.com/QW70yEx.png');   // ciel
 const MT_FAR = loadBG('https://i.imgur.com/I4gOsXm.png');   // montagnes lointaines
 const MT_NEAR= loadBG('https://i.imgur.com/bQDYgSH.png');   // montagnes proches
 const ALLEY  = loadBG('https://i.imgur.com/hVGwPdp.png');   // allée
 
 /* ===== Sprites & skins ===== */
-function load(url){ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; return img; }
 const SKINS = [
   { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
@@ -224,64 +294,25 @@ function applySkin(idx){
 const STORAGE_KEY = 'wcs_tune_v8';
 const TUNE_VERSION = 8;
 
-/* SEED: profils calibrés par défaut pour un nouvel utilisateur (navigation privée incluse) */
-const SEEDED_PROFILES = {
-  pc: {
-    ratio: 1.3333333333333333, // 4:3
-    layers: {
-      sky:  { zoom: 0.5,  offsetXPct: -0.031, yOffsetPct: -0.277, speedX: 0 },
-      far:  { wPct: 1,    offsetXPct: -1.372, bottomPct: -0.019,  speedX: 0.004 },
-      near: { wPct: 2.99, offsetXPct: 0.528,  bottomPct: 0.225,   speedX: 0.025 },
-      alley:{ wPct: 1.2,  offsetXPct: 0,      bottomPct: 0,       speedX: 0 }
-    },
-    fighter: { wPct: 0.165, centerX: 0.51, bottomPct: 0.09 },
-    dummy:   { wPct: 0.186, centerX: 0.5,  bottomPct: 0.083 },
-    onoByTech: {
-      pak:   { xPct: 0.598, yPct: 0.467, hPct: 0.404, rotDeg:  39 },
-      tan:   { xPct: 0.417, yPct: 0.503, hPct: 0.310, rotDeg: -15 },
-      bon:   { xPct: 0.593, yPct: 0.497, hPct: 0.382, rotDeg:  19 },
-      punch: { xPct: 0.427, yPct: 0.513, hPct: 0.370, rotDeg: -37 }
-    }
+/* SEED rapides (exemple minimal, garde ta logique complète au besoin) */
+const DEFAULT_PROFILE_PC = {
+  ratio: PC_RATIO,
+  layers:{
+    sky:{zoom:1,offsetXPct:0,yOffsetPct:0,speedX:0},
+    far:{wPct:1.8,offsetXPct:0,bottomPct:0.34,speedX:0.04},
+    near:{wPct:2,offsetXPct:0,bottomPct:0.08,speedX:0.10},
+    alley:{wPct:1.2,offsetXPct:0,bottomPct:0,speedX:0}
   },
-  mobile: {
-    ratio: 0.5625, // 9:16
-    layers: {
-      sky:  { zoom: 0.34, offsetXPct: 0.225,  yOffsetPct: -0.35, speedX: 0 },
-      far:  { wPct: 1.38, offsetXPct: 0.025,  bottomPct: 0.319,  speedX: 0.011 },
-      near: { wPct: 8,    offsetXPct: -1.462, bottomPct: 0.319,  speedX: 0.035 },
-      alley:{ wPct: 4,    offsetXPct: 0,      bottomPct: 0,      speedX: 0 }
-    },
-    fighter: { wPct: 0.437, centerX: 0.51, bottomPct: 0.124 },
-    dummy:   { wPct: 0.489, centerX: 0.5,  bottomPct: 0.119 },
-    onoByTech: {
-      pak:   { xPct: 0.719, yPct: 0.442, hPct: 0.310, rotDeg:  37 },
-      tan:   { xPct: 0.332, yPct: 0.422, hPct: 0.310, rotDeg: -26 },
-      bon:   { xPct: 0.724, yPct: 0.417, hPct: 0.310, rotDeg:  23 },
-      punch: { xPct: 0.332, yPct: 0.397, hPct: 0.310, rotDeg: -44 }
-    }
+  fighter:{ wPct:0.165, centerX:0.51, bottomPct:0.09 },
+  dummy:{   wPct:0.186, centerX:0.50, bottomPct:0.083 },
+  onoByTech:{
+    pak:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    tan:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    bon:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0},
+    punch:{xPct:0.50,yPct:0.30,hPct:0.31,rotDeg:0}
   }
 };
-
-/* Si tu utilises encore les DEFAULT_* ailleurs, on les pointe vers les seeds */
-const DEFAULT_PROFILE_PC = SEEDED_PROFILES.pc;
-const DEFAULT_PROFILE_MOBILE = SEEDED_PROFILES.mobile;
-
-/* … puis garde ta logique loadConfig() existante.
-   Dans son bloc `else { ... }` de premier lancement, assure-toi d'utiliser bien les seeds:
-   (exemple)
-   const firstIsPortrait = window.innerHeight >= window.innerWidth;
-   CFG = {
-     version: TUNE_VERSION,
-     previewLock: false,
-     editingProfile: firstIsPortrait ? 'mobile' : 'pc',
-     profiles: {
-       pc: deepClone(SEEDED_PROFILES.pc),
-       mobile: deepClone(SEEDED_PROFILES.mobile)
-     },
-     fighterDxPxByTech: { pak:-110, tan:110, bon:-110, punch:110 }
-   };
-   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
-*/
+const DEFAULT_PROFILE_MOBILE = JSON.parse(JSON.stringify(DEFAULT_PROFILE_PC)); DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
 
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
 
@@ -305,27 +336,20 @@ let CFG;
     };
  } else {
   const firstIsPortrait = window.innerHeight >= window.innerWidth;
-
-  // On part des seeds si fournis, sinon des DEFAULT_*
-  const seedPC = SEEDED_PROFILES.pc ? SEEDED_PROFILES.pc : DEFAULT_PROFILE_PC;
-  const seedMB = SEEDED_PROFILES.mobile ? SEEDED_PROFILES.mobile : (SEEDED_PROFILES.pc || DEFAULT_PROFILE_MOBILE);
-
   CFG = {
     version: TUNE_VERSION,
     previewLock: false,
     editingProfile: firstIsPortrait ? 'mobile' : 'pc',
     profiles: {
-      pc: deepClone(seedPC),
-      mobile: deepClone(seedMB)
+      pc: deepClone(DEFAULT_PROFILE_PC),
+      mobile: deepClone(DEFAULT_PROFILE_MOBILE)
     },
     fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
   };
-
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
 }
 
-  /* PATCH: sécurité si un vieux storage remet un lock aberrant */
-  if (CFG && typeof CFG.previewLock !== 'boolean') CFG.previewLock = false; // PATCH
+  if (CFG && typeof CFG.previewLock !== 'boolean') CFG.previewLock = false; // sécurité
 })();
 
 function migrate7to8(p){
@@ -364,8 +388,8 @@ let DPR=1, W=0, H=0;
 let last = performance.now();
 
 function resize(){
-  /* PATCH: ratio imposé par orientation plutôt que par P().ratio */
-  const r = activeRatio();  // PATCH
+  /* PATCH: ratio imposé par orientation */
+  const r = activeRatio();
 
   const wrapW=stageWrap.clientWidth, wrapH=stageWrap.clientHeight;
   let boxW=wrapW, boxH=Math.round(wrapW / r);
@@ -379,6 +403,11 @@ function resize(){
 
   ctx.setTransform(DPR,0,0,DPR,0,0);
   W=boxW; H=boxH;
+
+  /* PATCH: exposer la taille du stage au CSS + flag d’orientation */
+  document.documentElement.style.setProperty('--stageW', W + 'px');
+  document.documentElement.style.setProperty('--stageH', H + 'px');
+  document.body.classList.toggle('isPortrait', isPortrait());
 
   if(onoSticky) showOnoSticky();
 }
@@ -548,7 +577,7 @@ applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
 function renderSkins(){
   skinsGrid.innerHTML=''; SKINS.forEach((s,i)=>{ const card=document.createElement('button');
-    card.className='skinCard'+(i===activeSkinIdx?' skinActive':''); card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${s.thumb}"/><div style="font-weight:700">${s.name}</div>`;
+    card.className='skinCard'+(i===activeSkinIdx?' skinActive':''); card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/><div style="font-weight:700">${s.name}</div>`; /* bust thumb */
     card.onclick=()=>{applySkin(i); renderSkins();}; skinsGrid.appendChild(card);
   });
 }
