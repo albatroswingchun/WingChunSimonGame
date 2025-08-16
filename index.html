@@ -7,8 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
   :root{ --panel:#1c1715;--panel2:#241d1b;--ink:#e8d6b8; --gold:#d1a341; }
+
+  /* PATCH: hauteur viewport stable pour mobiles (barre d’URL, etc.) */
+  :root{ --vh: 100svh; }
+  @supports (height: 100dvh) {
+    :root{ --vh: 100dvh; }
+  }
+
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
-  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+  /* PATCH: #app prend la hauteur stable plutôt que le vh bancal */
+  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto; height: var(--vh);} /* PATCH */
+
   header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:20}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
   .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
@@ -133,6 +142,10 @@ const APP_VERSION = 'v2.136';
 const PC_RATIO = 4/3;      // paysage
 const MB_RATIO = 9/16;     // portrait
 
+/* PATCH: ratio strict par orientation, indépendamment des profils */
+function isPortrait(){ return window.innerHeight >= window.innerWidth; } // PATCH
+function activeRatio(){ return isPortrait() ? MB_RATIO : PC_RATIO; }      // PATCH
+
 /* ===== Refs ===== */
 const pads=[...document.querySelectorAll('.pad')];
 const scoreEl=document.getElementById('score');
@@ -252,12 +265,22 @@ let CFG;
       }
     };
   } else {
-    CFG = { version:TUNE_VERSION, editingProfile:'pc', previewLock:true,
-            profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
-            fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110} };
+    /* PATCH: premier lancement sain selon orientation, sans verrouillage */
+    const firstIsPortrait = window.innerHeight >= window.innerWidth; // PATCH
+    CFG = { // PATCH
+      version:TUNE_VERSION,
+      previewLock:false,                                  // PATCH
+      editingProfile: firstIsPortrait ? 'mobile' : 'pc',  // PATCH
+      profiles:{ pc:deepClone(DEFAULT_PROFILE_PC), mobile:deepClone(DEFAULT_PROFILE_MOBILE) },
+      fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
+    }; // PATCH
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+
+  /* PATCH: sécurité si un vieux storage remet un lock aberrant */
+  if (CFG && typeof CFG.previewLock !== 'boolean') CFG.previewLock = false; // PATCH
 })();
+
 function migrate7to8(p){
   if(!p) return null;
   const out = deepClone(DEFAULT_PROFILE_PC);
@@ -294,7 +317,9 @@ let DPR=1, W=0, H=0;
 let last = performance.now();
 
 function resize(){
-  const r = P().ratio || PC_RATIO;
+  /* PATCH: ratio imposé par orientation plutôt que par P().ratio */
+  const r = activeRatio();  // PATCH
+
   const wrapW=stageWrap.clientWidth, wrapH=stageWrap.clientHeight;
   let boxW=wrapW, boxH=Math.round(wrapW / r);
   if(boxH>wrapH){ boxH=wrapH; boxW=Math.round(wrapH * r); }
@@ -665,6 +690,22 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+/* PATCH: synchronise --vh avec la hauteur visible (Android/iOS) et re-resize */
+(function(){
+  const applyVH = () => {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vh', h + 'px');
+    resize();
+  };
+  applyVH();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', applyVH, {passive:true});
+    window.visualViewport.addEventListener('scroll', applyVH, {passive:true});
+  } else {
+    window.addEventListener('resize', applyVH, {passive:true});
+  }
+})();
 </script>
 </body>
 </html>
