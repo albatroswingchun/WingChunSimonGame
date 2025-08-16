@@ -16,7 +16,7 @@
 
   html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   /* PATCH: #app prend la hauteur stable plutôt que le vh bancal */
-  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto; height: var(--vh);} /* PATCH */
+  #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto; min-height: var(--vh);} /* PATCH */
 
   header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:20}
   .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
@@ -282,9 +282,6 @@ const DEFAULT_PROFILE_MOBILE = SEEDED_PROFILES.mobile;
    };
    localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
 */
-
-const DEFAULT_PROFILE_MOBILE = JSON.parse(JSON.stringify(DEFAULT_PROFILE_PC));
-DEFAULT_PROFILE_MOBILE.ratio = MB_RATIO;
 
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
 
