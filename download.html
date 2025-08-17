@@ -27,9 +27,35 @@
     }
     *{box-sizing:border-box}
     html,body{margin:0;height:100%;background:var(--bg);color:#eee;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+    html{scroll-behavior:smooth}
     a{color:inherit;text-decoration:none}
     img{display:block;max-width:100%}
     .wrap{max-width:1120px;margin:0 auto;padding:24px}
+    /* pour que les ancres ne passent pas sous la nav fixe */
+    :target{scroll-margin-top:72px}
+
+    /* NAV FIXE */
+    .nav{
+      position:sticky; top:0; z-index:50;
+      background:rgba(15,13,12,.7); backdrop-filter:saturate(120%) blur(8px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav .row{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.2px}
+    .brand img{width:24px;height:24px;border-radius:6px}
+    .links{margin-left:auto;display:flex;gap:10px}
+    .links a{padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#00000033;font-weight:600;font-size:14px}
+    .links a:hover{transform:translateY(-1px)}
+    /* Hamburger */
+    .burger{display:none;margin-left:auto;gap:8px;align-items:center}
+    .burger button{all:unset;cursor:pointer;padding:8px;border:1px solid var(--border);border-radius:10px;background:#00000033}
+    .drawer{display:none}
+    @media (max-width:800px){
+      .links{display:none}
+      .burger{display:flex}
+      .drawer{display:none; border-top:1px solid var(--border); background:rgba(10,9,9,.9)}
+      .drawer a{display:block;padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600}
+    }
 
     /* Typo + rythme */
     p, li{line-height:1.6}
@@ -40,6 +66,7 @@
     header{position:relative;border-radius:20px;overflow:hidden;
       background:radial-gradient(1200px 600px at 80% -10%, #3b2b14 0%, transparent 60%), linear-gradient(160deg, #12100f 0%, #1b1714 100%);
       border:1px solid var(--border);
+      margin-top:12px;
     }
     header .inner{display:grid;grid-template-columns:1.1fr 0.9fr;gap:24px;align-items:center;padding:48px}
     @media (max-width:900px){ header .inner{grid-template-columns:1fr; padding:28px} }
@@ -48,8 +75,9 @@
     .title{font-family:"Permanent Marker", system-ui; font-size:56px; line-height:1.02; margin:14px 0 10px}
     @media (max-width:900px){ .title{font-size:40px} }
 
-    .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
-    .btn{display:inline-flex;gap:10px;align-items:center;padding:14px 18px;border-radius:14px;border:1px solid var(--border);
+    .cta{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+    @media (min-width:560px){ .cta{flex-direction:row;flex-wrap:wrap} }
+    .btn{display:inline-flex;justify-content:center;gap:10px;align-items:center;padding:14px 18px;border-radius:14px;border:1px solid var(--border);
       background:linear-gradient(180deg,#1f1a17,#151210);font-weight:700}
     .btn:hover{transform:translateY(-1px); box-shadow:0 8px 22px #00000070}
     .btn.primary{background:linear-gradient(180deg, var(--brand), var(--brand2));color:#120e08;border:none}
@@ -65,51 +93,50 @@
     .card img{width:100%;height:220px;object-fit:cover}
     .card .p{padding:14px}
 
-    /* Sections texte: lisibilité améliorée sans changer le contenu */
+    /* Sections texte */
     .sec{margin-top:36px;padding:20px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,var(--panel),var(--panel2))}
     .sec h2{font-size:26px;margin:0 0 14px;font-weight:800;letter-spacing:.2px}
-    .list{display:grid;gap:12px}
+    .list{display:grid;gap:12px; list-style:none; padding:0; margin:0}
     .list li{background:linear-gradient(180deg,#15120f,#0f0d0b);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
 
     footer{margin:42px 0 12px;color:#a99f8c;font-size:12px;text-align:center}
-
-    /* --- Fix listes jolies, sans puces qui dépassent --- */
-.list{
-  list-style: none;          /* bye les • par défaut */
-  padding: 0;                /* aligne avec les cartes */
-  margin: 0;                 /* évite les décalages de section */
-  display: grid;
-  gap: 12px;                 /* même espace entre items */
-}
-
-.list li{
-  background: linear-gradient(180deg,#15120f,#0f0d0b);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;        /* box homogène */
-  line-height: 1.6;
-}
-
-/* Optionnel: titres de section un poil plus proches des listes */
-.sec h2{ margin-bottom: 10px; }
-
-/* Sur petits écrans, évite les marges fantômes */
-@media (max-width: 600px){
-  .sec{ padding: 16px; }
-  .list li{ padding: 12px; }
-}
-
   </style>
 </head>
 <body>
+
+  <!-- NAVIGATION FIXE -->
+  <nav class="nav">
+    <div class="row">
+      <div class="brand">
+        <img src="https://i.imgur.com/2SPSIIX.png" alt="logo">
+        <span>Simon Wing Chun</span>
+      </div>
+      <div class="links">
+        <a href="#jeu">🎮 Jeu</a>
+        <a href="#telecharger">📥 Télécharger</a>
+        <a href="#installer">⚙️ Installer</a>
+        <a href="#iphone">📱 iPhone</a>
+      </div>
+      <div class="burger">
+        <button id="burgerBtn" aria-label="Ouvrir le menu">☰</button>
+      </div>
+    </div>
+    <div class="drawer" id="drawer">
+      <a href="#jeu">🎮 Jeu</a>
+      <a href="#telecharger">📥 Télécharger</a>
+      <a href="#installer">⚙️ Installer</a>
+      <a href="#iphone">📱 iPhone</a>
+    </div>
+  </nav>
+
   <div class="wrap">
-    <header>
+    <header id="jeu">
       <div class="inner">
         <div>
           <span class="badge">🎮 Jeu mobile • Réflexes • Mémoire • Wing Chun</span>
           <h1 class="title">Simon Wing Chun</h1>
           <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et fais hurler le tableau des meilleurs scores. Conçu par un pratiquant de Kung-Fu, calibré pour le fun et la progression.</p>
-          <div class="cta">
+          <div class="cta" id="telecharger">
             <a class="btn primary" href="https://github.com/albatroswingchun/WingChunSimonGame/releases/download/v2.141/app-debug.apk" download>
               ⬇️ Télécharger l’APK
               <span class="tag">Android</span>
@@ -145,7 +172,7 @@
       </div>
     </header>
 
-    <section class="sec">
+    <section class="sec" id="caracteristiques">
       <h2>Caractéristiques</h2>
       <ul class="list">
         <li>🔔 Feedback audio et visuel précis pour mémoriser les enchaînements.</li>
@@ -155,7 +182,7 @@
       </ul>
     </section>
 
-    <section class="sec">
+    <section class="sec" id="installer">
       <h2>Installer sur Android</h2>
       <div class="install-steps">
         <div class="list">
@@ -166,7 +193,7 @@
       </div>
     </section>
 
-    <section class="sec">
+    <section class="sec" id="iphone">
       <h2>Sur iPhone (iOS)</h2>
       <ul class="list">
         <li>1. Ouvre la <a href="https://albatroswingchun.github.io/WingChunSimonGame/" target="_blank" rel="noopener"><strong>version web</strong></a> dans Safari.</li>
@@ -182,6 +209,19 @@
 
   <script>
     document.getElementById('y').textContent = new Date().getFullYear();
+
+    // hamburger
+    const btn = document.getElementById('burgerBtn');
+    const drawer = document.getElementById('drawer');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        drawer.style.display = drawer.style.display === 'block' ? 'none' : 'block';
+      });
+    }
+    // refermer le drawer après clic
+    document.querySelectorAll('#drawer a').forEach(a=>{
+      a.addEventListener('click', ()=>{ drawer.style.display='none'; });
+    });
   </script>
 </body>
 </html>
