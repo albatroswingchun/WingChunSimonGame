@@ -72,6 +72,33 @@
     .list li{background:linear-gradient(180deg,#15120f,#0f0d0b);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
 
     footer{margin:42px 0 12px;color:#a99f8c;font-size:12px;text-align:center}
+
+    /* --- Fix listes jolies, sans puces qui dépassent --- */
+.list{
+  list-style: none;          /* bye les • par défaut */
+  padding: 0;                /* aligne avec les cartes */
+  margin: 0;                 /* évite les décalages de section */
+  display: grid;
+  gap: 12px;                 /* même espace entre items */
+}
+
+.list li{
+  background: linear-gradient(180deg,#15120f,#0f0d0b);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;        /* box homogène */
+  line-height: 1.6;
+}
+
+/* Optionnel: titres de section un poil plus proches des listes */
+.sec h2{ margin-bottom: 10px; }
+
+/* Sur petits écrans, évite les marges fantômes */
+@media (max-width: 600px){
+  .sec{ padding: 16px; }
+  .list li{ padding: 12px; }
+}
+
   </style>
 </head>
 <body>
