@@ -12,7 +12,7 @@
   <!-- Open Graph / Twitter -->
   <meta property="og:title" content="Simon Wing Chun — Jeu mobile"/>
   <meta property="og:description" content="Réflexes, mémoire et Kung-Fu. Télécharge l’APK Android ou joue sur le web."/>
-  <meta property="og:image" content="https://i.imgur.com/gaWS18b.png"/>
+  <meta property="og:image" content="https://i.imgur.com/3m9bJgC.jpeg"/>
   <meta property="og:type" content="website"/>
   <meta name="twitter:card" content="summary_large_image"/>
 
@@ -56,6 +56,7 @@
     @media (max-width:900px){ .install-steps{grid-template-columns:1fr} }
     .hint{font-size:12px;color:#cbbfa6}
     footer{margin:50px 0 14px;color:#a99f8c;font-size:12px;text-align:center}
+    .ring{box-shadow:0 0 0 8px #00000060, 0 0 0 12px var(--ring) inset}
     .note{font-size:13px;color:#cabfa8;margin-top:8px}
     .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;border:1px solid #ffffff22;background:#00000030}
   </style>
@@ -67,7 +68,7 @@
         <div>
           <span class="badge">🎮 Jeu mobile • Réflexes • Mémoire • Wing Chun</span>
           <h1 class="title">Simon Wing Chun</h1>
-          <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et bats ton meilleur score. Conçu par un pratiquant de Kung-Fu, calibré pour le fun et la progression.</p>
+          <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et fais hurler le tableau des meilleurs scores. Conçu par un pratiquant de Kung-Fu, calibré pour le fun et la progression.</p>
           <div class="cta">
             <a class="btn primary" href="https://github.com/albatroswingchun/WingChunSimonGame/releases/download/v2.141/app-debug.apk" download>
               ⬇️ Télécharger l’APK
@@ -84,29 +85,64 @@
 
         <div>
           <div class="hero-shot ring">
-            <img src="https://i.imgur.com/gaWS18b.png" alt="Aperçu principal du jeu">
+            <img src="https://i.imgur.com/c6RyYT0.png" alt="Aperçu du jeu Simon Wing Chun">
           </div>
           <div class="grid">
             <div class="card">
-              <img src="https://i.imgur.com/kEgnTvG.png" alt="Visuel gameplay 1">
+              <img src="https://i.imgur.com/QW70yEx.png" alt="Visuel 1 du jeu">
               <div class="p"><strong>Ambiance</strong><br><span class="hint">Un décor travaillé et lisible, sans sacrifier la vitesse.</span></div>
             </div>
             <div class="card">
-              <img src="https://i.imgur.com/7hJwEYz.png" alt="Visuel gameplay 2">
+              <img src="https://i.imgur.com/I4gOsXm.png" alt="Visuel 2 du jeu">
               <div class="p"><strong>Gameplay</strong><br><span class="hint">Sons réactifs, animations claires, montée en difficulté progressive.</span></div>
             </div>
             <div class="card">
-              <img src="https://i.imgur.com/ig2Zfcs.png" alt="Visuel gameplay 3">
-              <div class="p"><strong>Défis</strong><br><span class="hint">De nouveaux patterns à maîtriser à chaque partie.</span></div>
+              <img src="https://i.imgur.com/3m9bJgC.jpeg" alt="Visuel 3 du jeu">
+              <div class="p"><strong>Challenge</strong><br><span class="hint">Score local, logique “Simon”, et patterns qui se corsent.</span></div>
             </div>
           </div>
         </div>
       </div>
     </header>
 
+    <section class="sec">
+      <h2>Caractéristiques</h2>
+      <ul class="list">
+        <li>🔔 Feedback audio et visuel précis pour mémoriser les enchaînements.</li>
+        <li>⚡ Performances optimisées, même sur téléphones modestes.</li>
+        <li>🎯 Mode hors-ligne possible (selon tes assets), parfait pour jouer partout.</li>
+        <li>🏆 Affichage du meilleur score et effets de progression.</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Installer sur Android</h2>
+      <div class="install-steps">
+        <div class="list">
+          <li>1. Appuie sur <strong>“Télécharger l’APK”</strong>.</li>
+          <li>2. Ouvre le fichier téléchargé puis accepte <em>“Autoriser cette source”</em> si Android le demande.</li>
+          <li>3. Installe. Lance l’app depuis l’écran d’accueil. Terminé.</li>
+        </div>
+        <!-- Partie supprimée : Conseil, Mises à jour, Sécurité -->
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>Sur iPhone (iOS)</h2>
+      <ul class="list">
+        <li>1. Ouvre la <a href="https://albatroswingchun.github.io/WingChunSimonGame/" target="_blank" rel="noopener"><strong>version web</strong></a> dans Safari.</li>
+        <li>2. Bouton <strong>Partager</strong> → <strong>Ajouter à l’écran d’accueil</strong> pour créer un raccourci plein écran.</li>
+        <li>3. Lance le jeu depuis l’icône créée. C’est la méthode la plus simple sans App Store.</li>
+      </ul>
+    </section>
+
     <footer>
-      <p>© 2025 Simon Wing Chun — Développé par passion 🥋</p>
+      © <span id="y"></span> Simon Wing Chun • Fait avec un peu de transpiration et beaucoup de timing.
     </footer>
   </div>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
