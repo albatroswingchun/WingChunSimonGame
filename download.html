@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Simon Wing Chun — Télécharger l’app Android</title>
+
+  <!-- SEO de base -->
+  <meta name="description" content="Le jeu Simon inspiré du Wing Chun. Enchaîne les techniques, progresse, et bats ton meilleur score. Télécharge l’APK Android ou joue en version web.">
+  <link rel="icon" href="https://i.imgur.com/1Q5m2YJ.png"/>
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="Simon Wing Chun — Jeu mobile"/>
+  <meta property="og:description" content="Réflexes, mémoire et Kung-Fu. Télécharge l’APK Android ou joue sur le web."/>
+  <meta property="og:image" content="https://i.imgur.com/3m9bJgC.jpeg"/>
+  <meta property="og:type" content="website"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0b0a0a; --panel:#171414; --ink:#e8d6b8; --muted:#bfb5a1;
+      --brand:#d1a341; --brand2:#b88a33; --ring:#ffe2a8;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:#eee;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1120px;margin:0 auto;padding:24px}
+    header{position:relative;border-radius:20px;overflow:hidden;background:radial-gradient(1200px 600px at 80% -10%, #3b2b14 0%, transparent 60%), linear-gradient(160deg, #12100f 0%, #1b1714 100%)}
+    header .inner{display:grid;grid-template-columns:1.1fr 0.9fr;gap:24px;align-items:center;padding:48px}
+    @media (max-width:900px){ header .inner{grid-template-columns:1fr; padding:28px} }
+    .badge{display:inline-flex;gap:8px;align-items:center;background:#00000040;border:1px solid #ffffff18;padding:6px 10px;border-radius:999px;font-size:12px;color:#ddd}
+    .title{font-family:"Permanent Marker", system-ui; font-size:58px; line-height:1.02; margin:14px 0 10px}
+    @media (max-width:900px){ .title{font-size:40px} }
+    .subtitle{color:var(--muted);max-width:46ch}
+    .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+    .btn{display:inline-flex;gap:10px;align-items:center;padding:14px 18px;border-radius:14px;border:1px solid #ffffff20;background:linear-gradient(180deg,#1f1a17,#151210);font-weight:700}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px #00000060}
+    .btn.primary{background:linear-gradient(180deg, var(--brand), var(--brand2));color:#120e08;border:none}
+    .btn .tag{font-size:11px;background:#00000045;border:1px solid #ffffff25;border-radius:999px;padding:4px 8px}
+    .hero-shot{position:relative; aspect-ratio:1/1; border-radius:18px; overflow:hidden; border:1px solid #ffffff18}
+    .hero-shot img{width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.02)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+    @media (max-width:900px){ .grid{grid-template-columns:1fr 1fr} }
+    @media (max-width:620px){ .grid{grid-template-columns:1fr} }
+    .card{background:linear-gradient(180deg,#171412,#120f0c);border:1px solid #ffffff14;border-radius:16px;overflow:hidden}
+    .card img{width:100%;height:220px;object-fit:cover}
+    .card .p{padding:14px}
+    .sec{margin-top:36px}
+    .sec h2{font-size:26px;margin:0 0 14px;font-weight:800;letter-spacing:0.2px}
+    .list{display:grid;gap:12px}
+    .list li{background:linear-gradient(180deg,#15120f,#0f0d0b);border:1px solid #ffffff12;border-radius:12px;padding:12px 14px}
+    .install-steps{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:900px){ .install-steps{grid-template-columns:1fr} }
+    .hint{font-size:12px;color:#cbbfa6}
+    footer{margin:50px 0 14px;color:#a99f8c;font-size:12px;text-align:center}
+    .ring{box-shadow:0 0 0 8px #00000060, 0 0 0 12px var(--ring) inset}
+    .note{font-size:13px;color:#cabfa8;margin-top:8px}
+    .qr{display:none}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;border:1px solid #ffffff22;background:#00000030}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="inner">
+        <div>
+          <span class="badge">🎮 Jeu mobile • Réflexes • Mémoire • Wing Chun</span>
+          <h1 class="title">Simon Wing Chun</h1>
+          <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et fais hurler le tableau des meilleurs scores. Conçu par un pratiquant de Kung-Fu, calibré pour le fun et la progression.</p>
+          <div class="cta">
+            <a class="btn primary" href="https://github.com/albatroswingchun/WingChunSimonGame/releases/download/v2.141/app-debug.apk" download>
+              ⬇️ Télécharger l’APK
+              <span class="tag">Android</span>
+            </a>
+            <a class="btn" href="https://albatroswingchun.github.io/WingChunSimonGame/" target="_blank" rel="noopener">
+              ▶️ Jouer en ligne
+              <span class="tag">iPhone & Android</span>
+            </a>
+          </div>
+          <p class="note">Sur Android, active “Sources inconnues” lors de l’installation si on te le demande.</p>
+          <div style="margin-top:12px" class="pill">🔊 Casque recommandé • 🥋 Moves inspirés du Wing Chun • 📱 Mode portrait</div>
+        </div>
+
+        <div>
+          <div class="hero-shot ring">
+            <!-- Remplace l’image par un visuel de ton jeu (screenshot ou mockup) -->
+            <img src="https://i.imgur.com/c6RyYT0.png" alt="Aperçu du jeu Simon Wing Chun">
+          </div>
+          <div class="grid">
+            <div class="card">
+              <img src="https://i.imgur.com/QW70yEx.png" alt="Visuel 1 du jeu">
+              <div class="p"><strong>Ambiance</strong><br><span class="hint">Un décor travaillé et lisible, sans sacrifier la vitesse.</span></div>
+            </div>
+            <div class="card">
+              <img src="https://i.imgur.com/I4gOsXm.png" alt="Visuel 2 du jeu">
+              <div class="p"><strong>Gameplay</strong><br><span class="hint">Sons réactifs, animations claires, montée en difficulté progressive.</span></div>
+            </div>
+            <div class="card">
+              <img src="https://i.imgur.com/3m9bJgC.jpeg" alt="Visuel 3 du jeu">
+              <div class="p"><strong>Challenge</strong><br><span class="hint">Score local, logique “Simon”, et patterns qui se corsent.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="sec">
+      <h2>Caractéristiques</h2>
+      <ul class="list">
+        <li>🔔 Feedback audio et visuel précis pour mémoriser les enchaînements.</li>
+        <li>⚡ Performances optimisées, même sur téléphones modestes.</li>
+        <li>🎯 Mode hors-ligne possible (selon tes assets), parfait pour jouer partout.</li>
+        <li>🏆 Affichage du meilleur score et effets de progression.</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Installer sur Android</h2>
+      <div class="install-steps">
+        <div class="list">
+          <li>1. Appuie sur <strong>“Télécharger l’APK”</strong>.</li>
+          <li>2. Ouvre le fichier téléchargé puis accepte <em>“Autoriser cette source”</em> si Android le demande.</li>
+          <li>3. Installe. Lance l’app depuis l’écran d’accueil. Terminé.</li>
+        </div>
+        <div class="list">
+          <li>💡 <strong>Conseil</strong> — si une ancienne version est installée, désinstalle-la pour mettre à jour l’icône et éviter les conflits de signature.</li>
+          <li>📲 <strong>Mises à jour</strong> — reviens sur cette page pour récupérer la nouvelle version.</li>
+          <li>🔐 <strong>Sécurité</strong> — l’APK est fourni par l’éditeur du jeu. Tu peux toujours le scanner avec ton antivirus si ça te rassure.</li>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>Sur iPhone (iOS)</h2>
+      <ul class="list">
+        <li>1. Ouvre la <a href="LINK_TO_WEBVERSION" target="_blank" rel="noopener"><strong>version web</strong></a> dans Safari.</li>
+        <li>2. Bouton <strong>Partager</strong> → <strong>Ajouter à l’écran d’accueil</strong> pour créer un raccourci plein écran.</li>
+        <li>3. Lance le jeu depuis l’icône créée. C’est la méthode la plus simple sans App Store.</li>
+      </ul>
+    </section>
+
+    <footer>
+      © <span id="y"></span> Simon Wing Chun • Fait avec un peu de transpiration et beaucoup de timing.
+    </footer>
+  </div>
+
+  <script>
+    // Année dynamique. Oui, petit détail, mais ça évite d’oublier.
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
