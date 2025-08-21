@@ -531,6 +531,15 @@ const nsNameEl  = document.getElementById('nsName');
 const nsViewBtn = document.getElementById('nsViewBtn');
 const nsOkBtn   = document.getElementById('nsOkBtn');
 
+  // Ferme la popup
+nsOkBtn?.addEventListener('click', hideNewSkinPopup);
+
+// Ouvre le panneau Skins et ferme la popup
+nsViewBtn?.addEventListener('click', ()=>{
+  hideNewSkinPopup();
+  openSkinsPanel();
+});
+
 /* === Best Score popup refs === */
 const bestPopup = document.getElementById('bestPopup');
 const bpOk      = document.getElementById('bpOk');
@@ -577,6 +586,9 @@ rulesCloseBtn?.addEventListener('click', ()=>{
   hideRules();
   safeStartGame();
 });
+
+let currentSkinId = null;
+
 
 /* On mémorise le best au début de chaque partie */
 let runPrevBest = 0;
@@ -704,14 +716,16 @@ const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:
 const DEMON_UNLOCK_SCORE = 15;
 function isUnlocked(skin){ if(!skin.locked) return true; return localStorage.getItem('skin_unlocked_'+skin.id) === '1'; }
 function isUnlockedSkinId(id){ const s=SKINS.find(x=>x.id===id); return s ? isUnlocked(s) : false; }
-function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1'); }
+function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1');
+function lockSkin(id){ localStorage.removeItem('skin_unlocked_'+id); }
+}
 
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
   const s=SKINS[idx]||SKINS[0];
-  if(s.locked && !isUnlocked(s)){ renderSkins(); return; } // refuse si verrouillé
+  if(s.locked && !isUnlocked(s)){ renderSkins(); return; }
   activeSkinIdx=idx;
-  IMG.f_pak=load(s.f.pak,'high');
+  currentSkinId = s.id; // <— mémorise l'id du skin actif
   rICB(()=>{ IMG.f_tan=load(s.f.tan,'low'); IMG.f_bon=load(s.f.bon,'low'); IMG.f_punch=load(s.f.punch,'low'); });
   localStorage.setItem('wcs_skin_idx', idx);
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
@@ -748,6 +762,12 @@ const SEEDED_PROFILES = {
       tan:   { xPct: 0.417, yPct: 0.503, hPct: 0.310, rotDeg: -15 },
       bon:   { xPct: 0.593, yPct: 0.497, hPct: 0.382, rotDeg:  19 },
       punch: { xPct: 0.427, yPct: 0.513, hPct: 0.370, rotDeg: -37 }
+    },
+    // === NOUVEAU : réglages par skin (PC) ===
+    skins: {
+      classic:     { wPct: 0.165, centerX: 0.51,  bottomPct: 0.09  },
+      classic_alt: { wPct: 0.165, centerX: 0.51,  bottomPct: 0.09  },
+      demon:       { wPct: 0.185, centerX: 0.515, bottomPct: 0.085 }
     }
   },
   mobile: {
@@ -765,6 +785,12 @@ const SEEDED_PROFILES = {
       tan:   { xPct: 0.332, yPct: 0.422, hPct: 0.310, rotDeg: -26 },
       bon:   { xPct: 0.724, yPct: 0.417, hPct: 0.310, rotDeg:  23 },
       punch: { xPct: 0.332, yPct: 0.397, hPct: 0.310, rotDeg: -44 }
+    },
+    // === NOUVEAU : réglages par skin (Mobile) ===
+    skins: {
+      classic:     { wPct: 0.437, centerX: 0.51,  bottomPct: 0.124 },
+      classic_alt: { wPct: 0.437, centerX: 0.51,  bottomPct: 0.124 },
+      demon:       { wPct: 0.465, centerX: 0.515, bottomPct: 0.120 }
     }
   }
 };
@@ -1184,7 +1210,11 @@ function renderSkins(){
     const card=document.createElement('button');
     card.className='skinCard'+(i===activeSkinIdx?' skinActive':'')+(locked?' skinLocked':'');
     card.title = locked ? 'Débloque ce skin pour l’utiliser' : ('Choisir: '+s.name);
-    card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/><div style="font-weight:700">${s.name}</div>`;
+    const thumbSrc = locked ? s.thumb : (s.f?.pak || s.thumb);
+    card.innerHTML = `
+      <img class="skinThumb" alt="${s.name}" src="${bust(thumbSrc)}"/>
+      <div style="font-weight:700">${s.name}</div>
+    `;
     card.onclick=()=>{ if(locked) return; applySkin(i); renderSkins(); };
     skinsGrid.appendChild(card);
   });
@@ -1282,6 +1312,43 @@ function buildDevPanel(){
   addRange(devPanel,'Centre X %',E.fighter,'centerX',{min:0,max:1,step:0.001});
   addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
   sep();
+
+  // === Réglages PAR SKIN (basés sur le skin actif) ===
+section('Skin courant: ' + (SKINS[activeSkinIdx]?.name || currentSkinId || 'inconnu'));
+ensureSkinConfigObject(E);
+const currId = SKINS[activeSkinIdx]?.id || currentSkinId || 'classic';
+const SC = (E.skins[currId] ||= { ...E.fighter });
+
+// Sliders par skin
+addRange(devPanel,'Largeur % écran',SC,'wPct',{min:0.05,max:0.6,step:0.001});
+addRange(devPanel,'Centre X %',SC,'centerX',{min:0,max:1,step:0.001});
+addRange(devPanel,'Bas %',SC,'bottomPct',{min:-0.1,max:0.4,step:0.001});
+sep();
+
+// Petite barre utilitaire
+const bar2 = document.createElement('div'); bar2.className='bar';
+const syncFromF = document.createElement('button'); syncFromF.textContent='Copier depuis "Personnage"';
+syncFromF.onclick=()=>{
+  Object.assign(SC, E.fighter);
+  saveCFG();
+  buildDevPanel(); // refresh UI
+};
+const copyThis = document.createElement('button'); copyThis.textContent='Copier ce skin';
+copyThis.onclick=()=>{
+  navigator.clipboard.writeText(JSON.stringify(SC,null,2)).catch(()=>{});
+};
+const pasteThis = document.createElement('button'); pasteThis.textContent='Coller sur ce skin';
+pasteThis.onclick=()=>{
+  const raw=prompt('Colle le JSON du skin:');
+  if(!raw) return;
+  try{
+    const obj=JSON.parse(raw);
+    ['wPct','centerX','bottomPct'].forEach(k=>{ if(typeof obj[k]==='number') SC[k]=obj[k]; });
+    saveCFG(); buildDevPanel();
+  }catch{ alert('JSON invalide'); }
+};
+bar2.append(syncFromF, copyThis, pasteThis);
+devPanel.appendChild(bar2);
 
   section('Onomatopées (par technique)');
   E.onoByTech = E.onoByTech || deepClone(SEEDED_PROFILES.pc.onoByTech);
@@ -1384,15 +1451,14 @@ window.addEventListener('keydown', (e)=>{
       if(!demonSkin) return;
 
       if(isUnlocked(demonSkin)){
-        // Rebloquer
-        lockedSkins.add('demon');
-        alert("Cheat activé : Demon REBLOQUÉ !");
+        lockSkin('demon');
+        alert("Cheat : Demon REBLOQUÉ");
       } else {
-        // Débloquer
         unlockSkin('demon');
         showNewSkinPopup(demonSkin);
-        alert("Cheat activé : Demon DÉBLOQUÉ !");
+        alert("Cheat : Demon DÉBLOQUÉ");
       }
+      renderSkins(); // refresh vignettes
     }
     window._lastCheat = Date.now();
   }
