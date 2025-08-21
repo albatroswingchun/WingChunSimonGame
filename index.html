@@ -295,6 +295,11 @@
     .ns-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
     .ns-btn{ background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; }
     .ns-btn:hover{ filter:brightness(1.06); }
+
+    .skinCard div {
+  color: #fff; /* blanc */
+}
+
   </style>
 </head>
 <body>
@@ -393,8 +398,8 @@
 
 <script>
 /* ===== Version app ===== */
-const APP_VERSION = '20250817'; // version unique
-const APP_LABEL   = 'v2.150-demon15-newskin-fixSFX'; /* label */
+const APP_VERSION = '20250821'; // version unique
+const APP_LABEL   = 'v3.150'; /* label */
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
