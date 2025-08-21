@@ -558,12 +558,6 @@ function hideRules(){
   rulesPopup.classList.remove('open');
 }
 
-// fermeture normale avec bouton Fermer
-rulesCloseBtn?.addEventListener('click', ()=>{
-  hideRules();
-  startGame();
-});
-
 // === AJOUT 1 : fermer hors du panneau + touche Echap ===
 rulesPopup.addEventListener('click', (e)=>{
   if(e.target === rulesPopup){ hideRules(); startGame(); }
@@ -574,7 +568,7 @@ window.addEventListener('keydown', (e)=>{
   }
 });
 
-// === AJOUT 2 : sécuriser double clic Fermer ===
+// === Fermeture via bouton Fermer : sécuriser double clic ===
 let gameStarting = false;
 function safeStartGame(){
   if(gameStarting) return;
@@ -609,10 +603,10 @@ const SFX = {
   voice_punch: A('assets/sounds/Yah4.wav'),
 
   /* Pack DEMON (espaces encodés en %20) */
-  demon_pak:   A('assets/sounds/demon/Son1 Demon.wav'),
-  demon_tan:   A('assets/sounds/demon/Son2 Demon.wav'),
-  demon_bon:   A('assets/sounds/demon/Son3 Demon.wav'),
-  demon_punch: A('assets/sounds/demon/Son4 Demon.wav'),
+  demon_pak:   A('assets/sounds/Son1 Demon.wav'),
+  demon_tan:   A('assets/sounds/Son2 Demon.wav'),
+  demon_bon:   A('assets/sounds/Son3 Demon.wav'),
+  demon_punch: A('assets/sounds/Son4 Demon.wav'),
 
   music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
