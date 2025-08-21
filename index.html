@@ -22,7 +22,6 @@
       --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8; --gold:#d1a341;
       --scoreYellow:#FFD700;
 
-      /* Couleurs Simon + halo */
       --simon-red:#d34b43;
       --simon-green:#4cb36c;
       --simon-blue:#3d74d6;
@@ -33,11 +32,8 @@
       --bestBadgeShift: 20px;
     }
 
-    /* Hauteur viewport stable mobiles */
     :root{ --vh: 100svh; }
     @supports (height: 100dvh) { :root{ --vh: 100dvh; } }
-
-    /* Taille du stage exposée au CSS */
     :root { --stageW: 100vw; --stageH: var(--vh); }
 
     html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
@@ -55,7 +51,6 @@
 
     #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:10}
 
-    /* Pads */
     .pad{
       width:132px;height:100px;border-radius:14px;
       background:linear-gradient(#2a2a2a,#1e1e1e);
@@ -100,11 +95,16 @@
 
     #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
     #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
-    .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center;position:relative}
+    .skinCard{position:relative;background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
     .skinCard:hover{filter:brightness(1.05)}
     .skinActive{outline:2px solid var(--gold)}
     .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
-    .skinLock{position:absolute;right:8px;top:8px;font-size:12px;opacity:.9}
+    .skinLocked{opacity:.55; cursor:not-allowed;}
+    .skinLocked::after{
+      content:"🔒 Verrouillé";
+      position:absolute; left:50%; top:8px; transform:translateX(-50%);
+      background:#000a; border:1px solid #3a302d; color:#e8d6b8; padding:3px 8px; border-radius:8px; font-size:12px;
+    }
 
     /* Panneau réglages (T) */
     #devPanel{
@@ -125,24 +125,37 @@
     .sep{margin:10px 0; height:1px; background:#2a2322}
     .hint{font-size:11px;opacity:.7;margin-top:6px}
 
-    /* UI fluide */
+    /* Menu proportionnel */
     #menu .panel{ min-width: unset; width: min(92vw, calc(var(--stageW) * .90)); }
     .title-main{ font-size: clamp(42px, calc(var(--stageW)*0.09), 96px); }
     .title-sub { font-size: clamp(18px, calc(var(--stageW)*0.035), 32px); }
     .subtitle  { font-size: clamp(14px, calc(var(--stageW)*0.022), 18px); }
-    .btn{ padding: clamp(8px, calc(var(--stageW)*0.012), 12px) clamp(12px, calc(var(--stageW)*0.02), 18px); }
+    .btn{
+      padding: clamp(8px, calc(var(--stageW)*0.012), 12px)
+               clamp(12px, calc(var(--stageW)*0.02), 18px);
+    }
 
+    /* Pads 2×2 portrait */
     body.isPortrait #board{
-      position: absolute; left: 50%; transform: translateX(-50%);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       bottom: min(18px, calc(var(--stageH)*0.03));
-      display: grid; grid-template-columns: repeat(2, 1fr);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: clamp(8px, calc(var(--stageW)*0.02), 18px);
       width: min(92vw, calc(var(--stageW) * .90));
     }
     body.isPortrait .pad{
-      width: 80%; height: auto; aspect-ratio: 4 / 3;
-      margin: 0 auto; font-size: clamp(14px, calc(var(--stageW)*0.04), 22px); max-width: 140px;
+      width: 80%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      margin: 0 auto;
+      font-size: clamp(14px, calc(var(--stageW)*0.04), 22px);
+      max-width: 140px;
     }
+
+    /* Pads paysage */
     body:not(.isPortrait) #board{ display:flex; gap: clamp(8px, calc(var(--stageW)*0.015), 14px); }
     body:not(.isPortrait) .pad{
       width:  clamp(100px,  calc(var(--stageW)*0.13), 148px);
@@ -150,7 +163,7 @@
       font-size: clamp(14px, calc(var(--stageH)*0.032), 20px);
     }
 
-    /* HUD score géant */
+    /* HUD SCORE */
     #hud{ position:absolute; inset:0; z-index:13; pointer-events:none; }
     #scoreBox{
       position:absolute; left:50%; transform:translateX(-50%);
@@ -158,18 +171,23 @@
       text-align:center;
     }
     #scoreTitle{
-      font-family:'Permanent Marker',cursive; color: var(--scoreYellow); font-weight: 900;
+      font-family:'Permanent Marker',cursive;
+      color: var(--scoreYellow);
+      font-weight: 900;
       font-size: clamp(22px, calc(var(--stageW)*0.06), 56px);
-      line-height: 1; margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
+      line-height: 1;
+      margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
       text-shadow: 0 1px 0 #000, 0 0 18px rgba(209,163,65,.35);
       letter-spacing: .5px;
     }
     #bigScore{
-      font-family:'Permanent Marker',cursive; font-weight:900;
+      font-family:'Permanent Marker',cursive;
+      font-weight:900;
       font-size: clamp(42px, calc(var(--stageW)*0.12), 160px);
       color: var(--scoreYellow);
       text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
-      letter-spacing: 1px; line-height: .9;
+      letter-spacing: 1px;
+      line-height: .9;
     }
     #bestBadge{
       position:absolute; left:50%; transform:translateX(-50%);
@@ -221,14 +239,6 @@
     }
     .go-share:hover{ filter:brightness(1.06); }
     .go-share::before{ content:"📤"; }
-
-    /* Invite MAJ APK */
-    #updatePrompt{ position:fixed; inset:0; display:none; place-items:center; z-index:50; background:rgba(0,0,0,.6); backdrop-filter:blur(2px) }
-    #updatePrompt .box{
-      background:#1a1716;border:1px solid #3a302d;border-radius:14px;padding:18px; width:min(92vw,420px); text-align:center;
-    }
-    #updatePrompt .title{ font-family:'Permanent Marker',cursive;font-size:24px;margin-bottom:8px;color:#e8d6b8 }
-    #updatePrompt .text{ opacity:.9;margin-bottom:12px }
   </style>
 </head>
 <body>
@@ -242,7 +252,6 @@
     <div class="right"></div>
   </header>
 
-  <!-- Bouton d'accès tactile au panneau de réglages -->
   <button style="position:fixed;top:10px;right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
 
   <div id="stageWrap">
@@ -305,18 +314,6 @@
     </div>
   </div>
 
-  <!-- Invite mise à jour APK -->
-  <div id="updatePrompt">
-    <div class="box">
-      <div class="title">Mise à jour dispo</div>
-      <div class="text">Une nouvelle version est disponible. Mets à jour pour profiter des dernières améliororations.</div>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <a id="updateLink" class="btn" href="#" target="_blank" rel="noopener">Télécharger l’APK</a>
-        <button class="btn" onclick="document.getElementById('updatePrompt').style.display='none'">Plus tard</button>
-      </div>
-    </div>
-  </div>
-
   <footer></footer>
 </div>
 
@@ -324,8 +321,8 @@
 
 <script>
 /* ===== Version app ===== */
-const APP_VERSION = '20250817'; // version unique
-const APP_LABEL   = 'v2.200-skins-demon-update'; /* label maj */
+const APP_VERSION = '20250817';
+const APP_LABEL   = 'v2.144-demon-skin+voices';
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -345,8 +342,8 @@ if ('serviceWorker' in navigator) {
 }
 
 /* ===== Ratios ===== */
-const PC_RATIO = 4/3;      // paysage
-const MB_RATIO = 9/16;     // portrait
+const PC_RATIO = 4/3;
+const MB_RATIO = 9/16;
 function isPortrait(){ return window.innerHeight >= window.innerWidth; }
 function activeRatio(){ return isPortrait() ? MB_RATIO : PC_RATIO; }
 
@@ -376,38 +373,58 @@ const replayBtn  = document.getElementById('replayBtn');
 const shareBtn   = document.getElementById('shareBtn');
 
 /* ===== Audio ===== */
+function A(src){ const a=new Audio(src); a.preload='none'; try{a.src=bust(a.src);}catch{} return a; }
+
 const SFX = {
-  pak:   new Audio('assets/sounds/pak.wav'),
-  tan:   new Audio('assets/sounds/tan.wav'),
-  bon:   new Audio('assets/sounds/bon.wav'),
-  punch: new Audio('assets/sounds/punch.wav'),
-  wrong: new Audio('assets/sounds/wrong.wav'),
-  voice_pak:   new Audio('assets/sounds/Yah1.wav'),
-  voice_tan:   new Audio('assets/sounds/Yah2.wav'),
-  voice_bon:   new Audio('assets/sounds/Yah3.wav'),
-  voice_punch: new Audio('assets/sounds/Yah4.wav'),
-  music: new Audio('assets/sounds/Digital Mosaic.mp3')
+  pak:   A('assets/sounds/pak.wav'),
+  tan:   A('assets/sounds/tan.wav'),
+  bon:   A('assets/sounds/bon.wav'),
+  punch: A('assets/sounds/punch.wav'),
+  wrong: A('assets/sounds/wrong.wav'),
+
+  /* Pack voix par défaut (classic) */
+  voice_pak:   A('assets/sounds/Yah1.wav'),
+  voice_tan:   A('assets/sounds/Yah2.wav'),
+  voice_bon:   A('assets/sounds/Yah3.wav'),
+  voice_punch: A('assets/sounds/Yah4.wav'),
+
+  /* Pack voix DEMON – mets tes 4 sons ici */
+  demon_pak:   A('assets/sounds/demon/son1.wav'),
+  demon_tan:   A('assets/sounds/demon/son2.wav'),
+  demon_bon:   A('assets/sounds/demon/son3.wav'),
+  demon_punch: A('assets/sounds/demon/son4.wav'),
+
+  /* Option (si tu gardes les noms avec espaces) :
+  demon_pak:   A('assets/sounds/demon/Son1%20Demon.wav'),
+  demon_tan:   A('assets/sounds/demon/Son2%20Demon.wav'),
+  demon_bon:   A('assets/sounds/demon/Son3%20Demon.wav'),
+  demon_punch: A('assets/sounds/demon/Son4%20Demon.wav'),
+  */
+
+  music: A('assets/sounds/Digital Mosaic.mp3')
 };
-Object.values(SFX).forEach(a=>{
-  a.preload = 'none';
-  try { a.src = bust(a.src); } catch {}
-});
 SFX.music.loop = true; SFX.music.volume = 0.5;
 try{ SFX.music.preload = 'auto'; SFX.music.load(); }catch{}
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
 
-/* Pools audio */
 const POOL={}; let audioReady=false;
 function ensureAudioPool(){
   if(audioReady) return;
-  const keys=['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music'];
+  const keys=Object.keys(SFX);
   keys.forEach(k=>{
     const a=SFX[k]; if(!a) return;
-    const v=a.volume; const clones=Array.from({length:3},()=>{const c=a.cloneNode(); c.volume=v; try{c.src=bust(a.src);}catch{} return c});
+    const v=a.volume ?? 1;
+    const clones=Array.from({length:3},()=>{const c=a.cloneNode(); c.volume=v; try{c.src=bust(a.src);}catch{} return c});
     POOL[k]=[a,...clones];
   });
   audioReady=true;
 }
+let muted=false;
+muteBtn.onclick=()=>{
+  muted=!muted;
+  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
+  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
+};
 function playKey(key){
   if(muted) return;
   ensureAudioPool();
@@ -416,45 +433,20 @@ function playKey(key){
   if(!s){ const t=arr[0]; s=t.cloneNode(); try{s.src=bust(t.src);}catch{} s.volume=t.volume; if(arr.length<6) arr.push(s); }
   try{ s.currentTime=0; s.play().catch(()=>{}); }catch{}
 }
-let muted=false;
-muteBtn.onclick=()=>{
-  muted=!muted;
-  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
-  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
+
+/* === Pack de voix actif par skin === */
+const VOICE_PACK_ID = { classic:'default', classic_alt:'default', demon:'demon' };
+const VOICE_PACKS = {
+  default: { pak:'voice_pak', tan:'voice_tan', bon:'voice_bon', punch:'voice_punch' },
+  demon:   { pak:'demon_pak', tan:'demon_tan', bon:'demon_bon', punch:'demon_punch' }
 };
-
-/* Voix par skin (avec fallback sur SFX.voice_*) */
-let ACTIVE_VOICE = null;     // {pak,tan,bon,punch} -> Audio
-const VOICE_POOL = {};
-function buildVoiceForSkin(skin){
-  ACTIVE_VOICE = null;
-  if(!skin || !skin.voice){ ACTIVE_VOICE = null; return; }
-  ACTIVE_VOICE = {};
-  ['pak','tan','bon','punch'].forEach(t=>{
-    const src = skin.voice[t];
-    if(!src) return;
-    const a = new Audio(bust(src)); a.preload='auto'; a.volume=0.8;
-    ACTIVE_VOICE[t]=a;
-    const key=`voice:${skin.id}:${t}`;
-    const clones=Array.from({length:2},()=>{const c=a.cloneNode(); c.volume=a.volume; return c;});
-    VOICE_POOL[key]=[a,...clones];
-  });
-}
-function playSkinVoice(tech){
-  if(muted) return;
-  const skin = SKINS[activeSkinIdx];
-  if(ACTIVE_VOICE && ACTIVE_VOICE[tech]){
-    const key=`voice:${skin.id}:${tech}`;
-    const arr=VOICE_POOL[key]; if(!arr) return;
-    let s=arr.find(x=>x.paused); if(!s){ const t=arr[0]; s=t.cloneNode(); s.volume=t.volume; if(arr.length<5) arr.push(s); }
-    try{ s.currentTime=0; s.play().catch(()=>{}); }catch{}
-  } else {
-    // fallback vers les sons globaux existants
-    playKey('voice_'+tech);
-  }
+let currentVoicePack = VOICE_PACKS.default;
+function playVoice(tech){
+  const key = (currentVoicePack[tech] || VOICE_PACKS.default[tech]);
+  if(key) playKey(key);
 }
 
-/* Autoplay musique sur premier geste */
+/* Autoplay sur premier geste utilisateur */
 let musicPrimed = false;
 function primeMusicOnce(){
   if(musicPrimed) return;
@@ -469,7 +461,7 @@ function primeMusicOnce(){
   window.addEventListener(ev, primeMusicOnce, true);
 });
 
-/* ===== BG assets ===== */
+/* ===== BG assets (lazy + priorité) ===== */
 function mkImg(url, priority='auto'){
   const img=new Image();
   img.crossOrigin='anonymous';
@@ -487,56 +479,48 @@ rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY = mkI
 /* ===== Sprites & skins ===== */
 function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
 
-/* Inventaire des skins
-   - classic: gratuit/actif
-   - classic_alt: gratuit
-   - demon: VISIBLE MAIS VERROUILLÉ (non sélectionnable) */
 const SKINS = [
-  {
-    id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' },
-    // pas de voice spécifique => fallback sur SFX.voice_*
-    unlock:{ type:'free' }
-  },
-  {
-    id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' },
-    unlock:{ type:'free' }
-  },
-  {
-    id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png',
+  { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
+  { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
+
+  /* === AJOUT: Skin DEMON (verrouillé) === */
+  { id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png', locked:true,
     f:{
-      pak:   'https://i.imgur.com/FvJK22b.png',
-      tan:   'https://i.imgur.com/wNewS04.png',
-      bon:   'https://i.imgur.com/Eg1mCJq.png',
-      punch: 'https://i.imgur.com/lpJkx50.png'
-    },
-    // pas de voice fourni -> fallback
-    unlock:{ type:'locked', note:'Bientôt' } // visible, non achetable, non score, non sélectionnable
+      bon:'https://i.imgur.com/Eg1mCJq.png',
+      tan:'https://i.imgur.com/wNewS04.png',
+      punch:'https://i.imgur.com/lpJkx50.png',
+      pak:'https://i.imgur.com/FvJK22b.png'
+    }
   }
 ];
 
 const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:null, o_bon:null, o_punch:null, d_unique:null };
 
-/* Possessions */
-const OWNED_KEY = 'wcs_owned_skins_v1';
-function getOwned(){ try{ return new Set(JSON.parse(localStorage.getItem(OWNED_KEY)||'[]')); }catch{ return new Set(); } }
-function setOwned(set){ localStorage.setItem(OWNED_KEY, JSON.stringify([...set])); }
-const owned = getOwned();
-SKINS.forEach(s=>{ if(s.unlock?.type==='free') owned.add(s.id); });
-setOwned(owned);
-
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
+function isUnlocked(skin){
+  if(!skin.locked) return true;
+  // futur: check score/achat. Pour l’instant toujours verrouillé.
+  const flag = localStorage.getItem('skin_unlocked_'+skin.id) === '1';
+  return flag;
+}
 function applySkin(idx){
   const s=SKINS[idx]||SKINS[0];
-  // sécurité: si non possédé, refuse
-  if(!owned.has(s.id)){ return; }
+  if(s.locked && !isUnlocked(s)){
+    // refuse la sélection si verrouillé
+    renderSkins(); // refresh état visuel
+    return;
+  }
   activeSkinIdx=idx;
   IMG.f_pak=load(s.f.pak,'high');
   rICB(()=>{ IMG.f_tan=load(s.f.tan,'low'); IMG.f_bon=load(s.f.bon,'low'); IMG.f_punch=load(s.f.punch,'low'); });
   localStorage.setItem('wcs_skin_idx', idx);
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
-  buildVoiceForSkin(s);
+
+  // Pack de voix pour ce skin
+  const packId = VOICE_PACK_ID[s.id] || 'default';
+  currentVoicePack = VOICE_PACKS[packId] || VOICE_PACKS.default;
 }
 rICB(()=>{
   IMG.d_unique = load('https://i.imgur.com/LwBpPL3.png','low');
@@ -745,7 +729,7 @@ function setSpritesFor(tech){
   const LUNGE={pak:10,tan:12,bon:8,punch:14}; const SCALE={pak:1.03,tan:1.035,bon:1.03,punch:1.04};
   actionAnim={until: now+260, lunge:(LUNGE[tech]||10), scale:(SCALE[tech]||1.03)};
   const img = IMG['f_'+tech]; if(img) currentFighter = img;
-  setTimeout(()=> playSkinVoice(tech), 100); // <-- voix par skin + fallback
+  setTimeout(()=> playVoice(tech), 100);
 }
 function drawFighter(){
   const img=currentFighter, F=P().fighter; if(!img || !img.complete || !img.naturalWidth) return;
@@ -808,12 +792,13 @@ function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); if(!b) re
 async function playSequence(){
   locked=true; await sleep(420);
   for(const tech of seq){
-    setSpritesFor(tech); setLit(tech,true); playSkinVoice(tech); showOno(tech);
+    setSpritesFor(tech); setLit(tech,true); playKey(tech); showOno(tech);
     await sleep(360); setLit(tech,false); await sleep(120);
   }
   locked=false; userIndex=0;
 }
 
+/* Popup helpers */
 function showGameOver(finalScore){
   goScoreEl.textContent = 'Score: ' + String(finalScore);
   goBestEl.textContent  = 'Meilleur: ' + String(best);
@@ -824,7 +809,7 @@ function hideGameOver(){ gameOverEl.classList.remove('open'); }
 
 async function press(tech){
   if(locked) return;
-  setSpritesFor(tech); setLit(tech,true); playSkinVoice(tech); showOno(tech);
+  setSpritesFor(tech); setLit(tech,true); playKey(tech); showOno(tech);
   await sleep(180); setLit(tech,false);
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
@@ -841,7 +826,7 @@ async function press(tech){
 }
 function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 
-/* Entrées pads */
+/* Entrées */
 pads.forEach(b=>{
   b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
 });
@@ -857,7 +842,9 @@ async function shareBest(){
   } else {
     try{
       await navigator.clipboard.writeText(`${text} — ${url}`);
-      shareBtn.style.transform = 'scale(1.05)'; shareBtn.textContent = '✅';
+      const old = shareBtn.getAttribute('data-ico') || '📤';
+      shareBtn.style.transform = 'scale(1.05)';
+      shareBtn.textContent = '✅';
       setTimeout(()=>{ shareBtn.textContent = ''; shareBtn.style.transform=''; }, 900);
     }catch{}
   }
@@ -868,51 +855,28 @@ function startGame(){
   hideGameOver();
   menu.style.display='none';
   ensureAudioPool();
-  if(!muted){ SFX.music.play().catch(()=>{}); }
+  if(!muted){
+    SFX.music.play().catch(()=>{});
+  }
   seq=[randTech()]; score=0; updateScoreUI(); playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault(); startGame();});
 
 /* ===== Skins UI ===== */
-applySkin(activeSkinIdx); // appliquera le premier possédé (classique)
+applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
-
 function renderSkins(){
   skinsGrid.innerHTML='';
   SKINS.forEach((s,i)=>{
-    const isOwned = owned.has(s.id);
-    const isActive = (i===activeSkinIdx);
     const card=document.createElement('button');
-    card.className='skinCard'+(isActive?' skinActive':'');
-    card.innerHTML=`
-      <img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/>
-      <div style="font-weight:700">${s.name}</div>
-      ${!isOwned ? `<div class="skinLock">🔒 ${s.unlock?.note || (s.unlock?.type==='locked'?'Bientôt':'')}</div>` : ''}
-    `;
-    card.onclick=()=>{
-      if(!isOwned){
-        if(s.unlock?.type==='locked'){ alert('Bientôt disponible.'); return; }
-        if(s.unlock?.type==='score'){ alert('Débloque-le en atteignant le score requis.'); return; }
-        if(s.unlock?.type==='iap'){ attemptPurchase(s); return; }
-        return;
-      }
-      applySkin(i); renderSkins();
-    };
+    const locked = s.locked && !isUnlocked(s);
+    card.className='skinCard'+(i===activeSkinIdx?' skinActive':'')+(locked?' skinLocked':'');
+    card.title = locked ? 'Débloque ce skin pour l’utiliser' : ('Choisir: '+s.name);
+    card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/><div style="font-weight:700">${s.name}</div>`;
+    card.onclick=()=>{ if(locked) return; applySkin(i); renderSkins(); };
     skinsGrid.appendChild(card);
   });
-}
-
-/* Achat (placeholder pour futur IAP/Play Billing) */
-async function attemptPurchase(skin){
-  if(skin.unlock?.type!=='iap') return;
-  if(window.AppBilling && typeof window.AppBilling.buy === 'function'){
-    try{ const ok = await window.AppBilling.buy(skin.unlock.sku); if(ok){ owned.add(skin.id); setOwned(owned); renderSkins(); } }catch{}
-    return;
-  }
-  // Fallback de maquette
-  const ok = confirm(`Simuler l'achat de "${skin.name}" ?`);
-  if(ok){ owned.add(skin.id); setOwned(owned); renderSkins(); }
 }
 
 /* ===== Boucle ===== */
@@ -1070,33 +1034,15 @@ if (!window.__T_BIND) {
   window.__T_BIND = true;
 }
 
-/* ===== Invite de mise à jour APK ===== */
-const UPDATE_CHECK_URL = bust('/version.json'); // fournis sur ton serveur
-async function checkForUpdate(){
-  try{
-    const res = await fetch(UPDATE_CHECK_URL, {cache:'no-store'});
-    if(!res.ok) return;
-    const data = await res.json(); // { latest:"20250819", apk:"https://ton.site/wingchun.apk" }
-    if(String(data.latest||'') !== String(APP_VERSION)){
-      const p = document.getElementById('updatePrompt');
-      const link = document.getElementById('updateLink');
-      if(link && data.apk) link.href = data.apk;
-      if(p) p.style.display='grid';
-    }
-  }catch{}
-}
-
 /* ===== Init ===== */
 function init(){
   resize();
-  // applique un skin possédé (si l'index stocké n'est pas possédé, on force classic)
-  if(!owned.has(SKINS[activeSkinIdx]?.id)) activeSkinIdx = SKINS.findIndex(s=>owned.has(s.id)) || 0;
+  // force pack voix selon skin actuel (au cas où le localStorage pointe sur DEMON verrouillé)
+  if(SKINS[activeSkinIdx]?.locked && !isUnlocked(SKINS[activeSkinIdx])) activeSkinIdx = 0;
   applySkin(activeSkinIdx);
   const tag = document.getElementById('appVersion');
   if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION;
   requestAnimationFrame(loop);
-  // check update après boot
-  checkForUpdate();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
