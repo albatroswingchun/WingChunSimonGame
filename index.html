@@ -22,7 +22,7 @@
       --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8; --gold:#d1a341;
       --scoreYellow:#FFD700;
 
-      /* === AJOUT: Couleurs Simon + intensité halo === */
+      /* Couleurs Simon + halo */
       --simon-red:#d34b43;
       --simon-green:#4cb36c;
       --simon-blue:#3d74d6;
@@ -55,7 +55,7 @@
 
     #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:10}
 
-    /* === MODIF: .pad avec police du score, plus lisible === */
+    /* Pads */
     .pad{
       width:132px;height:100px;border-radius:14px;
       background:linear-gradient(#2a2a2a,#1e1e1e);
@@ -67,14 +67,10 @@
       cursor:pointer;user-select:none;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-
-    /* === AJOUT: couleur par technique (sert au halo via currentColor) === */
     .pad[data-tech="punch"]{ color: var(--simon-red);   }
     .pad[data-tech="pak"]  { color: var(--simon-green); }
     .pad[data-tech="tan"]  { color: var(--simon-blue);  }
     .pad[data-tech="bon"]  { color: var(--simon-yellow);}
-
-    /* === AJOUT: Surbrillance façon Simon === */
     .lit{
       filter: brightness(1.85) saturate(1.15);
       box-shadow:
@@ -104,10 +100,11 @@
 
     #skinsPanel{margin-top:14px;background:#1118;border:1px solid #2f2724;border-radius:12px;padding:14px;display:none}
     #skinsGrid{display:grid;grid-template-columns:repeat(2, minmax(160px,1fr));gap:12px}
-    .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center}
+    .skinCard{background:#1a1716;border:1px solid #3a302d;border-radius:10px;padding:10px;cursor:pointer;text-align:center;position:relative}
     .skinCard:hover{filter:brightness(1.05)}
     .skinActive{outline:2px solid var(--gold)}
     .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
+    .skinLock{position:absolute;right:8px;top:8px;font-size:12px;opacity:.9}
 
     /* Panneau réglages (T) */
     #devPanel{
@@ -128,42 +125,24 @@
     .sep{margin:10px 0; height:1px; background:#2a2322}
     .hint{font-size:11px;opacity:.7;margin-top:6px}
 
-    /* ============ UI FLUIDE (MENU + PADS) ============ */
-
-    /* Menu proportionnel */
-    #menu .panel{
-      min-width: unset;
-      width: min(92vw, calc(var(--stageW) * .90));
-    }
+    /* UI fluide */
+    #menu .panel{ min-width: unset; width: min(92vw, calc(var(--stageW) * .90)); }
     .title-main{ font-size: clamp(42px, calc(var(--stageW)*0.09), 96px); }
     .title-sub { font-size: clamp(18px, calc(var(--stageW)*0.035), 32px); }
     .subtitle  { font-size: clamp(14px, calc(var(--stageW)*0.022), 18px); }
-    .btn{
-      padding: clamp(8px, calc(var(--stageW)*0.012), 12px)
-               clamp(12px, calc(var(--stageW)*0.02), 18px);
-    }
+    .btn{ padding: clamp(8px, calc(var(--stageW)*0.012), 12px) clamp(12px, calc(var(--stageW)*0.02), 18px); }
 
-    /* Pads 2×2 en portrait (plus petits) */
     body.isPortrait #board{
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
+      position: absolute; left: 50%; transform: translateX(-50%);
       bottom: min(18px, calc(var(--stageH)*0.03));
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      display: grid; grid-template-columns: repeat(2, 1fr);
       gap: clamp(8px, calc(var(--stageW)*0.02), 18px);
       width: min(92vw, calc(var(--stageW) * .90));
     }
     body.isPortrait .pad{
-      width: 80%;
-      height: auto;
-      aspect-ratio: 4 / 3;
-      margin: 0 auto;
-      font-size: clamp(14px, calc(var(--stageW)*0.04), 22px);
-      max-width: 140px;
+      width: 80%; height: auto; aspect-ratio: 4 / 3;
+      margin: 0 auto; font-size: clamp(14px, calc(var(--stageW)*0.04), 22px); max-width: 140px;
     }
-
-    /* Pads proportionnels en paysage */
     body:not(.isPortrait) #board{ display:flex; gap: clamp(8px, calc(var(--stageW)*0.015), 14px); }
     body:not(.isPortrait) .pad{
       width:  clamp(100px,  calc(var(--stageW)*0.13), 148px);
@@ -171,34 +150,27 @@
       font-size: clamp(14px, calc(var(--stageH)*0.032), 20px);
     }
 
-    /* ============ HUD SCORE GÉANT ============ */
+    /* HUD score géant */
     #hud{ position:absolute; inset:0; z-index:13; pointer-events:none; }
-
     #scoreBox{
       position:absolute; left:50%; transform:translateX(-50%);
       top: clamp(8px, calc(var(--stageH)*0.06), 64px);
       text-align:center;
     }
     #scoreTitle{
-      font-family:'Permanent Marker',cursive;
-      color: var(--scoreYellow);
-      font-weight: 900;
+      font-family:'Permanent Marker',cursive; color: var(--scoreYellow); font-weight: 900;
       font-size: clamp(22px, calc(var(--stageW)*0.06), 56px);
-      line-height: 1;
-      margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
+      line-height: 1; margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
       text-shadow: 0 1px 0 #000, 0 0 18px rgba(209,163,65,.35);
       letter-spacing: .5px;
     }
     #bigScore{
-      font-family:'Permanent Marker',cursive;
-      font-weight:900;
+      font-family:'Permanent Marker',cursive; font-weight:900;
       font-size: clamp(42px, calc(var(--stageW)*0.12), 160px);
       color: var(--scoreYellow);
       text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
-      letter-spacing: 1px;
-      line-height: .9;
+      letter-spacing: 1px; line-height: .9;
     }
-
     #bestBadge{
       position:absolute; left:50%; transform:translateX(-50%);
       top: calc(
@@ -207,15 +179,11 @@
         + var(--bestBadgeShift)
       );
       font-size: clamp(12px, calc(var(--stageW)*0.028), 16px);
-      opacity:.85;
-      color:#ffd48a;
-      text-shadow: 0 1px 0 #000;
+      opacity:.85; color:#ffd48a; text-shadow: 0 1px 0 #000;
     }
-
-    /* On vire les chips score/best du header visuellement */
     header .chip{ display:none; }
 
-    /* === AJOUT: Popup Game Over (version empilée + boutons redimensionnés) === */
+    /* Popup Game Over (empilée) */
     #gameOver{
       position:fixed; inset:0; display:none; place-items:center;
       background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px);
@@ -230,47 +198,37 @@
       font-family:'Permanent Marker',cursive; font-size:28px; margin:0 0 8px; color:var(--ink);
       text-shadow:0 1px 0 #000;
     }
-
-    /* Bloc central empilé */
-    .go-main{
-      display:grid; gap:6px; justify-items:center; margin:6px 0 12px;
-    }
+    .go-main{ display:grid; gap:6px; justify-items:center; margin:6px 0 12px; }
     #goScore{
-      font-family:'Permanent Marker',cursive;
-      font-size: 28px;          /* plus petit */
-      color: var(--scoreYellow);
-      text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28);
-      line-height:1;
+      font-family:'Permanent Marker',cursive; font-size: 28px;
+      color: var(--scoreYellow); text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28); line-height:1;
     }
     #goBest{
-      font-family:'Permanent Marker',cursive;
-      font-size: 20px;          /* encore plus petit */
-      color:#ffd48a;
-      text-shadow: 0 1px 0 #000;
-      opacity:.95;
-      line-height:1;
+      font-family:'Permanent Marker',cursive; font-size: 20px;
+      color:#ffd48a; text-shadow: 0 1px 0 #000; opacity:.95; line-height:1;
     }
-
-    /* Actions */
     .go-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
-
-    /* Gros bouton Rejouer */
     .go-replay{
       background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:14px;
       padding:14px 22px; cursor:pointer; font-weight:900; font-size:20px;
       box-shadow: 0 8px 22px rgba(0,0,0,.4);
     }
     .go-replay:hover{ filter:brightness(1.06); }
-
-    /* Petit bouton Partager: icône seule */
     .go-share{
       display:inline-flex; align-items:center; justify-content:center;
       width:44px; height:44px; border-radius:999px;
-      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; cursor:pointer;
-      font-size:20px;
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; cursor:pointer; font-size:20px;
     }
     .go-share:hover{ filter:brightness(1.06); }
-    .go-share::before{ content:"📤"; }  /* icône seule */
+    .go-share::before{ content:"📤"; }
+
+    /* Invite MAJ APK */
+    #updatePrompt{ position:fixed; inset:0; display:none; place-items:center; z-index:50; background:rgba(0,0,0,.6); backdrop-filter:blur(2px) }
+    #updatePrompt .box{
+      background:#1a1716;border:1px solid #3a302d;border-radius:14px;padding:18px; width:min(92vw,420px); text-align:center;
+    }
+    #updatePrompt .title{ font-family:'Permanent Marker',cursive;font-size:24px;margin-bottom:8px;color:#e8d6b8 }
+    #updatePrompt .text{ opacity:.9;margin-bottom:12px }
   </style>
 </head>
 <body>
@@ -278,7 +236,6 @@
   <header>
     <div class="left">
       <strong>Wing Chun Simon</strong>
-      <!-- chips masquées par CSS -->
       <span class="chip">Score: <span id="scoreHeader">0</span></span>
       <span class="chip">Meilleur: <span id="bestHeader">0</span></span>
     </div>
@@ -333,7 +290,7 @@
     </div>
   </div>
 
-  <!-- === AJOUT: Popup Game Over (empilée) === -->
+  <!-- Popup Game Over -->
   <div id="gameOver" aria-modal="true" role="dialog">
     <div class="go-panel" role="document">
       <h2 class="go-title">Game Over</h2>
@@ -348,6 +305,18 @@
     </div>
   </div>
 
+  <!-- Invite mise à jour APK -->
+  <div id="updatePrompt">
+    <div class="box">
+      <div class="title">Mise à jour dispo</div>
+      <div class="text">Une nouvelle version est disponible. Mets à jour pour profiter des dernières améliororations.</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <a id="updateLink" class="btn" href="#" target="_blank" rel="noopener">Télécharger l’APK</a>
+        <button class="btn" onclick="document.getElementById('updatePrompt').style.display='none'">Plus tard</button>
+      </div>
+    </div>
+  </div>
+
   <footer></footer>
 </div>
 
@@ -356,7 +325,7 @@
 <script>
 /* ===== Version app ===== */
 const APP_VERSION = '20250817'; // version unique
-const APP_LABEL   = 'v2.143-popup-stacked'; /* label maj */
+const APP_LABEL   = 'v2.200-skins-demon-update'; /* label maj */
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -399,14 +368,14 @@ const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 
-/* === Popup refs === */
+/* Popup refs */
 const gameOverEl = document.getElementById('gameOver');
 const goScoreEl  = document.getElementById('goScore');
 const goBestEl   = document.getElementById('goBest');
 const replayBtn  = document.getElementById('replayBtn');
 const shareBtn   = document.getElementById('shareBtn');
 
-/* ===== Audio (chargement paresseux) ===== */
+/* ===== Audio ===== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
   tan:   new Audio('assets/sounds/tan.wav'),
@@ -424,11 +393,10 @@ Object.values(SFX).forEach(a=>{
   try { a.src = bust(a.src); } catch {}
 });
 SFX.music.loop = true; SFX.music.volume = 0.5;
-/* précharge pour réduire la latence après premier geste */
 try{ SFX.music.preload = 'auto'; SFX.music.load(); }catch{}
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
 
-/* Pool audio créé à la demande */
+/* Pools audio */
 const POOL={}; let audioReady=false;
 function ensureAudioPool(){
   if(audioReady) return;
@@ -454,15 +422,45 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
-function playTechniqueSounds(tech){ playKey(tech); }
 
-/* Autoplay sur premier geste utilisateur */
+/* Voix par skin (avec fallback sur SFX.voice_*) */
+let ACTIVE_VOICE = null;     // {pak,tan,bon,punch} -> Audio
+const VOICE_POOL = {};
+function buildVoiceForSkin(skin){
+  ACTIVE_VOICE = null;
+  if(!skin || !skin.voice){ ACTIVE_VOICE = null; return; }
+  ACTIVE_VOICE = {};
+  ['pak','tan','bon','punch'].forEach(t=>{
+    const src = skin.voice[t];
+    if(!src) return;
+    const a = new Audio(bust(src)); a.preload='auto'; a.volume=0.8;
+    ACTIVE_VOICE[t]=a;
+    const key=`voice:${skin.id}:${t}`;
+    const clones=Array.from({length:2},()=>{const c=a.cloneNode(); c.volume=a.volume; return c;});
+    VOICE_POOL[key]=[a,...clones];
+  });
+}
+function playSkinVoice(tech){
+  if(muted) return;
+  const skin = SKINS[activeSkinIdx];
+  if(ACTIVE_VOICE && ACTIVE_VOICE[tech]){
+    const key=`voice:${skin.id}:${tech}`;
+    const arr=VOICE_POOL[key]; if(!arr) return;
+    let s=arr.find(x=>x.paused); if(!s){ const t=arr[0]; s=t.cloneNode(); s.volume=t.volume; if(arr.length<5) arr.push(s); }
+    try{ s.currentTime=0; s.play().catch(()=>{}); }catch{}
+  } else {
+    // fallback vers les sons globaux existants
+    playKey('voice_'+tech);
+  }
+}
+
+/* Autoplay musique sur premier geste */
 let musicPrimed = false;
 function primeMusicOnce(){
   if(musicPrimed) return;
   musicPrimed = true;
   ensureAudioPool();
-  SFX.music.play().catch(()=>{ /* si refus, on réessaiera sur Start */ });
+  SFX.music.play().catch(()=>{});
   ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
     window.removeEventListener(ev, primeMusicOnce, true);
   });
@@ -471,7 +469,7 @@ function primeMusicOnce(){
   window.addEventListener(ev, primeMusicOnce, true);
 });
 
-/* ===== BG assets (lazy + priorité) ===== */
+/* ===== BG assets ===== */
 function mkImg(url, priority='auto'){
   const img=new Image();
   img.crossOrigin='anonymous';
@@ -480,29 +478,65 @@ function mkImg(url, priority='auto'){
   img.src=bust(url);
   return img;
 }
-const SKY    = mkImg('https://i.imgur.com/QW70yEx.png','high'); // => ...?v=20250817
-const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high'); // => ...?v=20250817
+const SKY    = mkImg('https://i.imgur.com/QW70yEx.png','high');
+const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high');
 let MT_NEAR=null, ALLEY=null;
 const rICB = window.requestIdleCallback || (cb=>setTimeout(cb,1));
 rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY = mkImg('https://i.imgur.com/hVGwPdp.png','low'); });
 
-/* ===== Sprites & skins (lazy) ===== */
+/* ===== Sprites & skins ===== */
 function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
+
+/* Inventaire des skins
+   - classic: gratuit/actif
+   - classic_alt: gratuit
+   - demon: VISIBLE MAIS VERROUILLÉ (non sélectionnable) */
 const SKINS = [
-  { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
-  { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } }
+  {
+    id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' },
+    // pas de voice spécifique => fallback sur SFX.voice_*
+    unlock:{ type:'free' }
+  },
+  {
+    id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
+    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' },
+    unlock:{ type:'free' }
+  },
+  {
+    id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png',
+    f:{
+      pak:   'https://i.imgur.com/FvJK22b.png',
+      tan:   'https://i.imgur.com/wNewS04.png',
+      bon:   'https://i.imgur.com/Eg1mCJq.png',
+      punch: 'https://i.imgur.com/lpJkx50.png'
+    },
+    // pas de voice fourni -> fallback
+    unlock:{ type:'locked', note:'Bientôt' } // visible, non achetable, non score, non sélectionnable
+  }
 ];
+
 const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:null, o_bon:null, o_punch:null, d_unique:null };
+
+/* Possessions */
+const OWNED_KEY = 'wcs_owned_skins_v1';
+function getOwned(){ try{ return new Set(JSON.parse(localStorage.getItem(OWNED_KEY)||'[]')); }catch{ return new Set(); } }
+function setOwned(set){ localStorage.setItem(OWNED_KEY, JSON.stringify([...set])); }
+const owned = getOwned();
+SKINS.forEach(s=>{ if(s.unlock?.type==='free') owned.add(s.id); });
+setOwned(owned);
 
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
-  const s=SKINS[idx]||SKINS[0]; activeSkinIdx=idx;
+  const s=SKINS[idx]||SKINS[0];
+  // sécurité: si non possédé, refuse
+  if(!owned.has(s.id)){ return; }
+  activeSkinIdx=idx;
   IMG.f_pak=load(s.f.pak,'high');
   rICB(()=>{ IMG.f_tan=load(s.f.tan,'low'); IMG.f_bon=load(s.f.bon,'low'); IMG.f_punch=load(s.f.punch,'low'); });
   localStorage.setItem('wcs_skin_idx', idx);
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
+  buildVoiceForSkin(s);
 }
 rICB(()=>{
   IMG.d_unique = load('https://i.imgur.com/LwBpPL3.png','low');
@@ -711,7 +745,7 @@ function setSpritesFor(tech){
   const LUNGE={pak:10,tan:12,bon:8,punch:14}; const SCALE={pak:1.03,tan:1.035,bon:1.03,punch:1.04};
   actionAnim={until: now+260, lunge:(LUNGE[tech]||10), scale:(SCALE[tech]||1.03)};
   const img = IMG['f_'+tech]; if(img) currentFighter = img;
-  setTimeout(()=> playKey('voice_'+tech), 100);
+  setTimeout(()=> playSkinVoice(tech), 100); // <-- voix par skin + fallback
 }
 function drawFighter(){
   const img=currentFighter, F=P().fighter; if(!img || !img.complete || !img.naturalWidth) return;
@@ -774,26 +808,23 @@ function setLit(tech,on){ const b=pads.find(x=>x.dataset.tech===tech); if(!b) re
 async function playSequence(){
   locked=true; await sleep(420);
   for(const tech of seq){
-    setSpritesFor(tech); setLit(tech,true); playTechniqueSounds(tech); showOno(tech);
+    setSpritesFor(tech); setLit(tech,true); playSkinVoice(tech); showOno(tech);
     await sleep(360); setLit(tech,false); await sleep(120);
   }
   locked=false; userIndex=0;
 }
 
-/* Popup helpers */
 function showGameOver(finalScore){
   goScoreEl.textContent = 'Score: ' + String(finalScore);
   goBestEl.textContent  = 'Meilleur: ' + String(best);
   gameOverEl.classList.add('open');
   setTimeout(()=>{ replayBtn?.focus(); }, 0);
 }
-function hideGameOver(){
-  gameOverEl.classList.remove('open');
-}
+function hideGameOver(){ gameOverEl.classList.remove('open'); }
 
 async function press(tech){
   if(locked) return;
-  setSpritesFor(tech); setLit(tech,true); playTechniqueSounds(tech); showOno(tech);
+  setSpritesFor(tech); setLit(tech,true); playSkinVoice(tech); showOno(tech);
   await sleep(180); setLit(tech,false);
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
@@ -810,16 +841,13 @@ async function press(tech){
 }
 function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 
-/* Entrées */
+/* Entrées pads */
 pads.forEach(b=>{
   b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
 });
 
 /* Rejouer & Partager */
-replayBtn.addEventListener('click', ()=>{
-  hideGameOver();
-  startGame();
-});
+replayBtn.addEventListener('click', ()=>{ hideGameOver(); startGame(); });
 async function shareBest(){
   const url = location.href.split('#')[0];
   const text = `Mon meilleur score sur Wing Chun Simon: ${best}`;
@@ -829,10 +857,7 @@ async function shareBest(){
   } else {
     try{
       await navigator.clipboard.writeText(`${text} — ${url}`);
-      // feedback visuel discret pour l'icône seule
-      const old = shareBtn.getAttribute('data-ico') || '📤';
-      shareBtn.style.transform = 'scale(1.05)';
-      shareBtn.textContent = '✅';
+      shareBtn.style.transform = 'scale(1.05)'; shareBtn.textContent = '✅';
       setTimeout(()=>{ shareBtn.textContent = ''; shareBtn.style.transform=''; }, 900);
     }catch{}
   }
@@ -843,26 +868,51 @@ function startGame(){
   hideGameOver();
   menu.style.display='none';
   ensureAudioPool();
-  if(!muted){
-    SFX.music.play().catch(()=>{ /* bloqué jusqu’à autre geste */ });
-  }
+  if(!muted){ SFX.music.play().catch(()=>{}); }
   seq=[randTech()]; score=0; updateScoreUI(); playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault(); startGame();});
 
-/* ===== Skins ===== */
-applySkin(activeSkinIdx);
+/* ===== Skins UI ===== */
+applySkin(activeSkinIdx); // appliquera le premier possédé (classique)
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
+
 function renderSkins(){
   skinsGrid.innerHTML='';
   SKINS.forEach((s,i)=>{
+    const isOwned = owned.has(s.id);
+    const isActive = (i===activeSkinIdx);
     const card=document.createElement('button');
-    card.className='skinCard'+(i===activeSkinIdx?' skinActive':'');
-    card.innerHTML=`<img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/><div style="font-weight:700">${s.name}</div>`;
-    card.onclick=()=>{applySkin(i); renderSkins();};
+    card.className='skinCard'+(isActive?' skinActive':'');
+    card.innerHTML=`
+      <img class="skinThumb" alt="${s.name}" src="${bust(s.thumb)}"/>
+      <div style="font-weight:700">${s.name}</div>
+      ${!isOwned ? `<div class="skinLock">🔒 ${s.unlock?.note || (s.unlock?.type==='locked'?'Bientôt':'')}</div>` : ''}
+    `;
+    card.onclick=()=>{
+      if(!isOwned){
+        if(s.unlock?.type==='locked'){ alert('Bientôt disponible.'); return; }
+        if(s.unlock?.type==='score'){ alert('Débloque-le en atteignant le score requis.'); return; }
+        if(s.unlock?.type==='iap'){ attemptPurchase(s); return; }
+        return;
+      }
+      applySkin(i); renderSkins();
+    };
     skinsGrid.appendChild(card);
   });
+}
+
+/* Achat (placeholder pour futur IAP/Play Billing) */
+async function attemptPurchase(skin){
+  if(skin.unlock?.type!=='iap') return;
+  if(window.AppBilling && typeof window.AppBilling.buy === 'function'){
+    try{ const ok = await window.AppBilling.buy(skin.unlock.sku); if(ok){ owned.add(skin.id); setOwned(owned); renderSkins(); } }catch{}
+    return;
+  }
+  // Fallback de maquette
+  const ok = confirm(`Simuler l'achat de "${skin.name}" ?`);
+  if(ok){ owned.add(skin.id); setOwned(owned); renderSkins(); }
 }
 
 /* ===== Boucle ===== */
@@ -1020,13 +1070,33 @@ if (!window.__T_BIND) {
   window.__T_BIND = true;
 }
 
+/* ===== Invite de mise à jour APK ===== */
+const UPDATE_CHECK_URL = bust('/version.json'); // fournis sur ton serveur
+async function checkForUpdate(){
+  try{
+    const res = await fetch(UPDATE_CHECK_URL, {cache:'no-store'});
+    if(!res.ok) return;
+    const data = await res.json(); // { latest:"20250819", apk:"https://ton.site/wingchun.apk" }
+    if(String(data.latest||'') !== String(APP_VERSION)){
+      const p = document.getElementById('updatePrompt');
+      const link = document.getElementById('updateLink');
+      if(link && data.apk) link.href = data.apk;
+      if(p) p.style.display='grid';
+    }
+  }catch{}
+}
+
 /* ===== Init ===== */
 function init(){
   resize();
+  // applique un skin possédé (si l'index stocké n'est pas possédé, on force classic)
+  if(!owned.has(SKINS[activeSkinIdx]?.id)) activeSkinIdx = SKINS.findIndex(s=>owned.has(s.id)) || 0;
   applySkin(activeSkinIdx);
   const tag = document.getElementById('appVersion');
   if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION;
   requestAnimationFrame(loop);
+  // check update après boot
+  checkForUpdate();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
