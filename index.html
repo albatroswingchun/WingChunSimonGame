@@ -1375,6 +1375,29 @@ if (document.readyState === 'loading') {
   } else {
     window.addEventListener('resize', applyVH, {passive:true});
   }
+
+  // === Cheat code DEBUG : double D pour (dé)bloquer Demon ===
+window.addEventListener('keydown', (e)=>{
+  if(e.key.toLowerCase() === 'd'){
+    if(window._lastCheat && Date.now()-window._lastCheat < 600){
+      const demonSkin = SKINS.find(s=>s.id==='demon');
+      if(!demonSkin) return;
+
+      if(isUnlocked(demonSkin)){
+        // Rebloquer
+        lockedSkins.add('demon');
+        alert("Cheat activé : Demon REBLOQUÉ !");
+      } else {
+        // Débloquer
+        unlockSkin('demon');
+        showNewSkinPopup(demonSkin);
+        alert("Cheat activé : Demon DÉBLOQUÉ !");
+      }
+    }
+    window._lastCheat = Date.now();
+  }
+});
+
 })();
 </script>
 </body>
