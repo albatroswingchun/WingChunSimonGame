@@ -1,3 +1,4 @@
+
 "<!doctype html>
 <html lang="fr">
 <head>
@@ -1462,90 +1463,7 @@ if (document.readyState === 'loading') {
     window.addEventListener('resize', applyVH, {passive:true});
   }
 
-  <!-- === Addon SKIN: MONKING (drop-in) === -->
-<script>
-(function(){
-  // Sanity: vérifie que le script principal est chargé
-  if (!window.SKINS || !window.SFX || !window.VOICE_PACKS || !window.VOICE_PACK_ID) {
-    console.warn('[Monking] Script principal non prêt.');
-    return;
-  }
-
-  // 1) Sons voix Monking (mêmes règles que Demon/Default)
-  //    Chemins avec espaces acceptés (comme déjà pour Demon)
-  function A(src){ const a=new Audio(src); a.preload='none'; try{ a.src=bust(a.src);}catch{} return a; }
-  SFX.monking_pak   = SFX.monking_pak   || A('assets/sounds/Son1 Monking.wav');
-  SFX.monking_tan   = SFX.monking_tan   || A('assets/sounds/Son2 Monking.wav');
-  SFX.monking_bon   = SFX.monking_bon   || A('assets/sounds/Son3 Monking.wav');
-  SFX.monking_punch = SFX.monking_punch || A('assets/sounds/Son4 Monking.wav');
-
-  // Volumes alignés sur les autres packs (0.8)
-  try {
-    SFX.monking_pak.volume = SFX.monking_tan.volume =
-    SFX.monking_bon.volume = SFX.monking_punch.volume = 0.8;
-  } catch {}
-
-  // 2) Pack de voix + mapping de skin -> pack
-  VOICE_PACKS.monking = {
-    pak:   'monking_pak',
-    tan:   'monking_tan',
-    bon:   'monking_bon',
-    punch: 'monking_punch'
-  };
-  VOICE_PACK_ID.monking = 'monking';
-
-  // 3) Déclaration du skin Monking
-  //    thumb = image "verrouillé" (utilisée si un jour tu décides de le lock)
-  const MONKING_DEF = {
-    id: 'monking',
-    name: 'Monking',
-    thumb: 'https://i.imgur.com/cCAmBya.png',             // Personnage verrouillé
-    // Sprites par technique
-    f: {
-      tan:   'https://i.imgur.com/CyyeLpi.png',            // Tan
-      bon:   'https://i.imgur.com/aBXIgsS.png',            // Bon
-      punch: 'https://i.imgur.com/zBsBY7G.png',            // Punch
-      pak:   'https://i.imgur.com/NDj4Qyw.png'             // Pak
-    }
-    // Pas de "locked:true" ici => utilisable immédiatement
-  };
-
-  // Évite le doublon si réinjection
-  if (!SKINS.find(s => s.id === 'monking')) {
-    SKINS.push(MONKING_DEF);
-  }
-
-  // 4) Assure une config de placement par-skin pour Monking
-  //    On clone celle du skin "classic" si dispo, sinon "fighter"
-  function ensureSkinConfigObject(E){
-    if(!E.skins) E.skins = {};
-    SKINS.forEach(s=>{
-      if(!E.skins[s.id]) E.skins[s.id] = { ...E.fighter };
-    });
-  }
-  try {
-    ['pc','mobile'].forEach(p=>{
-      const E = (window.CFG && CFG.profiles && CFG.profiles[p]) ? CFG.profiles[p] : null;
-      if(!E) return;
-      ensureSkinConfigObject(E);
-      if (!E.skins.monking) {
-        E.skins.monking = E.skins.classic ? { ...E.skins.classic } : { ...E.fighter };
-      }
-    });
-    // Sauvegarde la CFG si possible
-    if (typeof saveCFG === 'function') saveCFG();
-  } catch(e){
-    console.warn('[Monking] Config skins: ', e);
-  }
-
-  // 5) Rafraîchis l’UI Skins et le panneau Dev si ouverts
-  try { if (typeof renderSkins === 'function') renderSkins(); } catch {}
-  try { if (typeof buildDevPanel === 'function') buildDevPanel(); } catch {}
-
-  console.log('[Monking] Skin installé.');
-})();
-
-// === Cheat code DEBUG : double D pour (dé)bloquer Demon ===
+  // === Cheat code DEBUG : double D pour (dé)bloquer Demon ===
 window.addEventListener('keydown', (e)=>{
   if(e.key.toLowerCase() === 'd'){
     if(window._lastCheat && Date.now()-window._lastCheat < 600){
@@ -1568,5 +1486,76 @@ window.addEventListener('keydown', (e)=>{
 
 })();
 </script>
+  
+  <!-- === Addon SKIN: MONKING (drop-in) === -->
+<script>
+(function(){
+  // Sanity: vérifier que l’app est prête
+  if (!window.SKINS || !window.SFX || !window.VOICE_PACKS || !window.VOICE_PACK_ID) {
+    console.warn('[Monking] Script principal non prêt.');
+    return;
+  }
+
+  // 1) Sons voix Monking
+  function A(src){ const a=new Audio(src); a.preload='none'; try{ a.src=bust(a.src);}catch{} return a; }
+  SFX.monking_pak   = SFX.monking_pak   || A('assets/sounds/Son1 Monking.wav');
+  SFX.monking_tan   = SFX.monking_tan   || A('assets/sounds/Son2 Monking.wav');
+  SFX.monking_bon   = SFX.monking_bon   || A('assets/sounds/Son3 Monking.wav');
+  SFX.monking_punch = SFX.monking_punch || A('assets/sounds/Son4 Monking.wav');
+  try {
+    SFX.monking_pak.volume = SFX.monking_tan.volume =
+    SFX.monking_bon.volume = SFX.monking_punch.volume = 0.8;
+  } catch {}
+
+  // 2) Pack de voix et association au skin
+  VOICE_PACKS.monking = {
+    pak: 'monking_pak', tan: 'monking_tan', bon: 'monking_bon', punch: 'monking_punch'
+  };
+  VOICE_PACK_ID.monking = 'monking';
+
+  // 3) Déclaration du skin Monking
+  const MONKING_DEF = {
+    id: 'monking',
+    name: 'Monking',
+    thumb: 'https://i.imgur.com/cCAmBya.png',
+    f: {
+      tan:   'https://i.imgur.com/CyyeLpi.png',
+      bon:   'https://i.imgur.com/aBXIgsS.png',
+      punch: 'https://i.imgur.com/zBsBY7G.png',
+      pak:   'https://i.imgur.com/NDj4Qyw.png'
+    }
+  };
+
+  if (!SKINS.find(s => s.id === 'monking')) {
+    SKINS.push(MONKING_DEF);
+  }
+
+  // 4) Placement par-skin (clone "classic" ou fallback "fighter")
+  function ensureSkinConfigObject(E){
+    if(!E.skins) E.skins = {};
+    SKINS.forEach(s=>{ if(!E.skins[s.id]) E.skins[s.id] = { ...E.fighter }; });
+  }
+  try {
+    ['pc','mobile'].forEach(p=>{
+      const E = (window.CFG && CFG.profiles && CFG.profiles[p]) ? CFG.profiles[p] : null;
+      if(!E) return;
+      ensureSkinConfigObject(E);
+      if (!E.skins.monking) {
+        E.skins.monking = E.skins.classic ? { ...E.skins.classic } : { ...E.fighter };
+      }
+    });
+    if (typeof saveCFG === 'function') saveCFG();
+  } catch(e){
+    console.warn('[Monking] Config skins: ', e);
+  }
+
+  // 5) Refresh UI
+  try { if (typeof renderSkins === 'function') renderSkins(); } catch {}
+  try { if (typeof buildDevPanel === 'function') buildDevPanel(); } catch {}
+
+  console.log('[Monking] Skin installé.');
+})();
+</script>
+
 </body>
 </html>
