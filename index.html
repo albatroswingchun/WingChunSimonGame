@@ -716,9 +716,8 @@ const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:
 const DEMON_UNLOCK_SCORE = 15;
 function isUnlocked(skin){ if(!skin.locked) return true; return localStorage.getItem('skin_unlocked_'+skin.id) === '1'; }
 function isUnlockedSkinId(id){ const s=SKINS.find(x=>x.id===id); return s ? isUnlocked(s) : false; }
-function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1');
+function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1'); }
 function lockSkin(id){ localStorage.removeItem('skin_unlocked_'+id); }
-}
 
 let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
@@ -726,6 +725,7 @@ function applySkin(idx){
   if(s.locked && !isUnlocked(s)){ renderSkins(); return; }
   activeSkinIdx=idx;
   currentSkinId = s.id; // <— mémorise l'id du skin actif
+  IMG.f_pak   = load(s.f.pak,'high');
   rICB(()=>{ IMG.f_tan=load(s.f.tan,'low'); IMG.f_bon=load(s.f.bon,'low'); IMG.f_punch=load(s.f.punch,'low'); });
   localStorage.setItem('wcs_skin_idx', idx);
   currentFighter = IMG['f_'+currentTech] || IMG.f_pak;
@@ -851,6 +851,13 @@ function migrate7to8(p){
   out.dummy   = p.dummy   || out.dummy;
   out.onoByTech = (p.onoByTech) ? p.onoByTech
                  : (p.ono ? {pak:p.ono,tan:p.ono,bon:p.ono,punch:p.ono} : deepClone(SEEDED_PROFILES.pc.onoByTech));
+  // Assure une structure skins si absente, basée sur fighter
+if(!out.skins){
+  out.skins = {};
+  ['classic','classic_alt','demon'].forEach(id=>{
+    out.skins[id] = { ...out.fighter };
+  });
+}
   return out;
 }
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
@@ -961,7 +968,7 @@ function setSpritesFor(tech){
   setTimeout(()=> playVoiceFor(tech), 100);
 }
 function drawFighter(){
-  const img=currentFighter, F=P().fighter; if(!img || !img.complete || !img.naturalWidth) return;
+  const img=currentFighter, F=activeSkinCfg(); if(!img || !img.complete || !img.naturalWidth) return;
   const baseW=Math.max(60, F.wPct*W);
   const finalW=baseW*((performance.now()<actionAnim.until)?actionAnim.scale:1);
   const finalH=img.naturalHeight*(finalW/img.naturalWidth);
@@ -1318,6 +1325,24 @@ section('Skin courant: ' + (SKINS[activeSkinIdx]?.name || currentSkinId || 'inco
 ensureSkinConfigObject(E);
 const currId = SKINS[activeSkinIdx]?.id || currentSkinId || 'classic';
 const SC = (E.skins[currId] ||= { ...E.fighter });
+const P = ()=> CFG.profiles[viewingProfileName()];
+
+  function ensureSkinConfigObject(E){
+  // crée E.skins si absent + garantit une entrée pour chaque skin connu
+  if(!E.skins) E.skins = {};
+  SKINS.forEach(s=>{
+    if(!E.skins[s.id]){
+      // duplique le bloc fighter comme base
+      E.skins[s.id] = { ...E.fighter };
+    }
+  });
+}
+
+function activeSkinCfg(){
+  const E = CFG.profiles[viewingProfileName()];
+  ensureSkinConfigObject(E);
+  return (currentSkinId && E.skins[currentSkinId]) ? E.skins[currentSkinId] : E.fighter;
+}
 
 // Sliders par skin
 addRange(devPanel,'Largeur % écran',SC,'wPct',{min:0.05,max:0.6,step:0.001});
