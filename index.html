@@ -244,14 +244,14 @@
     }
     #goScore{
       font-family:'Permanent Marker',cursive;
-      font-size: 28px;          /* plus petit */
+      font-size: 28px;
       color: var(--scoreYellow);
       text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28);
       line-height:1;
     }
     #goBest{
       font-family:'Permanent Marker',cursive;
-      font-size: 20px;          /* encore plus petit */
+      font-size: 20px;
       color:#ffd48a;
       text-shadow: 0 1px 0 #000;
       opacity:.95;
@@ -296,10 +296,39 @@
     .ns-btn{ background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; }
     .ns-btn:hover{ filter:brightness(1.06); }
 
-    .skinCard div {
-  color: #fff; /* blanc */
-}
+    /* === BEST SCORE POPUP + CONFETTIS === */
+    #bestPopup{
+      position:fixed; inset:0; display:none; place-items:center;
+      background:rgba(0,0,0,.55); z-index:60; backdrop-filter: blur(2px);
+    }
+    #bestPopup.open{ display:grid; }
+    #bestPopup .bp-panel{
+      position:relative;
+      background:#1a1716; border:1px solid #3a302d; border-radius:16px;
+      padding:24px 22px; width:min(92vw, 420px); text-align:center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    }
+    #bestPopup .bp-title{
+      font-family:'Permanent Marker',cursive;
+      font-weight:900;
+      font-size: clamp(32px, calc(var(--stageW)*0.10), 64px);
+      color: var(--scoreYellow);
+      text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
+      letter-spacing: 1px;
+      line-height: .9;
+      margin: 0 0 10px;
+    }
+    #bestPopup .bp-sub{ opacity:.9; margin-bottom:12px; }
+    #bestPopup .bp-ok{
+      background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;
+      border-radius:12px; padding:12px 18px; font-weight:900; cursor:pointer;
+    }
+    #confetti{
+      position:fixed; inset:0; pointer-events:none; z-index:59;
+    }
 
+    /* Noms de skins en blanc */
+    .skinCard div { color: #fff; }
   </style>
 </head>
 <body>
@@ -379,6 +408,16 @@ Une case s’allume. Le joueur doit appuyer dessus. À chaque tour, la séquence
     </div>
   </div>
 
+  <!-- === BEST SCORE POPUP === -->
+  <div id="bestPopup" aria-modal="true" role="dialog">
+    <div class="bp-panel" role="document">
+      <div class="bp-title">Best Score!</div>
+      <div class="bp-sub">Nouveau record battu 🎉</div>
+      <button id="bpOk" class="bp-ok">OK</button>
+    </div>
+  </div>
+  <canvas id="confetti"></canvas>
+
   <!-- === NEW SKIN unlocked === -->
   <div id="newSkin" aria-modal="true" role="dialog">
     <div class="ns-panel" role="document">
@@ -400,7 +439,7 @@ Une case s’allume. Le joueur doit appuyer dessus. À chaque tour, la séquence
 <script>
 /* ===== Version app ===== */
 const APP_VERSION = '20250821'; // version unique
-const APP_LABEL   = 'v3.150'; /* label */
+const APP_LABEL   = 'v3.151'; /* label + best popup */
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -456,6 +495,15 @@ const nsThumbEl = document.getElementById('nsThumb');
 const nsNameEl  = document.getElementById('nsName');
 const nsViewBtn = document.getElementById('nsViewBtn');
 const nsOkBtn   = document.getElementById('nsOkBtn');
+
+/* === Best Score popup refs === */
+const bestPopup = document.getElementById('bestPopup');
+const bpOk      = document.getElementById('bpOk');
+const confettiCv= document.getElementById('confetti');
+const confettiCx= confettiCv.getContext('2d');
+
+/* On mémorise le best au début de chaque partie */
+let runPrevBest = 0;
 
 /* ===== Audio (chargement paresseux) ===== */
 function A(src){ const a=new Audio(src); a.preload='none'; try{a.src=bust(a.src);}catch{} return a; }
@@ -526,10 +574,7 @@ const VOICE_PACKS = {
 };
 let currentVoicePack = VOICE_PACKS.default;
 
-/* === IMPORTANT: sons mannequin rétablis comme avant ===
-   - SFX technique = immédiat (via playTechniqueSounds)
-   - Voix (Yah) = déclenchée dans setSpritesFor après 100ms (comme l’ancien code).
-*/
+/* IMPORTANT: sons du mannequin conservés (technique + voix) */
 function playTechniqueSounds(tech){ playKey(tech); }
 function playVoiceFor(tech){
   const key = (currentVoicePack[tech] || VOICE_PACKS.default[tech]);
@@ -542,8 +587,7 @@ function primeMusicOnce(){
   if(musicPrimed) return;
   musicPrimed = true;
   ensureAudioPool();
-  SFX.music.play().catch(()=>{ /* si refus, on réessaiera sur Start */ });
-  // nettoie les écouteurs une fois la tentative faite
+  SFX.music.play().catch(()=>{});
   ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
     window.removeEventListener(ev, primeMusicOnce, true);
   });
@@ -740,6 +784,8 @@ function resize(){
   document.documentElement.style.setProperty('--stageH', H + 'px');
   document.body.classList.toggle('isPortrait', isPortrait());
 
+  fitConfetti();
+
   if(onoSticky) showOnoSticky();
 }
 addEventListener('resize', resize);
@@ -809,7 +855,7 @@ function setSpritesFor(tech){
   actionAnim={until: now+260, lunge:(LUNGE[tech]||10), scale:(SCALE[tech]||1.03)};
   const img = IMG['f_'+tech]; if(img) currentFighter = img;
 
-  /* === voix : on garde le comportement d'avant (appel depuis setSpritesFor) === */
+  /* voix (Yah) depuis setSpritesFor, comme avant */
   setTimeout(()=> playVoiceFor(tech), 100);
 }
 function drawFighter(){
@@ -862,6 +908,53 @@ function showOnoSticky(){
 }
 function hideOnoSticky(){ onoImg.style.opacity = '0'; onoImg.classList.remove('onoShow'); }
 
+/* ===== Confettis (Best Score) ===== */
+function fitConfetti(){
+  confettiCv.width  = window.innerWidth;
+  confettiCv.height = window.innerHeight;
+}
+window.addEventListener('resize', fitConfetti, {passive:true});
+fitConfetti();
+
+function launchConfetti(durationMs = 2500){
+  const W = confettiCv.width, H = confettiCv.height;
+  const N = Math.min(220, Math.floor((W*H)/18000));
+  const g = 0.12;
+  const pieces = Array.from({length:N}, ()=>({
+    x: Math.random()*W,
+    y: -20 - Math.random()*H*0.4,
+    vx: (Math.random()*2-1)*1.2,
+    vy: Math.random()*-1.5,
+    w: 6+Math.random()*6,
+    h: 8+Math.random()*8,
+    rot: Math.random()*Math.PI*2,
+    vr: (Math.random()*2-1)*0.15,
+    c: `hsl(${Math.random()*360},90%,60%)`,
+  }));
+
+  let alive = true;
+  const tEnd = performance.now() + durationMs;
+  (function tick(){
+    if(!alive) return;
+    const t = performance.now();
+    confettiCx.clearRect(0,0,W,H);
+    for(const p of pieces){
+      p.vy += g;
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.rot+= p.vr;
+      if(p.y > H + 24){ p.y = -24; p.x = Math.random()*W; p.vy = Math.random()*-2; }
+      confettiCx.save();
+      confettiCx.translate(p.x, p.y);
+      confettiCx.rotate(p.rot);
+      confettiCx.fillStyle = p.c;
+      confettiCx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      confettiCx.restore();
+    }
+    if (t < tEnd) requestAnimationFrame(tick);
+  })();
+}
+
 /* ===== Simon ===== */
 let seq=[], userIndex=0, locked=true, score=0;
 let best=+localStorage.getItem('wcs_best')||0; bestEl.textContent=best;
@@ -884,7 +977,6 @@ function showGameOver(finalScore){
   goScoreEl.textContent = 'Score: ' + String(finalScore);
   goBestEl.textContent  = 'Meilleur: ' + String(best);
   gameOverEl.classList.add('open');
-  // focus accessible
   setTimeout(()=>{ replayBtn?.focus(); }, 0);
 }
 function hideGameOver(){
@@ -898,6 +990,16 @@ function showNewSkinPopup(skin){
 }
 function hideNewSkinPopup(){ newSkinEl.classList.remove('open'); }
 
+function showBestPopup(){
+  bestPopup.classList.add('open');
+  launchConfetti(3000);
+  setTimeout(()=>bpOk?.focus(), 0);
+}
+function hideBestPopup(){
+  bestPopup.classList.remove('open');
+}
+bpOk?.addEventListener('click', hideBestPopup);
+
 let demonPopupShownThisRun = false;
 
 async function press(tech){
@@ -907,7 +1009,19 @@ async function press(tech){
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     locked = true;
+
+    /* Fin de partie */
     showGameOver(score);
+
+    /* Popup Best Score si score final > best du début de la run */
+    if (score > runPrevBest){
+      if(score > best){ 
+        best = score; 
+        bestEl.textContent = best; 
+        localStorage.setItem('wcs_best',best);
+      }
+      showBestPopup();
+    }
     return;
   }
   userIndex++;
@@ -953,7 +1067,6 @@ async function shareBest(){
   } else {
     try{
       await navigator.clipboard.writeText(`${text} — ${url}`);
-      // feedback visuel discret pour l'icône seule
       shareBtn.style.transform = 'scale(1.05)';
       shareBtn.textContent = '✅';
       setTimeout(()=>{ shareBtn.textContent = ''; shareBtn.style.transform=''; }, 900);
@@ -965,12 +1078,15 @@ shareBtn.addEventListener('click', shareBest);
 function startGame(){
   hideGameOver();
   hideNewSkinPopup();
+  hideBestPopup();
   menu.style.display='none';
   ensureAudioPool();
-  // tente de jouer la musique si pas encore lancée
   if(!muted){
-    SFX.music.play().catch(()=>{ /* déjà tenté, ou bloqué jusqu’à autre geste */ });
+    SFX.music.play().catch(()=>{});
   }
+  /* mémorise le best au début de la partie pour la popup record */
+  runPrevBest = +localStorage.getItem('wcs_best') || best || 0;
+
   seq=[randTech()]; score=0; demonPopupShownThisRun=false; updateScoreUI(); playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
