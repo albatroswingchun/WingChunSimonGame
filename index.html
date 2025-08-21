@@ -650,7 +650,7 @@ muteBtn.onclick=()=>{
 };
 
 /* === Packs voix par skin === */
-const VOICE_PACK_ID = { classic:'default', classic_alt:'default', demon:'demon' };
+const VOICE_PACK_ID = { classic:'default', demon:'demon' };
 const VOICE_PACKS = {
   default: { pak:'voice_pak', tan:'voice_tan', bon:'voice_bon', punch:'voice_punch' },
   demon:   { pak:'demon_pak', tan:'demon_tan', bon:'demon_bon', punch:'demon_punch' }
@@ -698,8 +698,6 @@ rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY = mkI
 function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
 const SKINS = [
   { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
-    f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
-  { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
   /* === DEMON verrouillé de base === */
   { id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png', locked:true,
@@ -760,9 +758,8 @@ const SEEDED_PROFILES = {
     },
     // === NOUVEAU : réglages par skin (PC) ===
     skins: {
-      classic:     { wPct: 0.165, centerX: 0.51,  bottomPct: 0.09  },
-      classic_alt: { wPct: 0.165, centerX: 0.51,  bottomPct: 0.09  },
-      demon:       { wPct: 0.185, centerX: 0.515, bottomPct: 0.085 }
+      classic: { wPct: 0.165, centerX: 0.51,  bottomPct: 0.09  },
+      demon:   { wPct: 0.185, centerX: 0.515, bottomPct: 0.085 }
     }
   },
   mobile: {
@@ -783,9 +780,8 @@ const SEEDED_PROFILES = {
     },
     // === NOUVEAU : réglages par skin (Mobile) ===
     skins: {
-      classic:     { wPct: 0.437, centerX: 0.51,  bottomPct: 0.124 },
-      classic_alt: { wPct: 0.437, centerX: 0.51,  bottomPct: 0.124 },
-      demon:       { wPct: 0.465, centerX: 0.515, bottomPct: 0.120 }
+      classic: { wPct: 0.437, centerX: 0.51,  bottomPct: 0.124 },
+      demon:   { wPct: 0.465, centerX: 0.515, bottomPct: 0.120 }
     }
   }
 };
@@ -849,7 +845,7 @@ function migrate7to8(p){
   // Assure une structure skins si absente, basée sur fighter
 if(!out.skins){
   out.skins = {};
-  ['classic','classic_alt','demon'].forEach(id=>{
+  ['classic','demon'].forEach(id=>{
     out.skins[id] = { ...out.fighter };
   });
 }
