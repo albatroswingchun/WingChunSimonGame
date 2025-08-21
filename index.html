@@ -1341,61 +1341,6 @@ function activeSkinCfg(){
     : E.fighter;
 }
 
-// === Panneau de dev ===
-function buildDevPanel(){
-  const pan=document.createElement('div');
-  pan.id='devPanel';
-  pan.style.cssText='position:fixed;top:0;right:0;width:320px;height:100%;background:#111;color:#eee;overflow:auto;font:14px monospace;z-index:9999;display:none;padding:6px';
-  document.body.appendChild(pan);
-
-  // Bouton toggle
-  const btn=document.createElement('button');
-  btn.textContent='Toggle Dev Panel (T)';
-  btn.style.cssText='position:fixed;top:0;left:0;z-index:10000';
-  document.body.appendChild(btn);
-  btn.onclick=()=>{ pan.style.display = (pan.style.display==='none')?'block':'none'; renderDevPanel(); };
-
-  function renderDevPanel(){
-    const E=P();
-    ensureSkinConfigObject(E); // important pour éviter undefined
-    let h=`<h3>Dev Panel - ${viewingProfileName()}</h3>`;
-
-    // sliders globaux
-    h+=`<h4>Fighter Global</h4>`;
-    for(const k of Object.keys(E.fighter)){
-      h+=`<label>${k}<input type="number" step="0.001" data-scope="fighter" data-key="${k}" value="${E.fighter[k]}"></label><br>`;
-    }
-
-    // sliders par skin
-    h+=`<h4>Fighter par Skin</h4>`;
-    const currId=currentSkinId||'classic';
-    const SC=(E.skins[currId] ||= { ...E.fighter });
-    h+=`<div>Skin actif: ${currId}</div>`;
-    for(const k of Object.keys(SC)){
-      h+=`<label>${k}<input type="number" step="0.001" data-scope="skin" data-key="${k}" value="${SC[k]}"></label><br>`;
-    }
-
-    pan.innerHTML=h;
-
-    pan.querySelectorAll('input').forEach(inp=>{
-      inp.oninput=e=>{
-        const val=parseFloat(inp.value);
-        if(inp.dataset.scope==='fighter'){
-          E.fighter[inp.dataset.key]=val;
-        } else if(inp.dataset.scope==='skin'){
-          E.skins[currId][inp.dataset.key]=val;
-        }
-        persistCfg();
-        renderDevPanel();
-      };
-    });
-  }
-
-  window.addEventListener('keydown',e=>{
-    if(e.key==='T' || e.key==='t'){ pan.style.display=(pan.style.display==='none')?'block':'none'; renderDevPanel(); }
-  });
-}
-
 // Sliders par skin
 addRange(devPanel,'Largeur % écran',SC,'wPct',{min:0.05,max:0.6,step:0.001});
 addRange(devPanel,'Centre X %',SC,'centerX',{min:0,max:1,step:0.001});
