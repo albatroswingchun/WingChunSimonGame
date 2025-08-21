@@ -1272,11 +1272,29 @@ function bar(){
   hint.textContent='Profil en jeu (auto): '+activeRuntime+' • Profil affiché: '+activeView;
   devPanel.appendChild(hint);
 }
+// === Gestion des skins dans les profils ===
+function ensureSkinConfigObject(E){
+  if(!E.skins) E.skins = {};
+  SKINS.forEach(s=>{
+    if(!E.skins[s.id]){
+      E.skins[s.id] = { ...E.fighter }; // clone fighter comme base
+    }
+  });
+}
+
+function activeSkinCfg(){
+  const E = CFG.profiles[viewingProfileName()];
+  ensureSkinConfigObject(E);
+  return (currentSkinId && E.skins[currentSkinId])
+    ? E.skins[currentSkinId]
+    : E.fighter;
+}
+  
 function buildDevPanel(){
-  devPanel.innerHTML=''; header(); bar(); sep();
-  const E = CFG.profiles[CFG.editingProfile];
-  const isMobileProfile = (CFG.editingProfile === 'mobile');
-  const SCALE_RANGE = {
+   devPanel.innerHTML=''; header(); bar(); sep();
+    const E = CFG.profiles[CFG.editingProfile];
+    const isMobileProfile = (CFG.editingProfile === 'mobile');
+    const SCALE_RANGE = {
     sky:  { min: isMobileProfile ? 0.02 : 0.50, max: isMobileProfile ? 10.0 : 3.0 },
     far:  { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
     near: { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
@@ -1315,37 +1333,16 @@ function buildDevPanel(){
   sep();
 
   // === Réglages PAR SKIN (basés sur le skin actif) ===
-section('Skin courant: ' + (SKINS[activeSkinIdx]?.name || currentSkinId || 'inconnu'));
-ensureSkinConfigObject(E);
-const currId = SKINS[activeSkinIdx]?.id || currentSkinId || 'classic';
-const SC = (E.skins[currId] ||= { ...E.fighter });
-  
-// === Helpers profil courant ===
-const P = ()=> CFG.profiles[viewingProfileName()];
-
-// === Gestion des skins dans les profils ===
-function ensureSkinConfigObject(E){
-  if(!E.skins) E.skins = {};
-  SKINS.forEach(s=>{
-    if(!E.skins[s.id]){
-      E.skins[s.id] = { ...E.fighter }; // clone fighter comme base
-    }
-  });
-}
-
-function activeSkinCfg(){
-  const E = CFG.profiles[viewingProfileName()];
+  section('Skin courant: ' + (SKINS[activeSkinIdx]?.name || currentSkinId || 'inconnu'));
   ensureSkinConfigObject(E);
-  return (currentSkinId && E.skins[currentSkinId]) 
-    ? E.skins[currentSkinId] 
-    : E.fighter;
-}
+  const currId = SKINS[activeSkinIdx]?.id || currentSkinId || 'classic';
+  const SC = (E.skins[currId] ||= { ...E.fighter });
 
-// Sliders par skin
-addRange(devPanel,'Largeur % écran',SC,'wPct',{min:0.05,max:0.6,step:0.001});
-addRange(devPanel,'Centre X %',SC,'centerX',{min:0,max:1,step:0.001});
-addRange(devPanel,'Bas %',SC,'bottomPct',{min:-0.1,max:0.4,step:0.001});
-sep();
+  // Sliders par skin
+  addRange(devPanel,'Largeur % écran',SC,'wPct',{min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',SC,'centerX',{min:0,max:1,step:0.001});
+  addRange(devPanel,'Bas %',SC,'bottomPct',{min:-0.1,max:0.4,step:0.001});
+  sep();
 
 // Petite barre utilitaire
 const bar2 = document.createElement('div'); bar2.className='bar';
