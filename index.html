@@ -2,27 +2,47 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8"/>
+  <!-- Anti-cache HTML (utile mais insuffisant seul) -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <title>Wing Chun - Simon Game</title>
 
+  <!-- Police -->
   <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+
+  <!-- Preload images (URL EXACTEMENT identiques à celles utilisées dans le JS) -->
   <link rel="preload" as="image" href="https://i.imgur.com/QW70yEx.png?v=20250817">
   <link rel="preload" as="image" href="https://i.imgur.com/I4gOsXm.png?v=20250817">
 
   <style>
     :root{
-      --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8; --gold:#d1a341; --scoreYellow:#FFD700;
-      --simon-red:#d34b43; --simon-green:#4cb36c; --simon-blue:#3d74d6; --simon-yellow:#d1a341;
-      --tech-glow-spread: 24px; --tech-glow-blur: 36px; --bestBadgeShift: 20px;
+      --panel:#1c1715; --panel2:#241d1b; --ink:#e8d6b8; --gold:#d1a341;
+      --scoreYellow:#FFD700;
+
+      /* === Couleurs Simon + intensité halo === */
+      --simon-red:#d34b43;
+      --simon-green:#4cb36c;
+      --simon-blue:#3d74d6;
+      --simon-yellow:#d1a341;
+      --tech-glow-spread: 24px;
+      --tech-glow-blur: 36px;
+
+      --bestBadgeShift: 20px;
     }
-    :root{ --vh: 100svh; } @supports (height: 100dvh) { :root{ --vh: 100dvh; } }
+
+    /* Hauteur viewport stable mobiles */
+    :root{ --vh: 100svh; }
+    @supports (height: 100dvh) { :root{ --vh: 100dvh; } }
+
+    /* Taille du stage exposée au CSS */
     :root { --stageW: 100vw; --stageH: var(--vh); }
 
     html,body{margin:0;height:100%;background:#0b0a0a;color:#eee;font-family:system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
     #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto; min-height: var(--vh);}
+
     header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:8px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border-bottom:1px solid #2a2322;z-index:20}
     .chip{padding:6px 10px;border-radius:9px;background:#2a2422;border:1px solid #3a302d}
     .btn{background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
@@ -32,25 +52,44 @@
     #stageWrap{position:relative;display:grid;place-items:center;overflow:hidden;background:#000}
     #stage{position:relative}
     canvas{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges}
+
     #board{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:14px;z-index:10}
 
+    /* === .pad avec police du score, plus lisible === */
     .pad{
-      width:132px;height:100px;border-radius:14px;background:linear-gradient(#2a2a2a,#1e1e1e);
-      color:#cfcfcf;display:flex;align-items:center;justify-content:center;font-weight:900;
-      font-family:'Permanent Marker',cursive;text-transform:uppercase; letter-spacing:.5px;
-      box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45); cursor:pointer;user-select:none;
+      width:132px;height:100px;border-radius:14px;
+      background:linear-gradient(#2a2a2a,#1e1e1e);
+      color:#cfcfcf;display:flex;align-items:center;justify-content:center;
+      font-weight:900;
+      font-family:'Permanent Marker',cursive;
+      text-transform:uppercase; letter-spacing:.5px;
+      box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
+      cursor:pointer;user-select:none;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .pad[data-tech="punch"]{ color: var(--simon-red); }
+
+    /* === couleur par technique (sert au halo via currentColor) === */
+    .pad[data-tech="punch"]{ color: var(--simon-red);   }
     .pad[data-tech="pak"]  { color: var(--simon-green); }
-    .pad[data-tech="tan"]  { color: var(--simon-blue); }
-    .pad[data-tech="bon"]  { color: var(--simon-yellow); }
+    .pad[data-tech="tan"]  { color: var(--simon-blue);  }
+    .pad[data-tech="bon"]  { color: var(--simon-yellow);}
+
+    /* === Surbrillance façon Simon === */
     .lit{
       filter: brightness(1.85) saturate(1.15);
-      box-shadow: inset 0 0 0 2px #fff3, 0 0 var(--tech-glow-spread) currentColor, 0 0 var(--tech-glow-blur) currentColor, 0 8px 26px rgba(0,0,0,.50);
+      box-shadow:
+        inset 0 0 0 2px #fff3,
+        0 0 var(--tech-glow-spread) currentColor,
+        0 0 var(--tech-glow-blur) currentColor,
+        0 8px 26px rgba(0,0,0,.50);
     }
 
-    #onoImg{ position:absolute; left:50%; top:50%; width:auto; height:360px; opacity:0; pointer-events:none; z-index:11; transform:translate(-50%,-50%); }
+    /* Onomatopées */
+    #onoImg{
+      position:absolute; left:50%; top:50%;
+      width:auto; height:360px; opacity:0; pointer-events:none; z-index:11;
+      transform:translate(-50%,-50%);
+    }
     .onoShow{animation:onoFade .9s ease forwards}
     @keyframes onoFade{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
     #flash{position:absolute;inset:0;background:#ff000022;opacity:0;pointer-events:none;z-index:12}
@@ -69,6 +108,7 @@
     .skinCard:hover{filter:brightness(1.05)}
     .skinActive{outline:2px solid var(--gold)}
     .skinThumb{display:block;margin:0 auto 8px;height:96px;width:auto;image-rendering:pixelated}
+    /* verrou visuel */
     .skinLocked{opacity:.55; cursor:not-allowed;}
     .skinLocked::after{
       content:"🔒 Verrouillé";
@@ -76,7 +116,12 @@
       background:#000a; border:1px solid #3a302d; color:#e8d6b8; padding:3px 8px; border-radius:8px; font-size:12px;
     }
 
-    #devPanel{ position:fixed; top:68px; right:12px; width:380px; max-height:85vh; overflow:auto; background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30; padding:12px; display:none; }
+    /* Panneau réglages (T) */
+    #devPanel{
+      position:fixed; top:68px; right:12px; width:380px; max-height:85vh; overflow:auto;
+      background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30;
+      padding:12px; display:none;
+    }
     #devPanel h2{margin:0 0 6px; font-size:18px}
     #devPanel h3{margin:12px 0 6px; font-size:15px; color:#ffd48a}
     #devPanel .row{display:grid; grid-template-columns:140px 1fr 64px; align-items:center; gap:6px; margin:6px 0}
@@ -90,50 +135,155 @@
     .sep{margin:10px 0; height:1px; background:#2a2322}
     .hint{font-size:11px;opacity:.7;margin-top:6px}
 
-    /* UI fluide */
-    #menu .panel{ min-width: unset; width: min(92vw, calc(var(--stageW) * .90)); }
+    /* ============ UI FLUIDE (MENU + PADS) ============ */
+
+    /* Menu proportionnel */
+    #menu .panel{
+      min-width: unset;
+      width: min(92vw, calc(var(--stageW) * .90));
+    }
     .title-main{ font-size: clamp(42px, calc(var(--stageW)*0.09), 96px); }
     .title-sub { font-size: clamp(18px, calc(var(--stageW)*0.035), 32px); }
     .subtitle  { font-size: clamp(14px, calc(var(--stageW)*0.022), 18px); }
-    .btn{ padding: clamp(8px, calc(var(--stageW)*0.012), 12px) clamp(12px, calc(var(--stageW)*0.02), 18px); }
+    .btn{
+      padding: clamp(8px, calc(var(--stageW)*0.012), 12px)
+               clamp(12px, calc(var(--stageW)*0.02), 18px);
+    }
 
-    /* Pads portrait */
+    /* Pads 2×2 en portrait (plus petits) */
     body.isPortrait #board{
-      position: absolute; left: 50%; transform: translateX(-50%);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       bottom: min(18px, calc(var(--stageH)*0.03));
-      display: grid; grid-template-columns: repeat(2, 1fr);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: clamp(8px, calc(var(--stageW)*0.02), 18px);
       width: min(92vw, calc(var(--stageW) * .90));
     }
-    body.isPortrait .pad{ width: 80%; height: auto; aspect-ratio: 4 / 3; margin: 0 auto; font-size: clamp(14px, calc(var(--stageW)*0.04), 22px); max-width: 140px; }
+    body.isPortrait .pad{
+      width: 80%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      margin: 0 auto;
+      font-size: clamp(14px, calc(var(--stageW)*0.04), 22px);
+      max-width: 140px;
+    }
 
-    /* Pads paysage */
+    /* Pads proportionnels en paysage */
     body:not(.isPortrait) #board{ display:flex; gap: clamp(8px, calc(var(--stageW)*0.015), 14px); }
-    body:not(.isPortrait) .pad{ width: clamp(100px, calc(var(--stageW)*0.13), 148px); height: clamp(76px, calc(var(--stageH)*0.12), 108px); font-size: clamp(14px, calc(var(--stageH)*0.032), 20px); }
+    body:not(.isPortrait) .pad{
+      width:  clamp(100px,  calc(var(--stageW)*0.13), 148px);
+      height: clamp(76px,  calc(var(--stageH)*0.12), 108px);
+      font-size: clamp(14px, calc(var(--stageH)*0.032), 20px);
+    }
 
-    /* HUD SCORE */
+    /* ============ HUD SCORE GÉANT ============ */
     #hud{ position:absolute; inset:0; z-index:13; pointer-events:none; }
-    #scoreBox{ position:absolute; left:50%; transform:translateX(-50%); top: clamp(8px, calc(var(--stageH)*0.06), 64px); text-align:center; }
-    #scoreTitle{ font-family:'Permanent Marker',cursive; color: var(--scoreYellow); font-weight: 900; font-size: clamp(22px, calc(var(--stageW)*0.06), 56px); line-height: 1; margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px); text-shadow: 0 1px 0 #000, 0 0 18px rgba(209,163,65,.35); letter-spacing: .5px;}
-    #bigScore{ font-family:'Permanent Marker',cursive; font-weight:900; font-size: clamp(42px, calc(var(--stageW)*0.12), 160px); color: var(--scoreYellow); text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35); letter-spacing: 1px; line-height: .9;}
-    #bestBadge{ position:absolute; left:50%; transform:translateX(-50%); top: calc(clamp(8px, calc(var(--stageH)*0.06), 64px) + clamp(60px, calc(var(--stageW)*0.16), 200px) + var(--bestBadgeShift)); font-size: clamp(12px, calc(var(--stageW)*0.028), 16px); opacity:.85; color:#ffd48a; text-shadow: 0 1px 0 #000; }
+
+    #scoreBox{
+      position:absolute; left:50%; transform:translateX(-50%);
+      top: clamp(8px, calc(var(--stageH)*0.06), 64px);
+      text-align:center;
+    }
+    #scoreTitle{
+      font-family:'Permanent Marker',cursive;
+      color: var(--scoreYellow);
+      font-weight: 900;
+      font-size: clamp(22px, calc(var(--stageW)*0.06), 56px);
+      line-height: 1;
+      margin-bottom: clamp(2px, calc(var(--stageH)*0.005), 8px);
+      text-shadow: 0 1px 0 #000, 0 0 18px rgba(209,163,65,.35);
+      letter-spacing: .5px;
+    }
+    #bigScore{
+      font-family:'Permanent Marker',cursive;
+      font-weight:900;
+      font-size: clamp(42px, calc(var(--stageW)*0.12), 160px);
+      color: var(--scoreYellow);
+      text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
+      letter-spacing: 1px;
+      line-height: .9;
+    }
+
+    #bestBadge{
+      position:absolute; left:50%; transform:translateX(-50%);
+      top: calc(
+        clamp(8px, calc(var(--stageH)*0.06), 64px)
+        + clamp(60px, calc(var(--stageW)*0.16), 200px)
+        + var(--bestBadgeShift)
+      );
+      font-size: clamp(12px, calc(var(--stageW)*0.028), 16px);
+      opacity:.85;
+      color:#ffd48a;
+      text-shadow: 0 1px 0 #000;
+    }
+
+    /* On vire les chips score/best du header visuellement */
     header .chip{ display:none; }
 
-    /* Game Over popup (empilée) */
-    #gameOver{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px); }
+    /* === Popup Game Over (empilée + boutons redimensionnés) === */
+    #gameOver{
+      position:fixed; inset:0; display:none; place-items:center;
+      background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px);
+    }
     #gameOver.open{ display:grid; }
-    .go-panel{ background:#1a1716; border:1px solid #3a302d; border-radius:16px; padding:22px; width:min(92vw, 420px); text-align:center; box-shadow: 0 16px 48px rgba(0,0,0,.45); }
-    .go-title{ font-family:'Permanent Marker',cursive; font-size:28px; margin:0 0 8px; color:var(--ink); text-shadow:0 1px 0 #000; }
-    .go-main{ display:grid; gap:6px; justify-items:center; margin:6px 0 12px; }
-    #goScore{ font-family:'Permanent Marker',cursive; font-size: 28px; color: var(--scoreYellow); text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28); line-height:1; }
-    #goBest{ font-family:'Permanent Marker',cursive; font-size: 20px; color:#ffd48a; text-shadow: 0 1px 0 #000; opacity:.95; line-height:1; }
+    .go-panel{
+      background:#1a1716; border:1px solid #3a302d; border-radius:16px;
+      padding:22px; width:min(92vw, 420px); text-align:center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    }
+    .go-title{
+      font-family:'Permanent Marker',cursive; font-size:28px; margin:0 0 8px; color:var(--ink);
+      text-shadow:0 1px 0 #000;
+    }
+
+    /* Bloc central empilé */
+    .go-main{
+      display:grid; gap:6px; justify-items:center; margin:6px 0 12px;
+    }
+    #goScore{
+      font-family:'Permanent Marker',cursive;
+      font-size: 28px;          /* plus petit */
+      color: var(--scoreYellow);
+      text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28);
+      line-height:1;
+    }
+    #goBest{
+      font-family:'Permanent Marker',cursive;
+      font-size: 20px;          /* encore plus petit */
+      color:#ffd48a;
+      text-shadow: 0 1px 0 #000;
+      opacity:.95;
+      line-height:1;
+    }
+
+    /* Actions */
     .go-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
-    .go-replay{ background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:14px; padding:14px 22px; cursor:pointer; font-weight:900; font-size:20px; box-shadow: 0 8px 22px rgba(0,0,0,.4); }
+
+    /* Gros bouton Rejouer */
+    .go-replay{
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:14px;
+      padding:14px 22px; cursor:pointer; font-weight:900; font-size:20px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.4);
+    }
     .go-replay:hover{ filter:brightness(1.06); }
-    .go-share{ display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:999px; background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; cursor:pointer; font-size:20px; }
+
+    /* Bouton Skins dans Game Over */
+    .go-skins{
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:12px;
+      padding:10px 14px; font-weight:800; cursor:pointer;
+    }
+
+    /* Petit bouton Partager: icône seule */
+    .go-share{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:999px;
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; cursor:pointer;
+      font-size:20px;
+    }
     .go-share:hover{ filter:brightness(1.06); }
-    .go-share::before{ content:"📤"; }
-    .go-skins{ background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:12px; padding:10px 14px; font-weight:800; }
+    .go-share::before{ content:"📤"; }  /* icône seule */
 
     /* === NEW SKIN POPUP === */
     #newSkin{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.55); z-index:50; backdrop-filter: blur(2px); }
@@ -152,18 +302,21 @@
   <header>
     <div class="left">
       <strong>Wing Chun Simon</strong>
+      <!-- chips masquées par CSS -->
       <span class="chip">Score: <span id="scoreHeader">0</span></span>
       <span class="chip">Meilleur: <span id="bestHeader">0</span></span>
     </div>
     <div class="right"></div>
   </header>
 
+  <!-- Bouton d'accès tactile au panneau de réglages -->
   <button style="position:fixed;top:10px;right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
 
   <div id="stageWrap">
     <div id="stage">
       <canvas id="cx"></canvas>
 
+      <!-- HUD score géant -->
       <div id="hud">
         <div id="scoreBox">
           <div id="scoreTitle">Score</div>
@@ -204,7 +357,7 @@
     </div>
   </div>
 
-  <!-- Game Over -->
+  <!-- === Popup Game Over (empilée) === -->
   <div id="gameOver" aria-modal="true" role="dialog">
     <div class="go-panel" role="document">
       <h2 class="go-title">Game Over</h2>
@@ -220,7 +373,7 @@
     </div>
   </div>
 
-  <!-- New Skin unlocked -->
+  <!-- === NEW SKIN unlocked === -->
   <div id="newSkin" aria-modal="true" role="dialog">
     <div class="ns-panel" role="document">
       <h2 class="ns-title">Nouveau Skin !</h2>
@@ -240,14 +393,19 @@
 
 <script>
 /* ===== Version app ===== */
-const APP_VERSION = '20250817';
-const APP_LABEL   = 'v2.145-unlock15-newskin-fixsounds';
+const APP_VERSION = '20250817'; // version unique
+const APP_LABEL   = 'v2.150-demon15-newskin-fixSFX'; /* label */
 
-/* ===== Cache-buster ===== */
+/* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
 function bust(url){
-  try{ const u = new URL(url, location.href); u.searchParams.set('v', CB); return u.toString(); }
-  catch{ return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(CB); }
+  try{
+    const u = new URL(url, location.href);
+    u.searchParams.set('v', CB);
+    return u.toString();
+  }catch{
+    return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(CB);
+  }
 }
 
 /* Optionnel: nettoyer d’anciens SW */
@@ -256,7 +414,8 @@ if ('serviceWorker' in navigator) {
 }
 
 /* ===== Ratios ===== */
-const PC_RATIO = 4/3, MB_RATIO = 9/16;
+const PC_RATIO = 4/3;      // paysage
+const MB_RATIO = 9/16;     // portrait
 function isPortrait(){ return window.innerHeight >= window.innerWidth; }
 function activeRatio(){ return isPortrait() ? MB_RATIO : PC_RATIO; }
 
@@ -278,7 +437,7 @@ const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 
-/* Game Over + NewSkin refs */
+/* === Popup refs === */
 const gameOverEl = document.getElementById('gameOver');
 const goScoreEl  = document.getElementById('goScore');
 const goBestEl   = document.getElementById('goBest');
@@ -292,9 +451,8 @@ const nsNameEl  = document.getElementById('nsName');
 const nsViewBtn = document.getElementById('nsViewBtn');
 const nsOkBtn   = document.getElementById('nsOkBtn');
 
-/* ===== Audio ===== */
+/* ===== Audio (chargement paresseux) ===== */
 function A(src){ const a=new Audio(src); a.preload='none'; try{a.src=bust(a.src);}catch{} return a; }
-
 const SFX = {
   pak:   A('assets/sounds/pak.wav'),
   tan:   A('assets/sounds/tan.wav'),
@@ -308,37 +466,37 @@ const SFX = {
   voice_bon:   A('assets/sounds/Yah3.wav'),
   voice_punch: A('assets/sounds/Yah4.wav'),
 
-  /* Pack DEMON — fichiers avec espaces encodés */
+  /* Pack DEMON (espaces encodés en %20) */
   demon_pak:   A('assets/sounds/demon/Son1%20Demon.wav'),
   demon_tan:   A('assets/sounds/demon/Son2%20Demon.wav'),
   demon_bon:   A('assets/sounds/demon/Son3%20Demon.wav'),
   demon_punch: A('assets/sounds/demon/Son4%20Demon.wav'),
 
-  music: A('assets/sounds/Digital Mosaic.mp3')
+  music: new Audio('assets/sounds/Digital Mosaic.mp3')
 };
+Object.values(SFX).forEach(a=>{
+  if (!(a instanceof Audio)) return;
+  a.preload = a === SFX.music ? 'auto' : 'none';
+  try { a.src = bust(a.src); } catch {}
+});
 SFX.music.loop = true; SFX.music.volume = 0.5;
-try{ SFX.music.preload = 'auto'; SFX.music.load(); }catch{}
+try{ SFX.music.load(); }catch{}
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
-/* volumes Demon */
 SFX.demon_pak.volume=SFX.demon_tan.volume=SFX.demon_bon.volume=SFX.demon_punch.volume=0.8;
 
+/* Pool audio créé à la demande */
 const POOL={}; let audioReady=false;
 function ensureAudioPool(){
   if(audioReady) return;
-  Object.keys(SFX).forEach(k=>{
-    const a=SFX[k]; if(!a) return;
+  const keys=Object.keys(SFX);
+  keys.forEach(k=>{
+    const a=SFX[k]; if(!(a instanceof Audio)) return;
     const v=a.volume ?? 1;
     const clones=Array.from({length:3},()=>{const c=a.cloneNode(); c.volume=v; try{c.src=bust(a.src);}catch{} return c});
     POOL[k]=[a,...clones];
   });
   audioReady=true;
 }
-let muted=false;
-muteBtn.onclick=()=>{
-  muted=!muted;
-  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
-  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
-};
 function playKey(key){
   if(muted) return;
   ensureAudioPool();
@@ -347,6 +505,12 @@ function playKey(key){
   if(!s){ const t=arr[0]; s=t.cloneNode(); try{s.src=bust(t.src);}catch{} s.volume=t.volume; if(arr.length<6) arr.push(s); }
   try{ s.currentTime=0; s.play().catch(()=>{}); }catch{}
 }
+let muted=false;
+muteBtn.onclick=()=>{
+  muted=!muted;
+  muteBtn.textContent=muted?'🔇 Muet':'🔊 Son';
+  if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
+};
 
 /* === Packs voix par skin === */
 const VOICE_PACK_ID = { classic:'default', classic_alt:'default', demon:'demon' };
@@ -356,57 +520,67 @@ const VOICE_PACKS = {
 };
 let currentVoicePack = VOICE_PACKS.default;
 
-/* === IMPORTANT: Comportement sons rétabli ===
-   On joue le SFX de la technique IMMÉDIATEMENT + la voix (Yah) avec un léger délai,
-   comme auparavant. Utiliser cette fonction partout. */
-function playTechniqueSounds(tech){
-  playKey(tech); // son "coup / mannequin"
-  setTimeout(()=>{ // voix associée au skin actif
-    const key = (currentVoicePack[tech] || VOICE_PACKS.default[tech]);
-    if(key) playKey(key);
-  }, 90);
+/* === IMPORTANT: sons mannequin rétablis comme avant ===
+   - SFX technique = immédiat (via playTechniqueSounds)
+   - Voix (Yah) = déclenchée dans setSpritesFor après 100ms (comme l’ancien code).
+*/
+function playTechniqueSounds(tech){ playKey(tech); }
+function playVoiceFor(tech){
+  const key = (currentVoicePack[tech] || VOICE_PACKS.default[tech]);
+  if(key) playKey(key);
 }
 
-/* Autoplay musique sur premier geste */
+/* === Autoplay musique sur premier geste === */
 let musicPrimed = false;
 function primeMusicOnce(){
-  if(musicPrimed) return; musicPrimed = true;
-  ensureAudioPool(); SFX.music.play().catch(()=>{});
-  ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>window.removeEventListener(ev, primeMusicOnce, true));
+  if(musicPrimed) return;
+  musicPrimed = true;
+  ensureAudioPool();
+  SFX.music.play().catch(()=>{ /* si refus, on réessaiera sur Start */ });
+  // nettoie les écouteurs une fois la tentative faite
+  ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
+    window.removeEventListener(ev, primeMusicOnce, true);
+  });
 }
-['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev, primeMusicOnce, true));
+['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
+  window.addEventListener(ev, primeMusicOnce, true);
+});
 
-/* ===== BG assets ===== */
-function mkImg(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
-const SKY = mkImg('https://i.imgur.com/QW70yEx.png','high');
-const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high');
+/* ===== BG assets (lazy + priorité) ===== */
+function mkImg(url, priority='auto'){
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.decoding='async';
+  img.fetchPriority=priority;
+  img.src=bust(url);
+  return img;
+}
+const SKY    = mkImg('https://i.imgur.com/QW70yEx.png','high'); // => ...?v=20250817
+const MT_FAR = mkImg('https://i.imgur.com/I4gOsXm.png','high'); // => ...?v=20250817
 let MT_NEAR=null, ALLEY=null;
 const rICB = window.requestIdleCallback || (cb=>setTimeout(cb,1));
 rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY = mkImg('https://i.imgur.com/hVGwPdp.png','low'); });
 
-/* ===== Sprites & Skins ===== */
+/* ===== Sprites & skins (lazy) ===== */
 function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
 const SKINS = [
   { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
   { id:'classic_alt', name:'Classique (alt)', thumb:'https://i.imgur.com/ZrLk97U.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
-  /* DEMON verrouillé de base */
+  /* === DEMON verrouillé de base === */
   { id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png', locked:true,
     f:{ bon:'https://i.imgur.com/Eg1mCJq.png', tan:'https://i.imgur.com/wNewS04.png', punch:'https://i.imgur.com/lpJkx50.png', pak:'https://i.imgur.com/FvJK22b.png' } }
 ];
 const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:null, o_bon:null, o_punch:null, d_unique:null };
 
+/* Unlock logic */
 const DEMON_UNLOCK_SCORE = 15;
-
 function isUnlocked(skin){ if(!skin.locked) return true; return localStorage.getItem('skin_unlocked_'+skin.id) === '1'; }
 function isUnlockedSkinId(id){ const s=SKINS.find(x=>x.id===id); return s ? isUnlocked(s) : false; }
-function unlockSkin(id){
-  localStorage.setItem('skin_unlocked_'+id, '1');
-  // si le skin était affiché comme verrouillé en UI, on pourra rafraîchir la grille
-}
-let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
+function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1'); }
 
+let activeSkinIdx = +localStorage.getItem('wcs_skin_idx') || 0;
 function applySkin(idx){
   const s=SKINS[idx]||SKINS[0];
   if(s.locked && !isUnlocked(s)){ renderSkins(); return; } // refuse si verrouillé
@@ -428,57 +602,142 @@ rICB(()=>{
   IMG.o_punch  = load('https://i.imgur.com/p0nSWkS.png','low');
 });
 
-/* ===== Profils / CFG ===== */
-const STORAGE_KEY = 'wcs_tune_v8'; const TUNE_VERSION = 8;
+/* ===== Profils & stockage (v8) ===== */
+const STORAGE_KEY = 'wcs_tune_v8';
+const TUNE_VERSION = 8;
+
 const SEEDED_PROFILES = {
-  pc: { ratio: 1.3333333333333333,
-    layers:{ sky:{zoom:0.5,offsetXPct:-0.031,yOffsetPct:-0.277,speedX:0}, far:{wPct:1,offsetXPct:-1.372,bottomPct:-0.019,speedX:0.004}, near:{wPct:2.99,offsetXPct:0.528,bottomPct:0.225,speedX:0.025}, alley:{wPct:1.2,offsetXPct:0,bottomPct:0,speedX:0} },
-    fighter:{wPct:0.165,centerX:0.51,bottomPct:0.09}, dummy:{wPct:0.186,centerX:0.5,bottomPct:0.083},
-    onoByTech:{ pak:{xPct:0.598,yPct:0.467,hPct:0.404,rotDeg:39}, tan:{xPct:0.417,yPct:0.503,hPct:0.310,rotDeg:-15}, bon:{xPct:0.593,yPct:0.497,hPct:0.382,rotDeg:19}, punch:{xPct:0.427,yPct:0.513,hPct:0.370,rotDeg:-37} }
+  pc: {
+    ratio: 1.3333333333333333,
+    layers: {
+      sky:  { zoom: 0.5,  offsetXPct: -0.031, yOffsetPct: -0.277, speedX: 0 },
+      far:  { wPct: 1,    offsetXPct: -1.372, bottomPct: -0.019,  speedX: 0.004 },
+      near: { wPct: 2.99, offsetXPct: 0.528,  bottomPct: 0.225,   speedX: 0.025 },
+      alley:{ wPct: 1.2,  offsetXPct: 0,      bottomPct: 0,       speedX: 0 }
+    },
+    fighter: { wPct: 0.165, centerX: 0.51, bottomPct: 0.09 },
+    dummy:   { wPct: 0.186, centerX: 0.5,  bottomPct: 0.083 },
+    onoByTech: {
+      pak:   { xPct: 0.598, yPct: 0.467, hPct: 0.404, rotDeg:  39 },
+      tan:   { xPct: 0.417, yPct: 0.503, hPct: 0.310, rotDeg: -15 },
+      bon:   { xPct: 0.593, yPct: 0.497, hPct: 0.382, rotDeg:  19 },
+      punch: { xPct: 0.427, yPct: 0.513, hPct: 0.370, rotDeg: -37 }
+    }
   },
-  mobile: { ratio:0.5625,
-    layers:{ sky:{zoom:0.34,offsetXPct:0.225,yOffsetPct:-0.35,speedX:0}, far:{wPct:1.38,offsetXPct:0.025,bottomPct:0.319,speedX:0.011}, near:{wPct:8,offsetXPct:-1.462,bottomPct:0.319,speedX:0.035}, alley:{wPct:4,offsetXPct:0,bottomPct:0,speedX:0} },
-    fighter:{wPct:0.437,centerX:0.51,bottomPct:0.124}, dummy:{wPct:0.489,centerX:0.5,bottomPct:0.119},
-    onoByTech:{ pak:{xPct:0.719,yPct:0.442,hPct:0.310,rotDeg:37}, tan:{xPct:0.332,yPct:0.422,hPct:0.310,rotDeg:-26}, bon:{xPct:0.724,yPct:0.417,hPct:0.310,rotDeg:23}, punch:{xPct:0.332,yPct:0.397,hPct:0.310,rotDeg:-44} }
+  mobile: {
+    ratio: 0.5625,
+    layers: {
+      sky:  { zoom: 0.34, offsetXPct: 0.225,  yOffsetPct: -0.35, speedX: 0 },
+      far:  { wPct: 1.38, offsetXPct: 0.025,  bottomPct: 0.319,  speedX: 0.011 },
+      near: { wPct: 8,    offsetXPct: -1.462, bottomPct: 0.319,  speedX: 0.035 },
+      alley:{ wPct: 4,    offsetXPct: 0,      bottomPct: 0,      speedX: 0 }
+    },
+    fighter: { wPct: 0.437, centerX: 0.51, bottomPct: 0.124 },
+    dummy:   { wPct: 0.489, centerX: 0.5,  bottomPct: 0.119 },
+    onoByTech: {
+      pak:   { xPct: 0.719, yPct: 0.442, hPct: 0.310, rotDeg:  37 },
+      tan:   { xPct: 0.332, yPct: 0.422, hPct: 0.310, rotDeg: -26 },
+      bon:   { xPct: 0.724, yPct: 0.417, hPct: 0.310, rotDeg:  23 },
+      punch: { xPct: 0.332, yPct: 0.397, hPct: 0.310, rotDeg: -44 }
+    }
   }
 };
+
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
+
 let CFG;
 (function loadConfig(){
   try{
     const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
     if(stored && stored.version===TUNE_VERSION){ CFG=stored; return; }
   }catch{}
+  let v7=null;
+  try{ v7 = JSON.parse(localStorage.getItem('wcs_tune_v7')||'null'); }catch{}
+  if(v7 && v7.profiles){
+    CFG = {
+      version:TUNE_VERSION, editingProfile:v7.editingProfile||'pc', previewLock:true,
+      fighterDxPxByTech:v7.fighterDxPxByTech||{pak:-110,tan:110,bon:-110,punch:110},
+      profiles:{
+        pc: migrate7to8(v7.profiles.pc) || deepClone(SEEDED_PROFILES.pc),
+        mobile: migrate7to8(v7.profiles.mobile||v7.profiles.pc) || deepClone(SEEDED_PROFILES.mobile),
+      }
+    };
+ } else {
   const firstIsPortrait = window.innerHeight >= window.innerWidth;
-  CFG = { version:TUNE_VERSION, previewLock:false, editingProfile:firstIsPortrait?'mobile':'pc',
-          profiles:{ pc:deepClone(SEEDED_PROFILES.pc), mobile:deepClone(SEEDED_PROFILES.mobile) },
-          fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110} };
+  CFG = {
+    version: TUNE_VERSION,
+    previewLock: false,
+    editingProfile: firstIsPortrait ? 'mobile' : 'pc',
+    profiles: {
+      pc: deepClone(SEEDED_PROFILES.pc),
+      mobile: deepClone(SEEDED_PROFILES.mobile)
+    },
+    fighterDxPxByTech:{pak:-110,tan:110,bon:-110,punch:110}
+  };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+}
+  if (CFG && typeof CFG.previewLock !== 'boolean') CFG.previewLock = false;
 })();
+
+function migrate7to8(p){
+  if(!p) return null;
+  const out = deepClone(SEEDED_PROFILES.pc);
+  out.ratio = p.ratio||PC_RATIO;
+  const skyIn = (p.layers&&p.layers.sky)||{};
+  out.layers.sky.zoom = (typeof skyIn.zoom==='number')?skyIn.zoom : (typeof skyIn.scaleX==='number'?Math.max(0.2,skyIn.scaleX):1);
+  out.layers.sky.offsetXPct = skyIn.offsetXPct||0;
+  out.layers.sky.yOffsetPct = skyIn.yOffsetPct||0;
+  out.layers.sky.speedX = skyIn.speedX||0;
+  ['far','near','alley'].forEach(k=>{
+    const s=(p.layers&&p.layers[k])||{};
+    out.layers[k].wPct = (typeof s.scaleX==='number') ? Math.max(0.5, s.scaleX) : (s.wPct ?? out.layers[k].wPct);
+    out.layers[k].offsetXPct = s.offsetXPct||0;
+    out.layers[k].bottomPct  = s.bottomPct ?? out.layers[k].bottomPct;
+    out.layers[k].speedX     = s.speedX||0;
+  });
+  out.fighter = p.fighter || out.fighter;
+  out.dummy   = p.dummy   || out.dummy;
+  out.onoByTech = (p.onoByTech) ? p.onoByTech
+                 : (p.ono ? {pak:p.ono,tan:p.ono,bon:p.ono,punch:p.ono} : deepClone(SEEDED_PROFILES.pc.onoByTech));
+  return out;
+}
 function saveCFG(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); }
+
+/* Profil affiché vs runtime */
 const runtimeProfileName = ()=> (innerHeight>innerWidth ? 'mobile' : 'pc');
 const viewingProfileName = ()=> (CFG.previewLock ? CFG.editingProfile : runtimeProfileName());
 const P = ()=> CFG.profiles[viewingProfileName()];
 
 /* ===== Canvas / Resize ===== */
-let DPR=1, W=0, H=0; let last = performance.now();
+let DPR=1, W=0, H=0;
+let last = performance.now();
+
 function resize(){
   const r = activeRatio();
   const wrapW=stageWrap.clientWidth, wrapH=stageWrap.clientHeight;
   let boxW=wrapW, boxH=Math.round(wrapW / r);
   if(boxH>wrapH){ boxH=wrapH; boxW=Math.round(wrapH * r); }
+
+  /* Réduction de charge en mobile portrait: DPR = 1 */
   const sysDPR = window.devicePixelRatio||1;
   DPR = isPortrait() ? 1 : Math.max(1, Math.min(2, sysDPR));
-  cx.width = Math.round(boxW * DPR); cx.height= Math.round(boxH * DPR);
+
+  cx.width = Math.round(boxW * DPR);
+  cx.height= Math.round(boxH * DPR);
   cx.style.width=boxW+'px'; cx.style.height=boxH+'px';
   stage.style.width=boxW+'px'; stage.style.height=boxH+'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0); W=boxW; H=boxH;
+
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  W=boxW; H=boxH;
+
   document.documentElement.style.setProperty('--stageW', W + 'px');
   document.documentElement.style.setProperty('--stageH', H + 'px');
   document.body.classList.toggle('isPortrait', isPortrait());
+
   if(onoSticky) showOnoSticky();
 }
-addEventListener('resize', resize); addEventListener('orientationchange', resize);
+addEventListener('resize', resize);
+addEventListener('orientationchange', resize);
 
 /* ===== Décor ===== */
 function drawSkyCover(){
@@ -514,6 +773,7 @@ function drawBG(dt){
   offFar  -= (L.far.speedX  ||0) * f;
   offNear -= (L.near.speedX ||0) * f;
   offAlley-= (L.alley.speedX||0) * f;
+
   drawSkyCover();
   tileScaledBottom(MT_FAR,  (L.far.offsetXPct||0)  + (offFar/W),  L.far.wPct,  L.far.bottomPct);
   ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
@@ -542,7 +802,9 @@ function setSpritesFor(tech){
   const LUNGE={pak:10,tan:12,bon:8,punch:14}; const SCALE={pak:1.03,tan:1.035,bon:1.03,punch:1.04};
   actionAnim={until: now+260, lunge:(LUNGE[tech]||10), scale:(SCALE[tech]||1.03)};
   const img = IMG['f_'+tech]; if(img) currentFighter = img;
-  // (NE JOUONS PAS la voix ici pour éviter les doublons) => centralisé dans playTechniqueSounds()
+
+  /* === voix : on garde le comportement d'avant (appel depuis setSpritesFor) === */
+  setTimeout(()=> playVoiceFor(tech), 100);
 }
 function drawFighter(){
   const img=currentFighter, F=P().fighter; if(!img || !img.complete || !img.naturalWidth) return;
@@ -577,14 +839,21 @@ function applyOnoStyleFor(tech){
 }
 function showOno(tech){
   const img=IMG['o_'+tech]; if(!img) return;
-  onoImg.src=img.src; applyOnoStyleFor(tech);
+  onoImg.src=img.src;
+  applyOnoStyleFor(tech);
   onoImg.classList.remove('onoShow'); void onoImg.offsetWidth; onoImg.classList.add('onoShow');
 }
 
 /* Aperçu collant */
 let onoSticky = false;
 let onoEditTech = 'pak';
-function showOnoSticky(){ const img = IMG['o_'+onoEditTech]; if(!img) return; onoImg.src = img.src; applyOnoStyleFor(onoEditTech); onoImg.classList.remove('onoShow'); onoImg.style.opacity = '1'; }
+function showOnoSticky(){
+  const img = IMG['o_'+onoEditTech]; if(!img) return;
+  onoImg.src = img.src;
+  applyOnoStyleFor(onoEditTech);
+  onoImg.classList.remove('onoShow');
+  onoImg.style.opacity = '1';
+}
 function hideOnoSticky(){ onoImg.style.opacity = '0'; onoImg.classList.remove('onoShow'); }
 
 /* ===== Simon ===== */
@@ -604,15 +873,17 @@ async function playSequence(){
   locked=false; userIndex=0;
 }
 
-/* Popups */
+/* === Popups helpers === */
 function showGameOver(finalScore){
   goScoreEl.textContent = 'Score: ' + String(finalScore);
   goBestEl.textContent  = 'Meilleur: ' + String(best);
   gameOverEl.classList.add('open');
+  // focus accessible
   setTimeout(()=>{ replayBtn?.focus(); }, 0);
 }
-function hideGameOver(){ gameOverEl.classList.remove('open'); }
-
+function hideGameOver(){
+  gameOverEl.classList.remove('open');
+}
 function showNewSkinPopup(skin){
   nsThumbEl.src = bust(skin.thumb);
   nsNameEl.textContent = skin.name;
@@ -621,14 +892,17 @@ function showNewSkinPopup(skin){
 }
 function hideNewSkinPopup(){ newSkinEl.classList.remove('open'); }
 
-/* Core press */
+let demonPopupShownThisRun = false;
+
 async function press(tech){
   if(locked) return;
   setSpritesFor(tech); setLit(tech,true); playTechniqueSounds(tech); showOno(tech);
   await sleep(180); setLit(tech,false);
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
-    locked = true; showGameOver(score); return;
+    locked = true;
+    showGameOver(score);
+    return;
   }
   userIndex++;
   if(userIndex===seq.length){
@@ -639,7 +913,10 @@ async function press(tech){
     if(!isUnlockedSkinId('demon') && score>=DEMON_UNLOCK_SCORE){
       unlockSkin('demon');
       const demonSkin = SKINS.find(s=>s.id==='demon');
-      if(demonSkin) showNewSkinPopup(demonSkin);
+      if(demonSkin && !demonPopupShownThisRun){
+        demonPopupShownThisRun = true;
+        showNewSkinPopup(demonSkin);
+      }
     }
 
     seq.push(randTech()); await sleep(360); playSequence();
@@ -647,39 +924,54 @@ async function press(tech){
 }
 function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 
-/* Entrées */
-pads.forEach(b=> b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false}));
+/* ===== Entrées ===== */
+pads.forEach(b=>{
+  b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
+});
 
-/* Rejouer & Partager & Skins */
-replayBtn.addEventListener('click', ()=>{ hideGameOver(); startGame(); });
-skinsGoBtn.addEventListener('click', ()=>{ hideGameOver(); openSkinsPanel(); });
+/* === Rejouer & Partager & Skins === */
+replayBtn.addEventListener('click', ()=>{
+  hideGameOver();
+  startGame();
+});
+skinsGoBtn.addEventListener('click', ()=>{
+  hideGameOver();
+  openSkinsPanel();
+});
 async function shareBest(){
   const url = location.href.split('#')[0];
   const text = `Mon meilleur score sur Wing Chun Simon: ${best}`;
   const shareData = { title:'Wing Chun Simon', text, url };
-  if(navigator.share){ try{ await navigator.share(shareData); }catch{} }
-  else {
+  if(navigator.share){
+    try{ await navigator.share(shareData); }catch{}
+  } else {
     try{
       await navigator.clipboard.writeText(`${text} — ${url}`);
-      shareBtn.style.transform = 'scale(1.05)'; shareBtn.textContent = '✅';
+      // feedback visuel discret pour l'icône seule
+      shareBtn.style.transform = 'scale(1.05)';
+      shareBtn.textContent = '✅';
       setTimeout(()=>{ shareBtn.textContent = ''; shareBtn.style.transform=''; }, 900);
     }catch{}
   }
 }
 shareBtn.addEventListener('click', shareBest);
 
-/* Start */
 function startGame(){
-  hideGameOver(); hideNewSkinPopup();
+  hideGameOver();
+  hideNewSkinPopup();
   menu.style.display='none';
   ensureAudioPool();
-  if(!muted){ SFX.music.play().catch(()=>{}); }
-  seq=[randTech()]; score=0; updateScoreUI(); playSequence();
+  // tente de jouer la musique si pas encore lancée
+  if(!muted){
+    SFX.music.play().catch(()=>{ /* déjà tenté, ou bloqué jusqu’à autre geste */ });
+  }
+  seq=[randTech()]; score=0; demonPopupShownThisRun=false; updateScoreUI(); playSequence();
 }
 startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
 startBtn.addEventListener('click',e=>{e.preventDefault(); startGame();});
 
-/* Skins UI */
+/* ===== Skins ===== */
+applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
 function openSkinsPanel(){
   menu.style.display='block';
@@ -699,11 +991,7 @@ function renderSkins(){
   });
 }
 
-/* New Skin buttons */
-nsViewBtn.addEventListener('click', ()=>{ hideNewSkinPopup(); openSkinsPanel(); });
-nsOkBtn.addEventListener('click', ()=>{ hideNewSkinPopup(); });
-
-/* Boucle */
+/* ===== Boucle ===== */
 function loop(t = performance.now()){
   const dt = Math.min(33, t - last) / (1000/60);
   last = t;
@@ -712,28 +1000,182 @@ function loop(t = performance.now()){
   requestAnimationFrame(loop);
 }
 
-/* Dev panel (raccourci T) — inchangé, omis pour concision: tu peux réinjecter ton panneau complet si besoin */
-function toggleDevPanel(){ const open = devPanel.style.display === 'block'; devPanel.style.display = open ? 'none' : 'block'; }
+/* ===== Panneau (T) ===== */
+function addRange(parent,label,obj,key,{min,max,step=0.01,after}){
+  const row=document.createElement('div'); row.className='row';
+  const lab=document.createElement('div'); lab.textContent=label; row.appendChild(lab);
+  const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=step; r.value=obj[key];
+  const n=document.createElement('input'); n.type='number'; n.step=step; n.value=obj[key]; n.min=min; n.max=max;
+  function sync(v){ v=+v; obj[key]=v; r.value=v; n.value=v; saveCFG(); if(after) after(); }
+  r.oninput=e=>sync(e.target.value); n.oninput=e=>sync(e.target.value);
+  row.append(r,n); parent.appendChild(row);
+}
+function section(t){ const h=document.createElement('h3'); h.textContent=t; devPanel.appendChild(h); }
+function sep(){ const d=document.createElement('div'); d.className='sep'; devPanel.appendChild(d); }
+function header(){ const h=document.createElement('h2'); h.textContent='Réglages (T pour fermer)'; devPanel.appendChild(h); }
+function bar(){
+  const wrap=document.createElement('div'); wrap.className='bar';
+  const reset=document.createElement('button'); reset.textContent='Réinitialiser';
+  const copy=document.createElement('button');  copy.textContent='Copier JSON';
+  const paste=document.createElement('button'); paste.textContent='Coller JSON';
+  const testOno=document.createElement('button'); testOno.textContent='Tester onomatopée';
+  const seg=document.createElement('div'); seg.className='seg';
+  const pcBtn=document.createElement('button'); const mbBtn=document.createElement('button'); const lock=document.createElement('button');
+  pcBtn.textContent='Éditer: PC (4:3)'; mbBtn.textContent='Éditer: Mobile (9:16)';
+  lock.textContent = (CFG.previewLock?'Aperçu = Profil édité':'Aperçu auto');
+  function mark(){ pcBtn.classList.toggle('active', CFG.editingProfile==='pc'); mbBtn.classList.toggle('active', CFG.editingProfile==='mobile'); }
+  pcBtn.onclick=()=>{ CFG.editingProfile='pc'; saveCFG(); mark(); lock.textContent=(CFG.previewLock?'Aperçu = Profil édité':'Aperçu auto'); buildDevPanel(); resize(); };
+  mbBtn.onclick=()=>{ CFG.editingProfile='mobile'; saveCFG(); mark(); lock.textContent=(CFG.previewLock?'Aperçu = Profil édité':'Aperçu auto'); buildDevPanel(); resize(); };
+  lock.onclick=()=>{ CFG.previewLock=!CFG.previewLock; saveCFG(); lock.textContent=(CFG.previewLock?'Aperçu = Profil édité':'Aperçu auto'); resize(); };
+  mark(); seg.append(pcBtn,mbBtn);
 
-/* Init */
+  reset.onclick=()=>{ CFG.profiles.pc=deepClone(SEEDED_PROFILES.pc); CFG.profiles.mobile=deepClone(SEEDED_PROFILES.mobile); saveCFG(); buildDevPanel(); resize(); };
+  copy.onclick =()=>{ navigator.clipboard.writeText(JSON.stringify(CFG,null,2)).catch(()=>{}); };
+  paste.onclick=()=>{ const raw=prompt('Colle la config JSON:'); if(!raw) return; try{ const o=JSON.parse(raw); Object.assign(CFG,o); saveCFG(); buildDevPanel(); resize(); }catch{ alert('JSON invalide'); } };
+  testOno.onclick=()=>{ showOno(currentTech); };
+
+  wrap.append(reset,copy,paste,testOno,seg,lock); devPanel.appendChild(wrap);
+
+  const hint=document.createElement('div'); hint.className='hint';
+  const activeView = viewingProfileName()==='pc'?'PC (4:3)':'Mobile (9:16)';
+  const activeRuntime = runtimeProfileName()==='pc'?'PC (4:3)':'Mobile (9:16)';
+  hint.textContent='Profil en jeu (auto): '+activeRuntime+' • Profil affiché: '+activeView;
+  devPanel.appendChild(hint);
+}
+function buildDevPanel(){
+  devPanel.innerHTML=''; header(); bar(); sep();
+  const E = CFG.profiles[CFG.editingProfile];
+  const isMobileProfile = (CFG.editingProfile === 'mobile');
+  const SCALE_RANGE = {
+    sky:  { min: isMobileProfile ? 0.02 : 0.50, max: isMobileProfile ? 10.0 : 3.0 },
+    far:  { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
+    near: { min: isMobileProfile ? 0.05 : 0.50, max: isMobileProfile ?  8.0 : 3.0 },
+    alley:{ min: isMobileProfile ? 0.20 : 0.50, max: isMobileProfile ?  4.0 : 3.0 }
+  };
+
+  section('Ciel');
+  addRange(devPanel,'Zoom',E.layers.sky,'zoom',{min:SCALE_RANGE.sky.min,max:SCALE_RANGE.sky.max,step:0.01});
+  addRange(devPanel,'Décalage X %',E.layers.sky,'offsetXPct',{min:-3,max:3,step:0.001});
+  addRange(devPanel,'Décalage Y %',E.layers.sky,'yOffsetPct',{min:-1,max:1,step:0.001});
+  addRange(devPanel,'Vitesse X (écran/s)',E.layers.sky,'speedX',{min:-3,max:3,step:0.01});
+  sep();
+
+  function R(label,key){
+    section(label);
+    addRange(devPanel,'Largeur × écran (wPct)',E.layers[key],'wPct',{min:SCALE_RANGE[key].min,max:SCALE_RANGE[key].max,step:0.01});
+    addRange(devPanel,'Décalage X %',E.layers[key],'offsetXPct',{min:-3,max:3,step:0.001});
+    addRange(devPanel,'Bas %',E.layers[key],'bottomPct',{min:-0.2,max:0.8,step:0.001});
+    addRange(devPanel,'Vitesse X (écran/s)',E.layers[key],'speedX',{min:-3,max:3,step:0.01});
+    sep();
+  }
+  R('Montagnes lointaines','far');
+  R('Montagnes proches','near');
+  R('Allée','alley');
+
+  section('Mannequin');
+  addRange(devPanel,'Largeur % écran',E.dummy,'wPct',{min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',E.dummy,'centerX',{min:0,max:1,step:0.001});
+  addRange(devPanel,'Bas %',E.dummy,'bottomPct',{min:-0.1,max:0.4,step:0.001});
+  sep();
+
+  section('Personnage');
+  addRange(devPanel,'Largeur % écran',E.fighter,'wPct',{min:0.05,max:0.6,step:0.001});
+  addRange(devPanel,'Centre X %',E.fighter,'centerX',{min:0,max:1,step:0.001});
+  addRange(devPanel,'Bas %',E.fighter,'bottomPct',{min:-0.1,max:0.4,step:0.001});
+  sep();
+
+  section('Onomatopées (par technique)');
+  E.onoByTech = E.onoByTech || deepClone(SEEDED_PROFILES.pc.onoByTech);
+  const barWrap=document.createElement('div'); barWrap.className='bar';
+  const previewBtn=document.createElement('button');
+  function refreshPreviewBtn(){ previewBtn.textContent='Aperçu: '+(onoSticky?'ON':'OFF'); }
+  previewBtn.onclick=()=>{ onoSticky=!onoSticky; if(onoSticky) showOnoSticky(); else hideOnoSticky(); refreshPreviewBtn(); };
+  refreshPreviewBtn(); barWrap.appendChild(previewBtn);
+  const seg=document.createElement('div'); seg.className='seg';
+  const techs=['pak','tan','bon','punch']; const buttons=[];
+  techs.forEach(k=>{
+    const b=document.createElement('button'); b.textContent=k; b.dataset.tech=k;
+    b.onclick=()=>{ onoEditTech=k; buttons.forEach(x=>x.classList.toggle('active', x.dataset.tech===k)); if(onoSticky) showOnoSticky(); buildDevPanel(); };
+    buttons.push(b); seg.appendChild(b);
+  });
+  buttons.forEach(b=> b.classList.toggle('active', b.dataset.tech===onoEditTech));
+  barWrap.appendChild(seg); devPanel.appendChild(barWrap);
+
+  const O = E.onoByTech[onoEditTech];
+  const refreshOno = ()=>{ if(onoSticky) showOnoSticky(); };
+  addRange(devPanel,'Pos X % écran',O,'xPct',{min:0,max:1,step:0.001,after:refreshOno});
+  addRange(devPanel,'Pos Y % écran',O,'yPct',{min:0,max:1,step:0.001,after:refreshOno});
+  addRange(devPanel,'Hauteur % écran',O,'hPct',{min:0.05,max:0.8,step:0.001,after:refreshOno});
+  addRange(devPanel,'Rotation (deg)',O,'rotDeg',{min:-180,max:180,step:1,after:refreshOno});
+
+  devPanel.style.display='block';
+}
+
+/* ===== Panneau (T) lock ===== */
+let devUnlocked = (localStorage.getItem('wcs_dev_ok') === '1');
+function askDevPassword(){
+  if (devUnlocked) return true;
+  const pwd = prompt('Mot de passe développeur ?');
+  if (pwd === 'Tocard'){
+    devUnlocked = true;
+    localStorage.setItem('wcs_dev_ok','1');
+    return true;
+  }
+  return false;
+}
+function toggleDevPanel(){
+  const open = devPanel.style.display === 'block';
+  if (open) devPanel.style.display = 'none';
+  else {
+    if (!askDevPassword()) return;
+    buildDevPanel();
+    devPanel.style.display = 'block';
+    resize();
+  }
+}
+function onKeyT(e){
+  const isT = (e.code === 'KeyT') || (e.key && e.key.toLowerCase() === 't');
+  if (!isT || e.repeat) return;
+  e.preventDefault(); e.stopPropagation();
+  toggleDevPanel();
+}
+if (!window.__T_BIND) {
+  window.addEventListener('keydown', onKeyT, { capture: true });
+  document.addEventListener('keydown', onKeyT, { capture: true });
+  devPanel.addEventListener('keydown', onKeyT, { capture: true });
+  window.__T_BIND = true;
+}
+
+/* ===== Init ===== */
 function init(){
   resize();
-  // Sécurité: si localStorage pointe sur un skin verrouillé, repasser au classic
+  // sécurité: si le skin sauvegardé est verrouillé, repasser au classic
   if(SKINS[activeSkinIdx]?.locked && !isUnlocked(SKINS[activeSkinIdx])) activeSkinIdx = 0;
   applySkin(activeSkinIdx);
-  const tag = document.getElementById('appVersion'); if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION;
+  const tag = document.getElementById('appVersion');
+  if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION;
   requestAnimationFrame(loop);
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
-/* Sync --vh */
+/* Sync --vh avec visualViewport + re-resize */
 (function(){
-  const applyVH = () => { const h = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--vh', h + 'px'); resize(); };
+  const applyVH = () => {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vh', h + 'px');
+    resize();
+  };
   applyVH();
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', applyVH, {passive:true});
     window.visualViewport.addEventListener('scroll', applyVH, {passive:true});
-  } else { window.addEventListener('resize', applyVH, {passive:true}); }
+  } else {
+    window.addEventListener('resize', applyVH, {passive:true});
+  }
 })();
 </script>
 </body>
