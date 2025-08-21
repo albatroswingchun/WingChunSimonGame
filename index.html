@@ -1483,11 +1483,14 @@ window.addEventListener('keydown', (e)=>{
 })();
 </script>
   
-  <!-- === Addon SKIN: MONKING (drop-in) === -->
+  <!-- === Addon SKIN: MONKING (drop-in) — FIXED === -->
 <script>
 (function(){
-  // Sanity: vérifier que l’app est prête
-  if (!window.SKINS || !window.SFX || !window.VOICE_PACKS || !window.VOICE_PACK_ID) {
+  // 0) Sanity check sans passer par window.*
+  if (typeof SKINS === 'undefined' ||
+      typeof SFX === 'undefined' ||
+      typeof VOICE_PACKS === 'undefined' ||
+      typeof VOICE_PACK_ID === 'undefined') {
     console.warn('[Monking] Script principal non prêt.');
     return;
   }
@@ -1499,41 +1502,42 @@ window.addEventListener('keydown', (e)=>{
   SFX.monking_bon   = SFX.monking_bon   || A('assets/sounds/Son3 Monking.wav');
   SFX.monking_punch = SFX.monking_punch || A('assets/sounds/Son4 Monking.wav');
   try {
-    SFX.monking_pak.volume = SFX.monking_tan.volume =
-    SFX.monking_bon.volume = SFX.monking_punch.volume = 0.8;
+    SFX.monking_pak.volume =
+    SFX.monking_tan.volume =
+    SFX.monking_bon.volume =
+    SFX.monking_punch.volume = 0.8;
   } catch {}
 
-  // 2) Pack de voix et association au skin
+  // 2) Pack de voix + mapping
   VOICE_PACKS.monking = {
-    pak: 'monking_pak', tan: 'monking_tan', bon: 'monking_bon', punch: 'monking_punch'
+    pak:'monking_pak', tan:'monking_tan', bon:'monking_bon', punch:'monking_punch'
   };
   VOICE_PACK_ID.monking = 'monking';
 
-  // 3) Déclaration du skin Monking
+  // 3) Déclaration du skin
   const MONKING_DEF = {
-    id: 'monking',
-    name: 'Monking',
-    thumb: 'https://i.imgur.com/cCAmBya.png',
-    f: {
-      tan:   'https://i.imgur.com/CyyeLpi.png',
-      bon:   'https://i.imgur.com/aBXIgsS.png',
-      punch: 'https://i.imgur.com/zBsBY7G.png',
-      pak:   'https://i.imgur.com/NDj4Qyw.png'
+    id:'monking',
+    name:'Monking',
+    thumb:'https://i.imgur.com/cCAmBya.png',
+    f:{
+      tan:'https://i.imgur.com/CyyeLpi.png',
+      bon:'https://i.imgur.com/aBXIgsS.png',
+      punch:'https://i.imgur.com/zBsBY7G.png',
+      pak:'https://i.imgur.com/NDj4Qyw.png'
     }
   };
-
   if (!SKINS.find(s => s.id === 'monking')) {
     SKINS.push(MONKING_DEF);
   }
 
-  // 4) Placement par-skin (clone "classic" ou fallback "fighter")
+  // 4) Placement par skin (cloner "classic" ou fallback "fighter")
   function ensureSkinConfigObject(E){
     if(!E.skins) E.skins = {};
-    SKINS.forEach(s=>{ if(!E.skins[s.id]) E.skins[s.id] = { ...E.fighter }; });
+    SKINS.forEach(s => { if(!E.skins[s.id]) E.skins[s.id] = { ...E.fighter }; });
   }
   try {
     ['pc','mobile'].forEach(p=>{
-      const E = (window.CFG && CFG.profiles && CFG.profiles[p]) ? CFG.profiles[p] : null;
+      const E = (typeof CFG !== 'undefined' && CFG.profiles && CFG.profiles[p]) ? CFG.profiles[p] : null;
       if(!E) return;
       ensureSkinConfigObject(E);
       if (!E.skins.monking) {
@@ -1545,7 +1549,7 @@ window.addEventListener('keydown', (e)=>{
     console.warn('[Monking] Config skins: ', e);
   }
 
-  // 5) Refresh UI
+  // 5) Refresh UI si dispo
   try { if (typeof renderSkins === 'function') renderSkins(); } catch {}
   try { if (typeof buildDevPanel === 'function') buildDevPanel(); } catch {}
 
