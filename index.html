@@ -29,6 +29,8 @@
       --simon-yellow:#d1a341;
       --tech-glow-spread: 24px;
       --tech-glow-blur: 36px;
+
+      --bestBadgeShift: 20px;
     }
 
     /* Hauteur viewport stable mobiles */
@@ -58,12 +60,12 @@
       width:132px;height:100px;border-radius:14px;
       background:linear-gradient(#2a2a2a,#1e1e1e);
       color:#cfcfcf;display:flex;align-items:center;justify-content:center;
-      font-weight:900; /* plus gras */
-      font-family:'Permanent Marker',cursive; /* même police que le score */
+      font-weight:900;
+      font-family:'Permanent Marker',cursive;
       text-transform:uppercase; letter-spacing:.5px;
       box-shadow:inset 0 0 0 2px #000,0 6px 22px rgba(0,0,0,.45);
       cursor:pointer;user-select:none;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; /* garde-fou */
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
     /* === AJOUT: couleur par technique (sert au halo via currentColor) === */
@@ -72,7 +74,7 @@
     .pad[data-tech="tan"]  { color: var(--simon-blue);  }
     .pad[data-tech="bon"]  { color: var(--simon-yellow);}
 
-    /* === AJOUT: Surbrillance façon Simon, plus forte que ta .lit initiale === */
+    /* === AJOUT: Surbrillance façon Simon === */
     .lit{
       filter: brightness(1.85) saturate(1.15);
       box-shadow:
@@ -157,7 +159,7 @@
       height: auto;
       aspect-ratio: 4 / 3;
       margin: 0 auto;
-      font-size: clamp(14px, calc(var(--stageW)*0.04), 22px); /* un peu plus grand qu'avant */
+      font-size: clamp(14px, calc(var(--stageW)*0.04), 22px);
       max-width: 140px;
     }
 
@@ -172,7 +174,6 @@
     /* ============ HUD SCORE GÉANT ============ */
     #hud{ position:absolute; inset:0; z-index:13; pointer-events:none; }
 
-    /* Boîte centrale: "Score" + valeur */
     #scoreBox{
       position:absolute; left:50%; transform:translateX(-50%);
       top: clamp(8px, calc(var(--stageH)*0.06), 64px);
@@ -198,9 +199,6 @@
       line-height: .9;
     }
 
-    :root{
-      --bestBadgeShift: 20px; /* augmente pour descendre davantage */
-    }
     #bestBadge{
       position:absolute; left:50%; transform:translateX(-50%);
       top: calc(
@@ -216,6 +214,41 @@
 
     /* On vire les chips score/best du header visuellement */
     header .chip{ display:none; }
+
+    /* === AJOUT: Popup Game Over === */
+    #gameOver{
+      position:fixed; inset:0; display:none; place-items:center;
+      background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px);
+    }
+    #gameOver.open{ display:grid; }
+    .go-panel{
+      background: #1a1716; border:1px solid #3a302d; border-radius:16px;
+      padding:22px; width:min(92vw, 420px); text-align:center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    }
+    .go-title{
+      font-family:'Permanent Marker',cursive; font-size:36px; margin:0 0 8px; color:var(--ink);
+      text-shadow:0 1px 0 #000;
+    }
+    .go-scores{
+      display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 16px;
+    }
+    .go-card{
+      background:#201c1b; border:1px solid #3a302d; border-radius:10px; padding:10px;
+    }
+    .go-label{ font-size:12px; opacity:.8; margin-bottom:4px; }
+    .go-value{
+      font-family:'Permanent Marker',cursive; font-size:32px; color:var(--scoreYellow);
+      text-shadow:0 1px 0 #000, 0 0 12px rgba(209,163,65,.35);
+    }
+    .go-actions{ display:flex; gap:10px; justify-content:center; margin-top:6px; flex-wrap:wrap;}
+    .go-btn{
+      background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;
+      padding:10px 14px; cursor:pointer; font-weight:800;
+    }
+    .go-btn:hover{ filter:brightness(1.06); }
+    .go-share::before{ content:"📤 "; }
+    .go-replay::before{ content:"🔁 "; }
   </style>
 </head>
 <body>
@@ -278,6 +311,27 @@
     </div>
   </div>
 
+  <!-- === AJOUT: Popup Game Over === -->
+  <div id="gameOver" aria-modal="true" role="dialog">
+    <div class="go-panel">
+      <h2 class="go-title">Game Over</h2>
+      <div class="go-scores">
+        <div class="go-card">
+          <div class="go-label">Score</div>
+          <div id="goScore" class="go-value">0</div>
+        </div>
+        <div class="go-card">
+          <div class="go-label">Meilleur</div>
+          <div id="goBest" class="go-value">0</div>
+        </div>
+      </div>
+      <div class="go-actions">
+        <button id="replayBtn" class="go-btn go-replay">Rejouer</button>
+        <button id="shareBtn"  class="go-btn go-share">Partager</button>
+      </div>
+    </div>
+  </div>
+
   <footer></footer>
 </div>
 
@@ -286,7 +340,7 @@
 <script>
 /* ===== Version app ===== */
 const APP_VERSION = '20250817'; // version unique
-const APP_LABEL   = 'v2.141-hud-label';
+const APP_LABEL   = 'v2.142-popup-autoplay'; /* === AJOUT: label maj === */
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -329,6 +383,13 @@ const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 
+/* === AJOUT: refs popup === */
+const gameOverEl = document.getElementById('gameOver');
+const goScoreEl  = document.getElementById('goScore');
+const goBestEl   = document.getElementById('goBest');
+const replayBtn  = document.getElementById('replayBtn');
+const shareBtn   = document.getElementById('shareBtn');
+
 /* ===== Audio (chargement paresseux) ===== */
 const SFX = {
   pak:   new Audio('assets/sounds/pak.wav'),
@@ -347,6 +408,8 @@ Object.values(SFX).forEach(a=>{
   try { a.src = bust(a.src); } catch {}
 });
 SFX.music.loop = true; SFX.music.volume = 0.5;
+/* === AJOUT: on force le préchargement de la musique pour réduire la latence après geste === */
+try{ SFX.music.preload = 'auto'; SFX.music.load(); }catch{}
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
 
 /* Pool audio créé à la demande */
@@ -356,7 +419,7 @@ function ensureAudioPool(){
   const keys=['pak','tan','bon','punch','wrong','voice_pak','voice_tan','voice_bon','voice_punch','music'];
   keys.forEach(k=>{
     const a=SFX[k]; if(!a) return;
-    const v=a.volume; const clones=Array.from({length:3},()=>{const c=a.cloneNode(); c.volume=v; return c});
+    const v=a.volume; const clones=Array.from({length:3},()=>{const c=a.cloneNode(); c.volume=v; try{c.src=bust(a.src);}catch{} return c});
     POOL[k]=[a,...clones];
   });
   audioReady=true;
@@ -366,7 +429,7 @@ function playKey(key){
   ensureAudioPool();
   const arr=POOL[key]; if(!arr) return;
   let s=arr.find(x=>x.paused);
-  if(!s){ const t=arr[0]; s=t.cloneNode(); s.volume=t.volume; if(arr.length<6) arr.push(s); }
+  if(!s){ const t=arr[0]; s=t.cloneNode(); try{s.src=bust(t.src);}catch{} s.volume=t.volume; if(arr.length<6) arr.push(s); }
   try{ s.currentTime=0; s.play().catch(()=>{}); }catch{}
 }
 let muted=false;
@@ -376,6 +439,22 @@ muteBtn.onclick=()=>{
   if(muted) SFX.music.pause(); else SFX.music.play().catch(()=>{});
 };
 function playTechniqueSounds(tech){ playKey(tech); }
+
+/* === AJOUT: Autoplay sur premier geste utilisateur === */
+let musicPrimed = false;
+function primeMusicOnce(){
+  if(musicPrimed) return;
+  musicPrimed = true;
+  ensureAudioPool();
+  SFX.music.play().catch(()=>{ /* si refus, on réessaiera sur Start */ });
+  // nettoie les écouteurs une fois la tentative faite
+  ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
+    window.removeEventListener(ev, primeMusicOnce, true);
+  });
+}
+['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
+  window.addEventListener(ev, primeMusicOnce, true);
+});
 
 /* ===== BG assets (lazy + priorité) ===== */
 function mkImg(url, priority='auto'){
@@ -627,12 +706,9 @@ function drawFighter(){
   const finalW=baseW*((performance.now()<actionAnim.until)?actionAnim.scale:1);
   const finalH=img.naturalHeight*(finalW/img.naturalWidth);
 
-  // Une seule déclaration
   const rawDx = (CFG.fighterDxPxByTech && CFG.fighterDxPxByTech[currentTech]) || 0;
-
-  // Échelle d’offset uniquement pour le profil mobile
   const isMobileView = (viewingProfileName && viewingProfileName() === 'mobile');
-  const dxTech = isMobileView ? rawDx * (W / 800) : rawDx; // 800 = largeur de ref mobile
+  const dxTech = isMobileView ? rawDx * (W / 800) : rawDx;
 
   const now=performance.now(), idleBob=(now>actionAnim.until)?Math.sin(now/420)*3:0;
   const t=1-Math.max(0,(actionAnim.until-now)/260); const ease=(now<actionAnim.until)?(1-Math.pow(1-t,3)):0;
@@ -690,13 +766,30 @@ async function playSequence(){
   }
   locked=false; userIndex=0;
 }
+
+/* === AJOUT: Popup helpers === */
+function showGameOver(finalScore){
+  goScoreEl.textContent = String(finalScore);
+  goBestEl.textContent  = String(best);
+  gameOverEl.classList.add('open');
+  // focus accessible
+  setTimeout(()=>{ replayBtn?.focus(); }, 0);
+}
+function hideGameOver(){
+  gameOverEl.classList.remove('open');
+}
+
 async function press(tech){
   if(locked) return;
   setSpritesFor(tech); setLit(tech,true); playTechniqueSounds(tech); showOno(tech);
   await sleep(180); setLit(tech,false);
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
-    seq=[]; score=0; updateScoreUI(); locked=true; await sleep(480); startGame(); return;
+    locked = true;
+    // === AJOUT: afficher la popup avec le score courant
+    showGameOver(score);
+    // on ne reset pas best ici, mais on resettra la séquence au rejouer
+    return;
   }
   userIndex++;
   if(userIndex===seq.length){
@@ -711,14 +804,40 @@ function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 pads.forEach(b=>{
   b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
 });
+
+/* === AJOUT: Rejouer & Partager === */
+replayBtn.addEventListener('click', ()=>{
+  hideGameOver();
+  startGame();
+});
+async function shareBest(){
+  const url = location.href.split('#')[0];
+  const text = `Mon meilleur score sur Wing Chun Simon: ${best}`;
+  const shareData = { title:'Wing Chun Simon', text, url };
+  if(navigator.share){
+    try{ await navigator.share(shareData); }catch{}
+  } else {
+    try{
+      await navigator.clipboard.writeText(`${text} — ${url}`);
+      shareBtn.textContent = 'Copié !';
+      setTimeout(()=> shareBtn.textContent = 'Partager', 1200);
+    }catch{}
+  }
+}
+shareBtn.addEventListener('click', shareBest);
+
 function startGame(){
+  hideGameOver();
   menu.style.display='none';
   ensureAudioPool();
-  if(!muted) SFX.music.play().catch(()=>{});
+  // === AJOUT: tente de jouer la musique si pas encore lancée
+  if(!muted){
+    SFX.music.play().catch(()=>{ /* déjà tenté, ou bloqué jusqu’à autre geste */ });
+  }
   seq=[randTech()]; score=0; updateScoreUI(); playSequence();
 }
-startBtn.addEventListener('pointerdown',e=>{e.preventDefault();startGame();},{passive:false});
-startBtn.addEventListener('click',e=>{e.preventDefault();startGame();});
+startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
+startBtn.addEventListener('click',e=>{e.preventDefault(); startGame();});
 
 /* ===== Skins ===== */
 applySkin(activeSkinIdx);
