@@ -443,7 +443,7 @@ Une case s’allume. Le joueur doit appuyer dessus. À chaque tour, la séquence
   </div>
   <canvas id="confetti"></canvas>
 
-    <!-- === RULES POPUP (au clic sur Commencer) === -->
+  <!-- === RULES POPUP (au clic sur Commencer) === -->
   <div id="rulesPopup" aria-modal="true" role="dialog">
     <div class="rp-panel" role="document">
       <h3 class="rp-title">Règles</h3>
@@ -550,9 +550,34 @@ function showRules(){
 function hideRules(){
   rulesPopup.classList.remove('open');
 }
+
+// fermeture normale avec bouton Fermer
 rulesCloseBtn?.addEventListener('click', ()=>{
   hideRules();
-  startGame();              // lance la partie après fermeture
+  startGame();
+});
+
+// === AJOUT 1 : fermer hors du panneau + touche Echap ===
+rulesPopup.addEventListener('click', (e)=>{
+  if(e.target === rulesPopup){ hideRules(); startGame(); }
+});
+window.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && rulesPopup.classList.contains('open')){
+    hideRules(); startGame();
+  }
+});
+
+// === AJOUT 2 : sécuriser double clic Fermer ===
+let gameStarting = false;
+function safeStartGame(){
+  if(gameStarting) return;
+  gameStarting = true;
+  startGame();
+  setTimeout(()=> gameStarting = false, 300);
+}
+rulesCloseBtn?.addEventListener('click', ()=>{
+  hideRules();
+  safeStartGame();
 });
 
 /* On mémorise le best au début de chaque partie */
