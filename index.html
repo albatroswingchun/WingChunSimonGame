@@ -1216,7 +1216,7 @@ function renderSkins(){
       <img class="skinThumb" alt="${s.name}" src="${bust(thumbSrc)}"/>
       <div style="font-weight:700">${s.name}</div>
     `;
-    card.onclick=()=>{ if(locked) return; applySkin(i); renderSkins(); };
+    card.onclick=()=>{ if(locked) return; applySkin(i); renderSkins(); buildDevPanel(); };
     skinsGrid.appendChild(card);
   });
 }
@@ -1335,7 +1335,7 @@ function buildDevPanel(){
   // === Réglages PAR SKIN (basés sur le skin actif) ===
   section('Skin courant: ' + (SKINS[activeSkinIdx]?.name || currentSkinId || 'inconnu'));
   ensureSkinConfigObject(E);
-  const currId = SKINS[activeSkinIdx]?.id || currentSkinId || 'classic';
+  const currId = currentSkinId || SKINS[activeSkinIdx]?.id || 'classic';
   const SC = (E.skins[currId] ||= { ...E.fighter });
 
   // Sliders par skin
