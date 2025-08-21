@@ -329,6 +329,31 @@
 
     /* Noms de skins en blanc */
     .skinCard div { color: #fff; }
+
+    /* === RULES POPUP === */
+    #rulesPopup{
+      position:fixed; inset:0; display:none; place-items:center;
+      background:rgba(0,0,0,.55); z-index:55; backdrop-filter: blur(2px);
+    }
+    #rulesPopup.open{ display:grid; }
+    #rulesPopup .rp-panel{
+      background:#1a1716; border:1px solid #3a302d; border-radius:16px;
+      padding:22px; width:min(92vw, 520px); text-align:center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    }
+    #rulesPopup .rp-title{
+      font-weight:900; color:var(--gold); margin:0 0 8px;
+      font-family:'Permanent Marker',cursive;
+    }
+    #rulesPopup .rp-text{
+      margin:8px 0 14px; line-height:1.35;
+    }
+    #rulesPopup .rp-close{
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8;
+      border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer;
+    }
+    #rulesPopup .rp-close:hover{ filter:brightness(1.06); }
+      
   </style>
 </head>
 <body>
@@ -418,6 +443,18 @@ Une case s’allume. Le joueur doit appuyer dessus. À chaque tour, la séquence
   </div>
   <canvas id="confetti"></canvas>
 
+    <!-- === RULES POPUP (au clic sur Commencer) === -->
+  <div id="rulesPopup" aria-modal="true" role="dialog">
+    <div class="rp-panel" role="document">
+      <h3 class="rp-title">Règles</h3>
+      <div class="rp-text">
+        Règles :<br/>
+        Une case s’allume. Le joueur doit appuyer dessus. À chaque tour, la séquence recommence depuis le début et s’allonge d’une nouvelle case.
+      </div>
+      <button id="rulesCloseBtn" class="rp-close">Fermer</button>
+    </div>
+  </div>
+
   <!-- === NEW SKIN unlocked === -->
   <div id="newSkin" aria-modal="true" role="dialog">
     <div class="ns-panel" role="document">
@@ -501,6 +538,22 @@ const bestPopup = document.getElementById('bestPopup');
 const bpOk      = document.getElementById('bpOk');
 const confettiCv= document.getElementById('confetti');
 const confettiCx= confettiCv.getContext('2d');
+
+  /* === Rules popup refs === */
+const rulesPopup   = document.getElementById('rulesPopup');
+const rulesCloseBtn= document.getElementById('rulesCloseBtn');
+
+function showRules(){
+  rulesPopup.classList.add('open');
+  setTimeout(()=>rulesCloseBtn?.focus(), 0);
+}
+function hideRules(){
+  rulesPopup.classList.remove('open');
+}
+rulesCloseBtn?.addEventListener('click', ()=>{
+  hideRules();
+  startGame();              // lance la partie après fermeture
+});
 
 /* On mémorise le best au début de chaque partie */
 let runPrevBest = 0;
@@ -1089,8 +1142,9 @@ function startGame(){
 
   seq=[randTech()]; score=0; demonPopupShownThisRun=false; updateScoreUI(); playSequence();
 }
-startBtn.addEventListener('pointerdown',e=>{e.preventDefault(); startGame();},{passive:false});
-startBtn.addEventListener('click',e=>{e.preventDefault(); startGame();});
+const handleStartClick = (e)=>{ e.preventDefault(); showRules(); };
+startBtn.addEventListener('pointerdown', handleStartClick, {passive:false});
+startBtn.addEventListener('click', handleStartClick);
 
 /* ===== Skins ===== */
 applySkin(activeSkinIdx);
