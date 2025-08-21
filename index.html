@@ -707,6 +707,7 @@ const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:
 
 /* Unlock logic */
 const DEMON_UNLOCK_SCORE = 15;
+const MONKING_UNLOCK_SCORE = 10; 
 function isUnlocked(skin){ if(!skin.locked) return true; return localStorage.getItem('skin_unlocked_'+skin.id) === '1'; }
 function isUnlockedSkinId(id){ const s=SKINS.find(x=>x.id===id); return s ? isUnlocked(s) : false; }
 function unlockSkin(id){ localStorage.setItem('skin_unlocked_'+id, '1'); }
@@ -1101,6 +1102,7 @@ function hideBestPopup(){
 bpOk?.addEventListener('click', hideBestPopup);
 
 let demonPopupShownThisRun = false;
+let monkingPopupShownThisRun = false;
 
 async function press(tech){
   if(locked) return;
@@ -1128,6 +1130,16 @@ async function press(tech){
   if(userIndex===seq.length){
     score++; updateScoreUI();
     if(score>best){ best=score; bestEl.textContent=best; localStorage.setItem('wcs_best',best); }
+
+    // === Déblocage MONKING à 10 ===
+    if(!isUnlockedSkinId('monking') && score >= MONKING_UNLOCK_SCORE){
+      unlockSkin('monking');
+      const monkingSkin = SKINS.find(s=>s.id==='monking');
+      if(monkingSkin && !monkingPopupShownThisRun){
+        monkingPopupShownThisRun = true;
+        showNewSkinPopup(monkingSkin);
+      }
+    }
 
     /* === Déblocage DEMON à 15 === */
     if(!isUnlockedSkinId('demon') && score>=DEMON_UNLOCK_SCORE){
@@ -1187,7 +1199,7 @@ function startGame(){
   /* mémorise le best au début de la partie pour la popup record */
   runPrevBest = +localStorage.getItem('wcs_best') || best || 0;
 
-  seq=[randTech()]; score=0; demonPopupShownThisRun=false; updateScoreUI(); playSequence();
+  seq=[randTech()]; score=0; demonPopupShownThisRun=false; monkingPopupShownThisRun=false; updateScoreUI(); playSequence();
 }
 const handleStartClick = (e)=>{ e.preventDefault(); showRules(); };
 startBtn.addEventListener('pointerdown', handleStartClick, {passive:false});
@@ -1519,6 +1531,7 @@ window.addEventListener('keydown', (e)=>{
     id:'monking',
     name:'Monking',
     thumb:'https://i.imgur.com/cCAmBya.png',
+    locked: true,
     f:{
       tan:'https://i.imgur.com/CyyeLpi.png',
       bon:'https://i.imgur.com/aBXIgsS.png',
