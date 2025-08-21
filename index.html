@@ -215,40 +215,62 @@
     /* On vire les chips score/best du header visuellement */
     header .chip{ display:none; }
 
-    /* === AJOUT: Popup Game Over === */
+    /* === AJOUT: Popup Game Over (version empilée + boutons redimensionnés) === */
     #gameOver{
       position:fixed; inset:0; display:none; place-items:center;
       background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px);
     }
     #gameOver.open{ display:grid; }
     .go-panel{
-      background: #1a1716; border:1px solid #3a302d; border-radius:16px;
+      background:#1a1716; border:1px solid #3a302d; border-radius:16px;
       padding:22px; width:min(92vw, 420px); text-align:center;
       box-shadow: 0 16px 48px rgba(0,0,0,.45);
     }
     .go-title{
-      font-family:'Permanent Marker',cursive; font-size:36px; margin:0 0 8px; color:var(--ink);
+      font-family:'Permanent Marker',cursive; font-size:28px; margin:0 0 8px; color:var(--ink);
       text-shadow:0 1px 0 #000;
     }
-    .go-scores{
-      display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 16px;
+
+    /* Bloc central empilé */
+    .go-main{
+      display:grid; gap:6px; justify-items:center; margin:6px 0 12px;
     }
-    .go-card{
-      background:#201c1b; border:1px solid #3a302d; border-radius:10px; padding:10px;
+    #goScore{
+      font-family:'Permanent Marker',cursive;
+      font-size: 28px;          /* plus petit */
+      color: var(--scoreYellow);
+      text-shadow: 0 1px 0 #000, 0 0 12px rgba(209,163,65,.28);
+      line-height:1;
     }
-    .go-label{ font-size:12px; opacity:.8; margin-bottom:4px; }
-    .go-value{
-      font-family:'Permanent Marker',cursive; font-size:32px; color:var(--scoreYellow);
-      text-shadow:0 1px 0 #000, 0 0 12px rgba(209,163,65,.35);
+    #goBest{
+      font-family:'Permanent Marker',cursive;
+      font-size: 20px;          /* encore plus petit */
+      color:#ffd48a;
+      text-shadow: 0 1px 0 #000;
+      opacity:.95;
+      line-height:1;
     }
-    .go-actions{ display:flex; gap:10px; justify-content:center; margin-top:6px; flex-wrap:wrap;}
-    .go-btn{
-      background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;border-radius:10px;
-      padding:10px 14px; cursor:pointer; font-weight:800;
+
+    /* Actions */
+    .go-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+
+    /* Gros bouton Rejouer */
+    .go-replay{
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; border-radius:14px;
+      padding:14px 22px; cursor:pointer; font-weight:900; font-size:20px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.4);
     }
-    .go-btn:hover{ filter:brightness(1.06); }
-    .go-share::before{ content:"📤 "; }
-    .go-replay::before{ content:"🔁 "; }
+    .go-replay:hover{ filter:brightness(1.06); }
+
+    /* Petit bouton Partager: icône seule */
+    .go-share{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:999px;
+      background:#1e1b1a; border:1px solid #3a302d; color:#e8d6b8; cursor:pointer;
+      font-size:20px;
+    }
+    .go-share:hover{ filter:brightness(1.06); }
+    .go-share::before{ content:"📤"; }  /* icône seule */
   </style>
 </head>
 <body>
@@ -311,23 +333,17 @@
     </div>
   </div>
 
-  <!-- === AJOUT: Popup Game Over === -->
+  <!-- === AJOUT: Popup Game Over (empilée) === -->
   <div id="gameOver" aria-modal="true" role="dialog">
-    <div class="go-panel">
+    <div class="go-panel" role="document">
       <h2 class="go-title">Game Over</h2>
-      <div class="go-scores">
-        <div class="go-card">
-          <div class="go-label">Score</div>
-          <div id="goScore" class="go-value">0</div>
-        </div>
-        <div class="go-card">
-          <div class="go-label">Meilleur</div>
-          <div id="goBest" class="go-value">0</div>
-        </div>
+      <div class="go-main">
+        <div id="goScore">Score: 0</div>
+        <div id="goBest">Meilleur: 0</div>
       </div>
       <div class="go-actions">
-        <button id="replayBtn" class="go-btn go-replay">Rejouer</button>
-        <button id="shareBtn"  class="go-btn go-share">Partager</button>
+        <button id="replayBtn" class="go-replay">Rejouer</button>
+        <button id="shareBtn"  class="go-share" title="Partager"></button>
       </div>
     </div>
   </div>
@@ -340,7 +356,7 @@
 <script>
 /* ===== Version app ===== */
 const APP_VERSION = '20250817'; // version unique
-const APP_LABEL   = 'v2.142-popup-autoplay'; /* === AJOUT: label maj === */
+const APP_LABEL   = 'v2.143-popup-stacked'; /* label maj */
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -383,7 +399,7 @@ const stage=document.getElementById('stage');
 const cx=document.getElementById('cx');
 const ctx=cx.getContext('2d',{alpha:true}); ctx.imageSmoothingEnabled=false;
 
-/* === AJOUT: refs popup === */
+/* === Popup refs === */
 const gameOverEl = document.getElementById('gameOver');
 const goScoreEl  = document.getElementById('goScore');
 const goBestEl   = document.getElementById('goBest');
@@ -408,7 +424,7 @@ Object.values(SFX).forEach(a=>{
   try { a.src = bust(a.src); } catch {}
 });
 SFX.music.loop = true; SFX.music.volume = 0.5;
-/* === AJOUT: on force le préchargement de la musique pour réduire la latence après geste === */
+/* précharge pour réduire la latence après premier geste */
 try{ SFX.music.preload = 'auto'; SFX.music.load(); }catch{}
 SFX.voice_pak.volume=SFX.voice_tan.volume=SFX.voice_bon.volume=SFX.voice_punch.volume=0.8;
 
@@ -440,14 +456,13 @@ muteBtn.onclick=()=>{
 };
 function playTechniqueSounds(tech){ playKey(tech); }
 
-/* === AJOUT: Autoplay sur premier geste utilisateur === */
+/* Autoplay sur premier geste utilisateur */
 let musicPrimed = false;
 function primeMusicOnce(){
   if(musicPrimed) return;
   musicPrimed = true;
   ensureAudioPool();
   SFX.music.play().catch(()=>{ /* si refus, on réessaiera sur Start */ });
-  // nettoie les écouteurs une fois la tentative faite
   ['pointerdown','mousedown','touchstart','keydown'].forEach(ev=>{
     window.removeEventListener(ev, primeMusicOnce, true);
   });
@@ -501,7 +516,6 @@ rICB(()=>{
 const STORAGE_KEY = 'wcs_tune_v8';
 const TUNE_VERSION = 8;
 
-/* Seeds = ta sauvegarde JSON */
 const SEEDED_PROFILES = {
   pc: {
     ratio: 1.3333333333333333,
@@ -614,7 +628,6 @@ function resize(){
   let boxW=wrapW, boxH=Math.round(wrapW / r);
   if(boxH>wrapH){ boxH=wrapH; boxW=Math.round(wrapH * r); }
 
-  /* Réduction de charge en mobile portrait: DPR = 1 */
   const sysDPR = window.devicePixelRatio||1;
   DPR = isPortrait() ? 1 : Math.max(1, Math.min(2, sysDPR));
 
@@ -767,12 +780,11 @@ async function playSequence(){
   locked=false; userIndex=0;
 }
 
-/* === AJOUT: Popup helpers === */
+/* Popup helpers */
 function showGameOver(finalScore){
-  goScoreEl.textContent = String(finalScore);
-  goBestEl.textContent  = String(best);
+  goScoreEl.textContent = 'Score: ' + String(finalScore);
+  goBestEl.textContent  = 'Meilleur: ' + String(best);
   gameOverEl.classList.add('open');
-  // focus accessible
   setTimeout(()=>{ replayBtn?.focus(); }, 0);
 }
 function hideGameOver(){
@@ -786,9 +798,7 @@ async function press(tech){
   if(tech!==seq[userIndex]){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     locked = true;
-    // === AJOUT: afficher la popup avec le score courant
     showGameOver(score);
-    // on ne reset pas best ici, mais on resettra la séquence au rejouer
     return;
   }
   userIndex++;
@@ -800,12 +810,12 @@ async function press(tech){
 }
 function updateScoreUI(){ bigScoreEl.textContent = String(score); }
 
-/* ===== Entrées ===== */
+/* Entrées */
 pads.forEach(b=>{
   b.addEventListener('pointerdown',e=>{ e.preventDefault(); press(b.dataset.tech); }, {passive:false});
 });
 
-/* === AJOUT: Rejouer & Partager === */
+/* Rejouer & Partager */
 replayBtn.addEventListener('click', ()=>{
   hideGameOver();
   startGame();
@@ -819,8 +829,11 @@ async function shareBest(){
   } else {
     try{
       await navigator.clipboard.writeText(`${text} — ${url}`);
-      shareBtn.textContent = 'Copié !';
-      setTimeout(()=> shareBtn.textContent = 'Partager', 1200);
+      // feedback visuel discret pour l'icône seule
+      const old = shareBtn.getAttribute('data-ico') || '📤';
+      shareBtn.style.transform = 'scale(1.05)';
+      shareBtn.textContent = '✅';
+      setTimeout(()=>{ shareBtn.textContent = ''; shareBtn.style.transform=''; }, 900);
     }catch{}
   }
 }
@@ -830,9 +843,8 @@ function startGame(){
   hideGameOver();
   menu.style.display='none';
   ensureAudioPool();
-  // === AJOUT: tente de jouer la musique si pas encore lancée
   if(!muted){
-    SFX.music.play().catch(()=>{ /* déjà tenté, ou bloqué jusqu’à autre geste */ });
+    SFX.music.play().catch(()=>{ /* bloqué jusqu’à autre geste */ });
   }
   seq=[randTech()]; score=0; updateScoreUI(); playSequence();
 }
