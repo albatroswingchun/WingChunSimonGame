@@ -1209,7 +1209,7 @@ startBtn.addEventListener('click', handleStartClick);
 applySkin(activeSkinIdx);
 skinsBtn.onclick=()=>{ const show=skinsPanel.style.display!=='block'; skinsPanel.style.display=show?'block':'none'; if(show) renderSkins(); };
 function openSkinsPanel(){
-  menu.style.display='block';
+  menu.style.display='grid';
   skinsPanel.style.display='block';
   renderSkins();
 }
