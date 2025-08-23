@@ -1255,10 +1255,18 @@ function renderSkins(){
     card.className='skinCard'+(i===activeSkinIdx?' skinActive':'')+(locked?' skinLocked':'');
     card.title = locked ? 'Débloque ce skin pour l’utiliser' : ('Choisir: '+s.name);
     const thumbSrc = locked ? s.thumb : (s.f?.pak || s.thumb);
-    card.innerHTML = `
-      <img class="skinThumb" alt="${s.name}" src="${bust(thumbSrc)}"/>
-      <div style="font-weight:700">${s.name}</div>
-    `;
+   let note = '';
+if (locked) {
+  if (s.id === 'monking') note = '<div style="font-size:12px;opacity:.8;color:#ffd48a">Débloqué au score 10</div>';
+  if (s.id === 'demon')   note = '<div style="font-size:12px;opacity:.8;color:#ffd48a">Débloqué au score 15</div>';
+}
+
+card.innerHTML = `
+  <img class="skinThumb" alt="${s.name}" src="${bust(thumbSrc)}"/>
+  <div style="font-weight:700">${s.name}</div>
+  ${note}
+`;
+
     card.onclick=()=>{ if(locked) return; applySkin(i); renderSkins(); buildDevPanel(); };
     skinsGrid.appendChild(card);
   });
