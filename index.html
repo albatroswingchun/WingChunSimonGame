@@ -33,17 +33,6 @@
       --bestBadgeShift: 20px;
     }
 
-    <script type="module">
-      import { StatusBar, Style } from '@capacitor/status-bar';
-
-      // Empêche le contenu de passer sous la barre d’état
-      StatusBar.setOverlaysWebView({ overlay: false });
-
-      // Optionnel : change la couleur et le style des icônes
-      StatusBar.setBackgroundColor({ color: '#0b0a0a' });
-      StatusBar.setStyle({ style: Style.Light }); // Light = icônes claires (barre sombre)
-    </script>
-
     /* Hauteur viewport stable mobiles */
     :root{ --vh: 100svh; }
     @supports (height: 100dvh) { :root{ --vh: 100dvh; } }
