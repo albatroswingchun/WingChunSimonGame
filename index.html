@@ -709,15 +709,29 @@ let MT_NEAR=null, ALLEY=null;
 const rICB = window.requestIdleCallback || (cb=>setTimeout(cb,1));
 rICB(()=>{ MT_NEAR = mkImg('https://i.imgur.com/bQDYgSH.png','low'); ALLEY = mkImg('https://i.imgur.com/hVGwPdp.png','low'); });
 
-/* ===== Sprites & skins (lazy) ===== */
-function load(url, priority='auto'){ const img=new Image(); img.crossOrigin='anonymous'; img.decoding='async'; img.fetchPriority=priority; img.src=bust(url); return img; }
+ * ===== Sprites & skins (lazy) ===== */
+function load(url, priority='auto'){ 
+  const img=new Image(); 
+  img.crossOrigin='anonymous'; 
+  img.decoding='async'; 
+  img.fetchPriority=priority; 
+  img.src=bust(url); 
+  return img; 
+}
+
 const SKINS = [
   { id:'classic', name:'Classique', thumb:'https://i.imgur.com/AweXMem.png',
     f:{ pak:'https://i.imgur.com/AweXMem.png', tan:'https://i.imgur.com/ZrLk97U.png', bon:'https://i.imgur.com/CG30Yh6.png', punch:'https://i.imgur.com/JYL2S46.png' } },
+
+  /* === MONKING verrouillé de base === */
+  { id:'monking', name:'Monking', thumb:'https://i.imgur.com/cCAmBya.png', locked:true,
+    f:{ pak:'https://i.imgur.com/NDj4Qyw.png', tan:'https://i.imgur.com/CyyeLpi.png', bon:'https://i.imgur.com/aBXIgsS.png', punch:'https://i.imgur.com/zBsBY7G.png' } },
+
   /* === DEMON verrouillé de base === */
   { id:'demon', name:'Demon', thumb:'https://i.imgur.com/b60LiYf.png', locked:true,
     f:{ bon:'https://i.imgur.com/Eg1mCJq.png', tan:'https://i.imgur.com/wNewS04.png', punch:'https://i.imgur.com/lpJkx50.png', pak:'https://i.imgur.com/FvJK22b.png' } }
 ];
+
 const IMG={ f_pak:null, f_tan:null, f_bon:null, f_punch:null, o_pak:null, o_tan:null, o_bon:null, o_punch:null, d_unique:null };
 
 /* Unlock logic */
