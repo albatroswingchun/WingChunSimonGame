@@ -488,8 +488,10 @@
 <div id="devPanel"></div>
 
 <script>
+
 /* ===== Version app ===== */
-const APP_LABEL   = 'v3.151'; /* label + best popup */
+const APP_LABEL = 'v3.152'; /* label + best popup */
+const APP_VERSION = '2025';  // ← utilisé par CB et affichage; doit exister AVANT son usage
 
 /* ===== Cache-buster (stable par version) ===== */
 const CB = (new URL(location.href)).searchParams.get('v') || APP_VERSION;
@@ -1130,7 +1132,20 @@ function showNewSkinPopup(skin){
   newSkinEl.classList.add('open');
   setTimeout(()=>{ nsViewBtn?.focus(); }, 0);
 }
-function hideNewSkinPopup(){ newSkinEl.classList.remove('open'); }
+function scheduleUnlockPopups(){
+  if (pendingUnlocksThisRun.length > 0){
+    const next = pendingUnlocksThisRun.shift();
+    showNewSkinPopup(next);
+  }
+}
+
+function hideNewSkinPopup(){
+  newSkinEl.classList.remove('open');
+  // S’il reste d’autres skins à annoncer, on enchaîne
+  if (pendingUnlocksThisRun.length){
+    setTimeout(scheduleUnlockPopups, 180);
+  }
+}
 
 function showBestPopup(finalScore){
   const scoreEl = document.getElementById('bpScore');
@@ -1144,12 +1159,20 @@ function hideBestPopup(){
   bestPopup.classList.remove('open');
   const scoreEl = document.getElementById('bpScore');
   if (scoreEl) scoreEl.textContent = '';
+  // Si on attendait la fin du best-popup, on lance maintenant les annonces
+  if (wantToShowUnlocksAfterBest){
+    wantToShowUnlocksAfterBest = false;
+    scheduleUnlockPopups();
+  }
 }
 
 bpOk?.addEventListener('click', hideBestPopup);
 
 let demonPopupShownThisRun = false;
 let monkingPopupShownThisRun = false;
+
+let pendingUnlocksThisRun = [];   // ← file des skins à annoncer après la défaite
+let wantToShowUnlocksAfterBest = false; // ← si best popup ouverte, on attend sa fermeture
 
 async function press(tech){
   if(locked) return;
@@ -1159,19 +1182,24 @@ async function press(tech){
     playKey('wrong'); flash.classList.remove('boom'); void flash.offsetWidth; flash.classList.add('boom');
     locked = true;
 
-    /* Fin de partie */
-    showGameOver(score);
+   /* Fin de partie */
+showGameOver(score);
 
-    /* Popup Best Score si score final > best du début de la run */
-    if (score > runPrevBest){
-      if(score > best){ 
-        best = score; 
-        bestEl.textContent = best; 
-        localStorage.setItem('wcs_best',best);
-      }
-      showBestPopup(score);   // ← passe le score ici
-    }
-    return;
+/* Popup Best Score si score final > best du début de la run */
+if (score > runPrevBest){
+  if(score > best){ 
+    best = score; 
+    bestEl.textContent = best; 
+    localStorage.setItem('wcs_best',best);
+  }
+    // On montre d’abord la best-popup, puis on enchaînera les annonces de skins à sa fermeture
+    wantToShowUnlocksAfterBest = true;
+    showBestPopup(score);
+  } else {
+    // Pas de best-popup : on peut annoncer tout de suite les skins débloqués
+    scheduleUnlockPopups();
+  }
+  return;
   }
   userIndex++;
   if(userIndex===seq.length){
@@ -1246,8 +1274,18 @@ function startGame(){
   /* mémorise le best au début de la partie pour la popup record */
   runPrevBest = +localStorage.getItem('wcs_best') || best || 0;
 
-  seq=[randTech()]; score=0; demonPopupShownThisRun=false; monkingPopupShownThisRun=false; updateScoreUI(); playSequence();
+  seq=[randTech()]; score=0;
+  demonPopupShownThisRun=false;
+  monkingPopupShownThisRun=false;
+
+  // <<< ICI ajout important >>>
+  pendingUnlocksThisRun = [];
+  wantToShowUnlocksAfterBest = false;
+
+  updateScoreUI();
+  playSequence();
 }
+
 const handleStartClick = (e)=>{ e.preventDefault(); showRules(); };
 startBtn.addEventListener('pointerdown', handleStartClick, {passive:false});
 startBtn.addEventListener('click', handleStartClick);
@@ -1685,7 +1723,8 @@ window.addEventListener('keydown', (e)=>{
 <script>
   /* ===== CONFIG À PERSONNALISER ===== */
   const VERSION_ENDPOINT = "https://albatroswingchun.github.io/WingChunSimonGame/meta/version.json"; // ← ton URL publique
-  const APP_VERSION      = "1.0.4";  // ← DOIT correspondre à versionName (Android)
+  const APP_VERSION_NAME = "1.0.4";
+  const cur = APP_VERSION_NAME;   // au lieu de APP_VERSION
   const SNOOZE_HOURS     = 24;       // rappel “Plus tard” après 24h
 
   /* ===== UTILITAIRES ===== */
