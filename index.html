@@ -323,10 +323,24 @@
       background:#1e1b1a;border:1px solid #3a302d;color:#e8d6b8;
       border-radius:12px; padding:12px 18px; font-weight:900; cursor:pointer;
     }
+
+    #bestPopup .bp-score{
+      font-family:'Permanent Marker',cursive;
+      font-weight:900;
+      font-size: clamp(24px, calc(var(--stageW)*0.07), 48px);
+      color: var(--scoreYellow);
+      text-shadow: 0 2px 0 #000, 0 0 24px rgba(209,163,65,.35);
+      letter-spacing: 1px;
+      margin: 6px 0 12px;
+    }
+    
     #confetti{
       position:fixed; inset:0; pointer-events:none; z-index:59;
+      display:none;           /* caché par défaut */
+      opacity:0;              /* prêt pour fade-in/out */
+      transition: opacity 300ms ease;
     }
-
+    
     /* Noms de skins en blanc */
     .skinCard div { color: #fff; }
 
@@ -344,6 +358,7 @@
     #rulesPopup .rp-title{
       font-weight:900; color:var(--gold); margin:0 0 8px;
       font-family:'Permanent Marker',cursive;
+      font-size: 36px;
     }
     #rulesPopup .rp-text{
       margin:8px 0 14px; line-height:1.35;
@@ -437,6 +452,7 @@
     <div class="bp-panel" role="document">
       <div class="bp-title">Best Score!</div>
       <div class="bp-sub">Nouveau record battu 🎉</div>
+        <div id="bpScore" class="bp-score"></div>
       <button id="bpOk" class="bp-ok">OK</button>
     </div>
   </div>
@@ -1017,14 +1033,22 @@ window.addEventListener('resize', fitConfetti, {passive:true});
 fitConfetti();
 
 function launchConfetti(durationMs = 2500){
-  const W = confettiCv.width, H = confettiCv.height;
+  const W = (confettiCv.width  = window.innerWidth);
+  const H = (confettiCv.height = window.innerHeight);
+
+  // show + fade-in
+  confettiCv.style.display = 'block';
+  // force reflow pour activer la transition proprement
+  void confettiCv.offsetWidth;
+  confettiCv.style.opacity = '1';
+
   const N = Math.min(220, Math.floor((W*H)/18000));
   const g = 0.12;
-  const pieces = Array.from({length:N}, ()=>({
+  const pieces = Array.from({length:N}, () => ({
     x: Math.random()*W,
     y: -20 - Math.random()*H*0.4,
     vx: (Math.random()*2-1)*1.2,
-    vy: Math.random()*-1.5,
+    vy: (Math.random()*-1.5),
     w: 6+Math.random()*6,
     h: 8+Math.random()*8,
     rot: Math.random()*Math.PI*2,
@@ -1032,17 +1056,13 @@ function launchConfetti(durationMs = 2500){
     c: `hsl(${Math.random()*360},90%,60%)`,
   }));
 
-  let alive = true;
   const tEnd = performance.now() + durationMs;
+
   (function tick(){
-    if(!alive) return;
     const t = performance.now();
     confettiCx.clearRect(0,0,W,H);
     for(const p of pieces){
-      p.vy += g;
-      p.x  += p.vx;
-      p.y  += p.vy;
-      p.rot+= p.vr;
+      p.vy += g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
       if(p.y > H + 24){ p.y = -24; p.x = Math.random()*W; p.vy = Math.random()*-2; }
       confettiCx.save();
       confettiCx.translate(p.x, p.y);
@@ -1051,7 +1071,16 @@ function launchConfetti(durationMs = 2500){
       confettiCx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
       confettiCx.restore();
     }
-    if (t < tEnd) requestAnimationFrame(tick);
+    if (t < tEnd){
+      requestAnimationFrame(tick);
+    } else {
+      // fade-out + nettoyage réel
+      confettiCv.style.opacity = '0';
+      setTimeout(() => {
+        confettiCx.clearRect(0,0,confettiCv.width, confettiCv.height);
+        confettiCv.style.display = 'none';
+      }, 320);
+    }
   })();
 }
 
@@ -1090,14 +1119,20 @@ function showNewSkinPopup(skin){
 }
 function hideNewSkinPopup(){ newSkinEl.classList.remove('open'); }
 
-function showBestPopup(){
+function showBestPopup(finalScore){
+  const scoreEl = document.getElementById('bpScore');
+  if (scoreEl) scoreEl.textContent = 'Score: ' + String(finalScore);
   bestPopup.classList.add('open');
   launchConfetti(3000);
   setTimeout(()=>bpOk?.focus(), 0);
 }
+
 function hideBestPopup(){
   bestPopup.classList.remove('open');
+  const scoreEl = document.getElementById('bpScore');
+  if (scoreEl) scoreEl.textContent = '';
 }
+
 bpOk?.addEventListener('click', hideBestPopup);
 
 let demonPopupShownThisRun = false;
@@ -1121,7 +1156,7 @@ async function press(tech){
         bestEl.textContent = best; 
         localStorage.setItem('wcs_best',best);
       }
-      showBestPopup();
+      showBestPopup(score);   // ← passe le score ici
     }
     return;
   }
