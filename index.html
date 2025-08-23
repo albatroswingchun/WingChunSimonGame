@@ -1,4 +1,3 @@
-
 "<!doctype html>
 <html lang="fr">
 <head>
@@ -1570,5 +1569,166 @@ window.addEventListener('keydown', (e)=>{
 })();
 </script>
 
+<!-- ==== Contrôle de version / Mise à jour (coller avant </body>) ==== -->
+<style>
+  /* Bannière non bloquante */
+  #updateBanner{
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999;
+    display: none; gap: 10px; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: #18222b; color: #eaf2fb; font: 14px/1.3 system-ui, sans-serif;
+    box-shadow: 0 -8px 24px rgba(0,0,0,.45);
+  }
+  #updateBanner .txt{opacity:.95}
+  #updateBanner button{ all: unset; padding: 8px 12px; background:#3d74d6; color:#fff; border-radius:8px; cursor: pointer; font-weight:600 }
+  #updateBanner .close{ background: transparent; color:#a9bfd4; padding:6px 10px; border:1px solid #2a3b49 }
+
+  /* Overlay bloquant */
+  #forceUpdateOverlay{
+    position: fixed; inset: 0; z-index: 10000; display: none;
+    background: rgba(0,0,0,.88); color: #eaf2fb; font: 15px/1.4 system-ui, sans-serif;
+  }
+  #forceUpdateOverlay .pane{
+    position:absolute; inset: 0; display:flex; align-items:center; justify-content:center; padding: 20px;
+  }
+  #forceUpdateOverlay .card{
+    max-width: 520px; background:#111a21; border:1px solid #22313d; border-radius:14px; padding:22px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+  }
+  #forceUpdateOverlay h2{ margin:0 0 8px 0; font-size: 20px }
+  #forceUpdateOverlay p{ margin:0 0 14px 0; opacity:.95 }
+  #forceUpdateOverlay .row{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap }
+  #forceUpdateOverlay button{ all: unset; padding: 10px 14px; background:#3d74d6; color:#fff; border-radius:10px; cursor:pointer; font-weight:600 }
+</style>
+
+<!-- Bannière “mise à jour disponible” -->
+<div id="updateBanner" role="status" aria-live="polite">
+  <div class="txt">
+    <strong>Nouvelle version disponible.</strong>
+    <span id="ubNotes"></span>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center">
+    <button id="ubLater" class="close" title="Me rappeler plus tard">Plus tard</button>
+    <button id="ubUpdate">Mettre à jour</button>
+  </div>
+</div>
+
+<!-- Overlay “mise à jour obligatoire” -->
+<div id="forceUpdateOverlay" aria-modal="true" role="dialog">
+  <div class="pane">
+    <div class="card">
+      <h2>Veuillez mettre à jour l’app</h2>
+      <p>Cette version n’est plus supportée. Installe la dernière mise à jour pour continuer.</p>
+      <p id="fuNotes" style="opacity:.8"></p>
+      <div class="row">
+        <button id="fuoUpdate">Télécharger la mise à jour</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ===== CONFIG À PERSONNALISER ===== */
+  const VERSION_ENDPOINT = "https://albatroswingchun.github.io/WingChunSimonGame/meta/version.json"; // ← ton URL publique
+  const APP_VERSION      = "1.0.4";  // ← DOIT correspondre à versionName (Android)
+  const SNOOZE_HOURS     = 24;       // rappel “Plus tard” après 24h
+
+  /* ===== UTILITAIRES ===== */
+  function cmpSemver(a,b){
+    const pa = String(a).split('.').map(n=>parseInt(n,10)||0);
+    const pb = String(b).split('.').map(n=>parseInt(n,10)||0);
+    const len = Math.max(pa.length, pb.length);
+    for(let i=0;i<len;i++){
+      const x = pa[i]||0, y = pb[i]||0;
+      if (x>y) return 1;
+      if (x<y) return -1;
+    }
+    return 0;
+  }
+  function nowTs(){ return Date.now(); }
+  function hours(n){ return n*3600*1000; }
+
+  /* ===== UI HANDLERS ===== */
+  const $banner = document.getElementById('updateBanner');
+  const $ubNotes = document.getElementById('ubNotes');
+  const $ubUpdate = document.getElementById('ubUpdate');
+  const $ubLater = document.getElementById('ubLater');
+
+  const $force = document.getElementById('forceUpdateOverlay');
+  const $fuNotes = document.getElementById('fuNotes');
+  const $fuoUpdate = document.getElementById('fuoUpdate');
+
+  function openUrl(url){
+    // Simple et universel: navigue vers l’URL (le téléchargement d’APK s’ouvrira)
+    location.href = url;
+  }
+
+  function hideBanner(){ $banner.style.display = 'none'; }
+  function showBanner(info){
+    $ubNotes.textContent = info?.notes ? ` — ${info.notes}` : '';
+    $banner.style.display = 'flex';
+    $ubUpdate.onclick = ()=> openUrl(info.url);
+    $ubLater.onclick = ()=>{
+      localStorage.setItem('updateSnoozeUntil', String(nowTs() + hours(SNOOZE_HOURS)));
+      hideBanner();
+    };
+  }
+
+  function showForce(info){
+    if (info?.notes) $fuNotes.textContent = info.notes;
+    $force.style.display = 'block';
+    $fuoUpdate.onclick = ()=> openUrl(info.url);
+  }
+
+  /* ===== COEUR: CHECK VERSION ===== */
+  async function fetchVersionInfo(){
+    const url = VERSION_ENDPOINT + (VERSION_ENDPOINT.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  let lastCheckTs = 0;
+  async function checkUpdate(force=false){
+    const since = nowTs() - lastCheckTs;
+    if (!force && since < 15_000) return; // évite spam si tu rappelles souvent
+    lastCheckTs = nowTs();
+
+    let info;
+    try{
+      info = await fetchVersionInfo();
+    }catch(e){
+      // Pas d’internet/en erreur: on laisse vivre l’app
+      return;
+    }
+
+    const cur = APP_VERSION;
+    const latest = info?.latest || cur;
+    const minSupported = info?.minSupported || cur;
+
+    // 1) MAJ obligatoire
+    if (cmpSemver(cur, minSupported) < 0){
+      showForce(info);
+      return;
+    }
+
+    // 2) MAJ conseillée
+    if (cmpSemver(cur, latest) < 0){
+      const snooze = parseInt(localStorage.getItem('updateSnoozeUntil')||'0',10) || 0;
+      if (nowTs() >= snooze){
+        showBanner(info);
+      }
+      return;
+    }
+
+    // Sinon: rien
+    hideBanner();
+  }
+
+  // DÉMARRAGE + rappel quand l’app revient au premier plan
+  document.addEventListener('DOMContentLoaded', ()=> checkUpdate(true));
+  document.addEventListener('visibilitychange', ()=> { if (!document.hidden) checkUpdate(false); });
+</script>
+<!-- ==== /Contrôle de version ==== -->
+  
 </body>
 </html>
