@@ -31,7 +31,6 @@
     a{color:inherit;text-decoration:none}
     img{display:block;max-width:100%}
     .wrap{max-width:1120px;margin:0 auto;padding:24px}
-    /* pour que les ancres ne passent pas sous la nav fixe */
     :target{scroll-margin-top:72px}
 
     /* NAV FIXE */
@@ -46,7 +45,6 @@
     .links{margin-left:auto;display:flex;gap:10px}
     .links a{padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#00000033;font-weight:600;font-size:14px}
     .links a:hover{transform:translateY(-1px)}
-    /* Hamburger */
     .burger{display:none;margin-left:auto;gap:8px;align-items:center}
     .burger button{all:unset;cursor:pointer;padding:8px;border:1px solid var(--border);border-radius:10px;background:#00000033}
     .drawer{display:none}
@@ -57,12 +55,10 @@
       .drawer a{display:block;padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600}
     }
 
-    /* Typo + rythme */
     p, li{line-height:1.6}
     .subtitle{color:var(--muted)}
     .note{font-size:13px;color:#cbbfa6;margin-top:10px}
 
-    /* Header (images = disposition d'avant) */
     header{position:relative;border-radius:20px;overflow:hidden;
       background:radial-gradient(1200px 600px at 80% -10%, #3b2b14 0%, transparent 60%), linear-gradient(160deg, #12100f 0%, #1b1714 100%);
       border:1px solid var(--border);
@@ -93,7 +89,6 @@
     .card img{width:100%;height:220px;object-fit:cover}
     .card .p{padding:14px}
 
-    /* Sections texte */
     .sec{margin-top:36px;padding:20px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,var(--panel),var(--panel2))}
     .sec h2{font-size:26px;margin:0 0 14px;font-weight:800;letter-spacing:.2px}
     .list{display:grid;gap:12px; list-style:none; padding:0; margin:0}
@@ -135,9 +130,9 @@
         <div>
           <span class="badge">🎮 Jeu mobile • Réflexes • Mémoire • Wing Chun</span>
           <h1 class="title">Simon Wing Chun</h1>
-          <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et fais hurler le tableau des meilleurs scores. Conçu par un pratiquant de Kung-Fu, calibré pour le fun et la progression.</p>
+          <p class="subtitle">Enchaîne les techniques au bon rythme, grimpe les niveaux, et fais hurler le tableau des meilleurs scores.</p>
           <div class="cta" id="telecharger">
-            <a class="btn primary" href="https://github.com/albatroswingchun/WingChunSimonGame/releases/download/v2.141/app-debug.apk" download>
+            <a class="btn primary" href="https://github.com/albatroswingchun/WingChunSimonGame/releases/download/v1.0.4/WingChunSimonGame.apk" download>
               ⬇️ Télécharger l’APK
               <span class="tag">Android</span>
             </a>
@@ -157,15 +152,15 @@
           <div class="grid">
             <div class="card">
               <img src="https://i.imgur.com/kEgnTvG.png" alt="Visuel 1 du jeu">
-              <div class="p"><strong>Ambiance</strong><br><span class="hint">Un décor travaillé et lisible, sans sacrifier la vitesse.</span></div>
+              <div class="p"><strong>Ambiance</strong><br>Décor travaillé et lisible.</div>
             </div>
             <div class="card">
               <img src="https://i.imgur.com/7hJwEYz.png" alt="Visuel 2 du jeu">
-              <div class="p"><strong>Gameplay</strong><br><span class="hint">Sons réactifs, animations claires, montée en difficulté progressive.</span></div>
+              <div class="p"><strong>Gameplay</strong><br>Sons réactifs, animations claires, progression fluide.</div>
             </div>
             <div class="card">
               <img src="https://i.imgur.com/ig2Zfcs.png" alt="Visuel 3 du jeu">
-              <div class="p"><strong>Challenge</strong><br><span class="hint">Score local, logique “Simon”, et patterns qui se corsent.</span></div>
+              <div class="p"><strong>Challenge</strong><br>Score local, logique “Simon”, patterns qui se corsent.</div>
             </div>
           </div>
         </div>
@@ -175,21 +170,19 @@
     <section class="sec" id="caracteristiques">
       <h2>Caractéristiques</h2>
       <ul class="list">
-        <li>🔔 Feedback audio et visuel précis pour mémoriser les enchaînements.</li>
+        <li>🔔 Feedback audio et visuel précis.</li>
         <li>⚡ Performances optimisées, même sur téléphones modestes.</li>
-        <li>🎯 Mode hors-ligne possible (selon tes assets), parfait pour jouer partout.</li>
-        <li>🏆 Affichage du meilleur score et effets de progression.</li>
+        <li>🎯 Mode hors-ligne possible (selon tes assets).</li>
+        <li>🏆 Meilleur score et effets de progression.</li>
       </ul>
     </section>
 
     <section class="sec" id="installer">
       <h2>Installer sur Android</h2>
-      <div class="install-steps">
-        <div class="list">
-          <li>1. Appuie sur <strong>“Télécharger l’APK”</strong>.</li>
-          <li>2. Ouvre le fichier téléchargé puis accepte <em>“Autoriser cette source”</em> si Android le demande.</li>
-          <li>3. Installe. Lance l’app depuis l’écran d’accueil. Terminé.</li>
-        </div>
+      <div class="list">
+        <li>1. Télécharge <strong>WingChunSimonGame.apk</strong>.</li>
+        <li>2. Ouvre le fichier téléchargé puis accepte <em>“Autoriser cette source”</em> si Android le demande.</li>
+        <li>3. Installe et lance l’app depuis l’écran d’accueil.</li>
       </div>
     </section>
 
@@ -197,20 +190,19 @@
       <h2>Sur iPhone (iOS)</h2>
       <ul class="list">
         <li>1. Ouvre la <a href="https://albatroswingchun.github.io/WingChunSimonGame/" target="_blank" rel="noopener"><strong>version web</strong></a> dans Safari.</li>
-        <li>2. Bouton <strong>Partager</strong> → <strong>Ajouter à l’écran d’accueil</strong> pour créer un raccourci plein écran.</li>
-        <li>3. Lance le jeu depuis l’icône créée. C’est la méthode la plus simple sans App Store.</li>
+        <li>2. Partage → <strong>Ajouter à l’écran d’accueil</strong> pour créer un raccourci.</li>
+        <li>3. Lance le jeu depuis l’icône créée.</li>
       </ul>
     </section>
 
     <footer>
-      © <span id="y"></span> Simon Wing Chun • Mon premier jeu, fait avec un peu de transpiration, beaucoup de passion & une semaine de travail acharné.
+      © <span id="y"></span> Simon Wing Chun • Fait avec passion et beaucoup de Kung-Fu 🥋
     </footer>
   </div>
 
   <script>
     document.getElementById('y').textContent = new Date().getFullYear();
 
-    // hamburger
     const btn = document.getElementById('burgerBtn');
     const drawer = document.getElementById('drawer');
     if (btn) {
@@ -218,7 +210,6 @@
         drawer.style.display = drawer.style.display === 'block' ? 'none' : 'block';
       });
     }
-    // refermer le drawer après clic
     document.querySelectorAll('#drawer a').forEach(a=>{
       a.addEventListener('click', ()=>{ drawer.style.display='none'; });
     });
