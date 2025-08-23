@@ -1830,6 +1830,21 @@ window.addEventListener('keydown', (e)=>{
   document.addEventListener('visibilitychange', ()=> { if (!document.hidden) checkUpdate(false); });
 </script>
 <!-- ==== /Contrôle de version ==== -->
+
+<script>
+(async () => {
+  try {
+    const cap = window.Capacitor;
+    // Compatibilité Capacitor 5/6
+    const sb = cap?.Plugins?.StatusBar || cap?.StatusBar;
+    if (cap?.isNativePlatform && sb) {
+      await sb.setOverlaysWebView({ overlay: false }); // évite la superposition
+      await sb.setBackgroundColor({ color: '#0b0a0a' });
+      await sb.setStyle({ style: 'LIGHT' }); // icônes claires, barre sombre
+    }
+  } catch {}
+})();
+</script>
   
 </body>
 </html>
