@@ -1540,7 +1540,7 @@ function init(){
   if(SKINS[activeSkinIdx]?.locked && !isUnlocked(SKINS[activeSkinIdx])) activeSkinIdx = 0;
   applySkin(activeSkinIdx);
   const tag = document.getElementById('appVersion');
-  if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION;
+  if (tag) tag.textContent = APP_LABEL + ' / ' + APP_VERSION_NAME;
   requestAnimationFrame(loop);
 }
 if (document.readyState === 'loading') {
