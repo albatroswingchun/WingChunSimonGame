@@ -1212,7 +1212,7 @@ if (score > runPrevBest){
       const monkingSkin = SKINS.find(s=>s.id==='monking');
       if(monkingSkin && !monkingPopupShownThisRun){
         monkingPopupShownThisRun = true;
-        showNewSkinPopup(monkingSkin);
+        pendingUnlocksThisRun.push(monkingSkin);
       }
     }
 
@@ -1222,7 +1222,7 @@ if (score > runPrevBest){
       const demonSkin = SKINS.find(s=>s.id==='demon');
       if(demonSkin && !demonPopupShownThisRun){
         demonPopupShownThisRun = true;
-        showNewSkinPopup(demonSkin);
+        pendingUnlocksThisRun.push(demonSkin);
       }
     }
 
@@ -1796,7 +1796,7 @@ window.addEventListener('keydown', (e)=>{
       return;
     }
 
-    const cur = APP_VERSION;
+    const cur = APP_VERSION_NAME;
     const latest = info?.latest || cur;
     const minSupported = info?.minSupported || cur;
 
