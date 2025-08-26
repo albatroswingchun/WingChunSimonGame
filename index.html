@@ -57,7 +57,7 @@
 
     /* === .pad avec police du score, plus lisible === */
     .pad{
-      width:132px;height:100px;border-radius:14px;
+      width:110px;height:84px;border-radius:14px;
       background:linear-gradient(#2a2a2a,#1e1e1e);
       color:#cfcfcf;display:flex;align-items:center;justify-content:center;
       font-weight:900;
@@ -118,7 +118,10 @@
 
     /* Panneau réglages (T) */
     #devPanel{
-      position:fixed; top:68px; right:12px; width:380px; max-height:85vh; overflow:auto;
+      position:fixed;
+      top: calc(env(safe-area-inset-top) + 68px);
+      top: calc(constant(safe-area-inset-top) + 68px); /* compat iOS ancien */
+      right:12px; width:380px; max-height:85vh; overflow:auto;
       background:#111c; backdrop-filter: blur(6px); border:1px solid #2f2724; border-radius:12px; z-index:30;
       padding:12px; display:none;
     }
@@ -162,20 +165,20 @@
       width: min(92vw, calc(var(--stageW) * .90));
     }
     body.isPortrait .pad{
-      width: 80%;
+      width: 70%;
       height: auto;
       aspect-ratio: 4 / 3;
       margin: 0 auto;
       font-size: clamp(14px, calc(var(--stageW)*0.04), 22px);
-      max-width: 140px;
+      max-width: 120px;
     }
 
     /* Pads proportionnels en paysage */
     body:not(.isPortrait) #board{ display:flex; gap: clamp(8px, calc(var(--stageW)*0.015), 14px); }
     body:not(.isPortrait) .pad{
-      width:  clamp(100px,  calc(var(--stageW)*0.13), 148px);
-      height: clamp(76px,  calc(var(--stageH)*0.12), 108px);
-      font-size: clamp(14px, calc(var(--stageH)*0.032), 20px);
+      width:  clamp(84px,  calc(var(--stageW)*0.11), 124px);
+      height: clamp(64px,  calc(var(--stageH)*0.10), 90px);
+      font-size: clamp(12px, calc(var(--stageH)*0.027), 17px);
     }
 
     /* ============ HUD SCORE GÉANT ============ */
@@ -226,6 +229,8 @@
     #gameOver{
       position:fixed; inset:0; display:none; place-items:center;
       background:rgba(0,0,0,0.55); z-index:40; backdrop-filter: blur(2px);
+      padding-top: env(safe-area-inset-top);
+      padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
     }
     #gameOver.open{ display:grid; }
     .go-panel{
@@ -286,7 +291,12 @@
     .go-share::before{ content:"📤"; }  /* icône seule */
 
     /* === NEW SKIN POPUP === */
-    #newSkin{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.55); z-index:50; backdrop-filter: blur(2px); }
+    #newSkin{
+      position:fixed; inset:0; display:none; place-items:center;
+      background:rgba(0,0,0,.55); z-index:50; backdrop-filter: blur(2px);
+      padding-top: env(safe-area-inset-top);
+      padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
+    }
     #newSkin.open{ display:grid; }
     .ns-panel{ background:#1a1716; border:1px solid #3a302d; border-radius:16px; padding:22px; width:min(92vw, 460px); text-align:center; box-shadow: 0 16px 48px rgba(0,0,0,.45); }
     .ns-title{ font-family:'Permanent Marker',cursive; font-size:32px; margin:0 0 10px; color:var(--gold); text-shadow:0 1px 0 #000; }
@@ -300,6 +310,8 @@
     #bestPopup{
       position:fixed; inset:0; display:none; place-items:center;
       background:rgba(0,0,0,.55); z-index:60; backdrop-filter: blur(2px);
+      padding-top: env(safe-area-inset-top);
+      padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
     }
     #bestPopup.open{ display:grid; }
     #bestPopup .bp-panel{
@@ -336,6 +348,8 @@
     
     #confetti{
       position:fixed; inset:0; pointer-events:none; z-index:59;
+      padding-top: env(safe-area-inset-top);
+      padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
       display:none;           /* caché par défaut */
       opacity:0;              /* prêt pour fade-in/out */
       transition: opacity 300ms ease;
@@ -348,6 +362,8 @@
     #rulesPopup{
       position:fixed; inset:0; display:none; place-items:center;
       background:rgba(0,0,0,.55); z-index:55; backdrop-filter: blur(2px);
+      padding-top: env(safe-area-inset-top);
+      padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
     }
     #rulesPopup.open{ display:grid; }
     #rulesPopup .rp-panel{
@@ -390,7 +406,7 @@
   </header>
 
   <!-- Bouton d'accès tactile au panneau de réglages -->
-  <button style="position:fixed;top:10px;right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
+  <button style="position:fixed;top:calc(env(safe-area-inset-top) + 10px);top:calc(constant(safe-area-inset-top) + 10px);right:10px;z-index:999;" onclick="toggleDevPanel()">⚙</button>
 
   <div id="stageWrap">
     <div id="stage">
@@ -1686,6 +1702,8 @@ window.addEventListener('keydown', (e)=>{
   #forceUpdateOverlay{
     position: fixed; inset: 0; z-index: 10000; display: none;
     background: rgba(0,0,0,.88); color: #eaf2fb; font: 15px/1.4 system-ui, sans-serif;
+    padding-top: env(safe-area-inset-top);
+    padding-top: constant(safe-area-inset-top); /* compat iOS ancien */
   }
   #forceUpdateOverlay .pane{
     position:absolute; inset: 0; display:flex; align-items:center; justify-content:center; padding: 20px;
